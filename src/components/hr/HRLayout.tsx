@@ -33,9 +33,6 @@ export function HRLayout() {
                   <h1 className="text-xl font-heading font-bold text-primary">
                     NAFGEM HR Management System
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Professional HR Management Platform
-                  </p>
                 </div>
               </div>
             </div>
