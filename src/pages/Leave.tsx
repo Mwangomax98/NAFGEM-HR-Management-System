@@ -12,7 +12,7 @@ export default function Leave() {
   const [activeTab, setActiveTab] = useState("request");
   
   // Mock user role - in real app this would come from auth context
-  const userRole: "employee" | "hr" | "admin" = "admin"; // Change this to test different roles
+  const [userRole, setUserRole] = useState<"employee" | "hr" | "admin">("admin");
 
   return (
     <div className="min-h-screen bg-background">
