@@ -5,6 +5,9 @@ import { HRDashboard } from "./HRDashboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Settings, LogOut } from "lucide-react";
+import { NotificationDropdown } from "../notifications/NotificationDropdown";
+import { SettingsModal } from "../settings/SettingsModal";
+import { LogoutConfirmation } from "../auth/LogoutConfirmation";
 
 export function HRLayout() {
   const [currentUser] = useState({
@@ -57,22 +60,10 @@ export function HRLayout() {
               </div>
 
               {/* Notifications */}
-              <div className="relative">
-                <Button variant="ghost" size="sm">
-                  <Bell className="h-4 w-4" />
-                </Button>
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs"
-                >
-                  3
-                </Badge>
-              </div>
+              <NotificationDropdown />
 
               {/* Settings */}
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
+              <SettingsModal />
 
               {/* User Info */}
               <div className="flex items-center space-x-3 pl-4 border-l border-border">
@@ -88,9 +79,7 @@ export function HRLayout() {
               </div>
 
               {/* Logout */}
-              <Button variant="ghost" size="sm">
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <LogoutConfirmation />
             </div>
           </header>
 
