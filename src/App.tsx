@@ -11,6 +11,12 @@ import Tasks from "./pages/Tasks";
 import Leave from "./pages/Leave";
 import Trips from "./pages/Trips";
 import Exit from "./pages/Exit";
+import EmployeeManagement from "./pages/hr/EmployeeManagement";
+import ProjectManagement from "./pages/hr/ProjectManagement";
+import TimesheetApprovals from "./pages/hr/TimesheetApprovals";
+import LeaveApprovals from "./pages/hr/LeaveApprovals";
+import UserManagement from "./pages/admin/UserManagement";
+import SystemSettings from "./pages/admin/SystemSettings";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +34,12 @@ const App = () => (
           <Route path="/leave" element={<Leave />} />
           <Route path="/trips" element={<Trips />} />
           <Route path="/exit" element={<Exit />} />
+          <Route path="/hr/employees" element={<EmployeeManagement />} />
+          <Route path="/hr/projects" element={<ProjectManagement />} />
+          <Route path="/hr/timesheet-approvals" element={<TimesheetApprovals />} />
+          <Route path="/hr/leave-approvals" element={<LeaveApprovals />} />
+          <Route path="/admin/users" element={<UserManagement />} />
+          <Route path="/admin/settings" element={<SystemSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -9,7 +9,7 @@ import { NotificationDropdown } from "../notifications/NotificationDropdown";
 import { SettingsModal } from "../settings/SettingsModal";
 import { LogoutConfirmation } from "../auth/LogoutConfirmation";
 
-export function HRLayout() {
+export function HRLayout({ children }: { children?: React.ReactNode }) {
   const [currentUser] = useState({
     name: "Sarah Johnson",
     role: "hr" as const, // Start with HR role for demo
@@ -85,7 +85,7 @@ export function HRLayout() {
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto">
-            <HRDashboard userRole={roleDemo} userName={currentUser.name} />
+            {children || <HRDashboard userRole={roleDemo} userName={currentUser.name} />}
           </main>
         </div>
       </div>
