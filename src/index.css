@@ -8,51 +8,67 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* HR System Design System Colors */
+    --background: 211 20% 97%; /* Off White #F8F9FA */
+    --foreground: 215 25% 27%; /* Deep Navy Blue text */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 27%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 27%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Deep Navy Blue #1E2A38 */
+    --primary: 215 25% 17%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Slate Gray #5A6C78 */
+    --secondary: 210 15% 41%;
+    --secondary-foreground: 0 0% 98%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 210 15% 41%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent: Teal #3BA99C */
+    --accent: 174 45% 44%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Error: Crimson Red #C62828 */
+    --destructive: 0 70% 47%;
+    --destructive-foreground: 0 0% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 174 45% 44%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    /* Sidebar: Deep Navy Blue */
+    --sidebar-background: 215 25% 17%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 174 45% 44%; /* Teal for active items */
     --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 215 25% 22%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 215 25% 22%;
+    --sidebar-ring: 174 45% 44%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom HR System tokens */
+    --navy-blue: 215 25% 17%;
+    --slate-gray: 210 15% 41%;
+    --teal-accent: 174 45% 44%;
+    --off-white: 211 20% 97%;
+    --crimson-red: 0 70% 47%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--navy-blue)), hsl(var(--slate-gray)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--teal-accent)), hsl(174 45% 54%));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--navy-blue)), hsl(var(--teal-accent)));
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 12px -2px hsl(var(--navy-blue) / 0.08);
+    --shadow-card: 0 8px 24px -4px hsl(var(--navy-blue) / 0.12);
+    --shadow-nav: 0 2px 8px -2px hsl(var(--navy-blue) / 0.15);
   }
 
   .dark {
@@ -101,5 +117,24 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Roboto', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+  }
+
+  .font-heading {
+    font-family: 'Montserrat', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Roboto', sans-serif;
+  }
+
+  .font-highlight {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 600;
   }
 }

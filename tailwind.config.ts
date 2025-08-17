@@ -61,7 +61,28 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Custom HR System Colors
+				navy: 'hsl(var(--navy-blue))',
+				slate: 'hsl(var(--slate-gray))',
+				teal: 'hsl(var(--teal-accent))',
+				'off-white': 'hsl(var(--off-white))',
+				crimson: 'hsl(var(--crimson-red))'
+			},
+			fontFamily: {
+				heading: ['Montserrat', 'sans-serif'],
+				body: ['Roboto', 'sans-serif'],
+				highlight: ['Open Sans', 'sans-serif'],
+			},
+			boxShadow: {
+				soft: 'var(--shadow-soft)',
+				card: 'var(--shadow-card)',
+				nav: 'var(--shadow-nav)',
+			},
+			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-accent': 'var(--gradient-accent)',
+				'gradient-hero': 'var(--gradient-hero)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
