@@ -54,7 +54,7 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
       case "admin":
         return "System administration and analytics dashboard";
       default:
-        return "Welcome to Harmony HR Core";
+        return "Welcome to NAFGEM HR Management System";
     }
   };
 

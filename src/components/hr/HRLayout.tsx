@@ -31,10 +31,10 @@ export function HRLayout() {
                 </div>
                 <div>
                   <h1 className="text-xl font-heading font-bold text-primary">
-                    Harmony HR Core
+                    NAFGEM HR Management System
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Professional HR Management System
+                    Professional HR Management Platform
                   </p>
                 </div>
               </div>
