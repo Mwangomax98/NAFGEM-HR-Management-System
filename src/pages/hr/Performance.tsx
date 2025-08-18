@@ -9,20 +9,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Search, Target, TrendingUp, Calendar, Star } from "lucide-react";
 import { ReviewDetailModal } from "@/components/modals/ReviewDetailModal";
+import { StartReviewModal } from "@/components/modals/StartReviewModal";
 
 const Performance = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReview, setSelectedReview] = useState<typeof reviews[0] | null>(null);
   const [isReviewDetailOpen, setIsReviewDetailOpen] = useState(false);
+  const [isStartReviewOpen, setIsStartReviewOpen] = useState(false);
 
-  const performanceStats = [
-    { title: "Active Reviews", value: "42", icon: Target, change: "Q4 2024 cycle" },
-    { title: "Avg Performance Score", value: "4.2", icon: TrendingUp, change: "+0.3 from last quarter" },
-    { title: "Pending Reviews", value: "18", icon: Calendar, change: "Due this week" },
-    { title: "Top Performers", value: "24", icon: Star, change: "Exceeds expectations" },
-  ];
-
-  const reviews = [
+  const [reviews, setReviews] = useState([
     { 
       id: 1, 
       employee: "John Smith", 
@@ -53,6 +48,13 @@ const Performance = () => {
       dueDate: "2024-01-20",
       department: "Sales"
     },
+  ]);
+
+  const performanceStats = [
+    { title: "Active Reviews", value: "42", icon: Target, change: "Q4 2024 cycle" },
+    { title: "Avg Performance Score", value: "4.2", icon: TrendingUp, change: "+0.3 from last quarter" },
+    { title: "Pending Reviews", value: "18", icon: Calendar, change: "Due this week" },
+    { title: "Top Performers", value: "24", icon: Star, change: "Exceeds expectations" },
   ];
 
   const goals = [
@@ -70,9 +72,12 @@ const Performance = () => {
     }
   };
 
-  const openReviewDetail = (review: typeof reviews[0]) => {
-    setSelectedReview(review);
-    setIsReviewDetailOpen(true);
+  const handleStartReview = (reviewData: any) => {
+    const newReview = {
+      id: reviews.length + 1,
+      ...reviewData
+    };
+    setReviews([...reviews, newReview]);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -92,7 +97,10 @@ const Performance = () => {
           <h1 className="text-3xl font-bold">Performance Reviews</h1>
           <p className="text-muted-foreground mt-2">Manage performance evaluations and track employee goals</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => setIsStartReviewOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Start Review Cycle
         </Button>
@@ -184,7 +192,10 @@ const Performance = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => openReviewDetail(review)}
+                      onClick={() => {
+                        setSelectedReview(review);
+                        setIsReviewDetailOpen(true);
+                      }}
                     >
                       View Details
                     </Button>
@@ -271,6 +282,12 @@ const Performance = () => {
           review={selectedReview}
         />
       )}
+
+      <StartReviewModal
+        isOpen={isStartReviewOpen}
+        onClose={() => setIsStartReviewOpen(false)}
+        onStartReview={handleStartReview}
+      />
     </div>
   );
 };

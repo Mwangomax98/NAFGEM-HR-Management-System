@@ -9,11 +9,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Search, BookOpen, Users, Calendar, Award } from "lucide-react";
 import { CourseDetailModal } from "@/components/modals/CourseDetailModal";
+import { CourseProgressModal } from "@/components/modals/CourseProgressModal";
+import { CreateCourseModal } from "@/components/modals/CreateCourseModal";
 
 const Training = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState<typeof employees[0] | null>(null);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<typeof courses[0] | null>(null);
   const [isCourseDetailOpen, setIsCourseDetailOpen] = useState(false);
+
+  const [courses, setCourses] = useState([
+    { id: 1, title: "Leadership Development", instructor: "Sarah Wilson", enrolled: 24, duration: "8 weeks", status: "Active", progress: 65 },
+    { id: 2, title: "Digital Marketing Fundamentals", instructor: "Mike Chen", enrolled: 18, duration: "6 weeks", status: "Starting Soon", progress: 0 },
+    { id: 3, title: "Project Management Essentials", instructor: "Anna Rodriguez", enrolled: 31, duration: "10 weeks", status: "Active", progress: 45 },
+    { id: 4, title: "Data Analytics Workshop", instructor: "David Kim", enrolled: 15, duration: "4 weeks", status: "Completed", progress: 100 },
+  ]);
 
   const trainingStats = [
     { title: "Active Courses", value: "24", icon: BookOpen, change: "+3 from last month" },
@@ -22,22 +34,23 @@ const Training = () => {
     { title: "Certifications", value: "89", icon: Award, change: "+7 completed" },
   ];
 
-  const courses = [
-    { id: 1, title: "Leadership Development", instructor: "Sarah Wilson", enrolled: 24, duration: "8 weeks", status: "Active", progress: 65 },
-    { id: 2, title: "Digital Marketing Fundamentals", instructor: "Mike Chen", enrolled: 18, duration: "6 weeks", status: "Starting Soon", progress: 0 },
-    { id: 3, title: "Project Management Essentials", instructor: "Anna Rodriguez", enrolled: 31, duration: "10 weeks", status: "Active", progress: 45 },
-    { id: 4, title: "Data Analytics Workshop", instructor: "David Kim", enrolled: 15, duration: "4 weeks", status: "Completed", progress: 100 },
-  ];
-
   const employees = [
     { id: 1, name: "John Smith", email: "john.smith@company.com", department: "Engineering", coursesCompleted: 5, currentCourses: 2, certifications: 3 },
     { id: 2, name: "Emily Johnson", email: "emily.johnson@company.com", department: "Marketing", coursesCompleted: 8, currentCourses: 1, certifications: 5 },
     { id: 3, name: "Michael Brown", email: "michael.brown@company.com", department: "Sales", coursesCompleted: 6, currentCourses: 3, certifications: 4 },
   ];
 
-  const openCourseDetail = (course: typeof courses[0]) => {
-    setSelectedCourse(course);
-    setIsCourseDetailOpen(true);
+  const openEmployeeProgress = (employee: typeof employees[0]) => {
+    setSelectedEmployee(employee);
+    setIsProgressModalOpen(true);
+  };
+
+  const handleCreateCourse = (courseData: any) => {
+    const newCourse = {
+      id: courses.length + 1,
+      ...courseData
+    };
+    setCourses([...courses, newCourse]);
   };
 
   const getStatusColor = (status: string) => {
@@ -57,7 +70,10 @@ const Training = () => {
           <h1 className="text-3xl font-bold">Training & Development</h1>
           <p className="text-muted-foreground mt-2">Manage employee training programs and track learning progress</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => setIsCreateCourseOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Create Course
         </Button>
@@ -132,7 +148,10 @@ const Training = () => {
                       variant="outline" 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => openCourseDetail(course)}
+                      onClick={() => {
+                        setSelectedCourse(course);
+                        setIsCourseDetailOpen(true);
+                      }}
                     >
                       View Details
                     </Button>
@@ -174,7 +193,13 @@ const Training = () => {
                   <TableCell>{employee.currentCourses}</TableCell>
                   <TableCell>{employee.certifications}</TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm">View Progress</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openEmployeeProgress(employee)}
+                    >
+                      View Progress
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -214,6 +239,20 @@ const Training = () => {
           course={selectedCourse}
         />
       )}
+
+      {selectedEmployee && (
+        <CourseProgressModal
+          isOpen={isProgressModalOpen}
+          onClose={() => setIsProgressModalOpen(false)}
+          employee={selectedEmployee}
+        />
+      )}
+
+      <CreateCourseModal
+        isOpen={isCreateCourseOpen}
+        onClose={() => setIsCreateCourseOpen(false)}
+        onCreateCourse={handleCreateCourse}
+      />
     </div>
   );
 };
