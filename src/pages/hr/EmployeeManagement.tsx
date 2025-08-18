@@ -14,52 +14,7 @@ export default function EmployeeManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [employees] = useState([
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah.johnson@nafgem.com",
-      phone: "+1 (555) 123-4567",
-      department: "Human Resources",
-      position: "HR Manager",
-      status: "active",
-      joinDate: "2020-03-15",
-      avatar: "SJ"
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      email: "michael.chen@nafgem.com",
-      phone: "+1 (555) 234-5678",
-      department: "Engineering",
-      position: "Senior Developer",
-      status: "active",
-      joinDate: "2019-08-22",
-      avatar: "MC"
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      email: "emily.rodriguez@nafgem.com",
-      phone: "+1 (555) 345-6789",
-      department: "Marketing",
-      position: "Marketing Specialist",
-      status: "on-leave",
-      joinDate: "2021-01-10",
-      avatar: "ER"
-    },
-    {
-      id: 4,
-      name: "David Thompson",
-      email: "david.thompson@nafgem.com",
-      phone: "+1 (555) 456-7890",
-      department: "Sales",
-      position: "Sales Representative",
-      status: "active",
-      joinDate: "2022-06-05",
-      avatar: "DT"
-    }
-  ]);
+  const [employees] = useState([]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -180,59 +135,67 @@ export default function EmployeeManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {employee.avatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{employee.name}</p>
-                        <p className="text-sm text-muted-foreground">{employee.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{employee.department}</TableCell>
-                  <TableCell>{employee.position}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-1 text-sm">
-                        <Mail className="w-3 h-3" />
-                        <span className="text-muted-foreground">{employee.email}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-sm">
-                        <Phone className="w-3 h-3" />
-                        <span className="text-muted-foreground">{employee.phone}</span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{getStatusBadge(employee.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedEmployee(employee);
-                          setShowProfile(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {employees.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    No employees found. Click "Add Employee" to register your first employee.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                employees.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {employee.avatar}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{employee.name}</p>
+                          <p className="text-sm text-muted-foreground">{employee.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{employee.department}</TableCell>
+                    <TableCell>{employee.position}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-1 text-sm">
+                          <Mail className="w-3 h-3" />
+                          <span className="text-muted-foreground">{employee.email}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-sm">
+                          <Phone className="w-3 h-3" />
+                          <span className="text-muted-foreground">{employee.phone}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{getStatusBadge(employee.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedEmployee(employee);
+                            setShowProfile(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

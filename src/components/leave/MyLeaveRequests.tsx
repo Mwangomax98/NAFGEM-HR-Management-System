@@ -10,80 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Eye, Search, Filter, Edit2, Trash2, MessageSquare, Calendar, Clock, User, FileText } from "lucide-react";
 import { format } from "date-fns";
 
-const mockRequests = [
-  {
-    id: 1,
-    refNumber: "LV-2024-A8F2G1",
-    leaveType: "Annual Leave",
-    fromDate: "2024-12-20",
-    toDate: "2024-12-27",
-    days: 6,
-    project: "USAID Health Systems",
-    status: "pending",
-    submittedDate: "2024-11-15",
-    reason: "Christmas holiday with family",
-    handoverDetails: "All tasks have been delegated to Mary Johnson. Client meetings rescheduled to January.",
-    replacementPerson: "Mary Johnson",
-    hrComments: [],
-    adminComments: []
-  },
-  {
-    id: 2,
-    refNumber: "LV-2024-B3H7K9",
-    leaveType: "Sick Leave",
-    fromDate: "2024-11-15",
-    toDate: "2024-11-16",
-    days: 2,
-    project: "EU Education Reform",
-    status: "hr_approved",
-    submittedDate: "2024-11-14",
-    reason: "Medical appointment and recovery",
-    handoverDetails: "Emergency tasks covered by team lead. Non-urgent items postponed.",
-    replacementPerson: "Team Lead",
-    hrComments: [
-      { user: "HR Manager", date: "2024-11-14", message: "Medical certificate received. Approved for HR review." }
-    ],
-    adminComments: []
-  },
-  {
-    id: 3,
-    refNumber: "LV-2024-C9M4N2",
-    leaveType: "Personal Day",
-    fromDate: "2024-10-05",
-    toDate: "2024-10-05",
-    days: 1,
-    project: "DFID Governance",
-    status: "final_approved",
-    submittedDate: "2024-09-28",
-    reason: "Family emergency",
-    handoverDetails: "Day coverage arranged with colleague.",
-    replacementPerson: "John Smith",
-    hrComments: [
-      { user: "HR Manager", date: "2024-09-29", message: "Approved for urgent personal matters." }
-    ],
-    adminComments: [
-      { user: "Executive Director", date: "2024-09-30", message: "Final approval granted. Hope everything is resolved." }
-    ]
-  },
-  {
-    id: 4,
-    refNumber: "LV-2024-D2P8Q5",
-    leaveType: "Annual Leave",
-    fromDate: "2024-08-15",
-    toDate: "2024-08-25",
-    days: 8,
-    project: "World Bank Infrastructure",
-    status: "rejected",
-    submittedDate: "2024-07-20",
-    reason: "Summer vacation",
-    handoverDetails: "Project deadlines conflict with requested dates.",
-    replacementPerson: "Sarah Wilson",
-    hrComments: [
-      { user: "HR Manager", date: "2024-07-22", message: "Conflicts with critical project milestones. Please reschedule." }
-    ],
-    adminComments: []
-  }
-];
+const mockRequests = [];
 
 const statusColors = {
   draft: { bg: "bg-gray-100", text: "text-gray-800", label: "Draft" },
@@ -196,145 +123,155 @@ export default function MyLeaveRequests() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.refNumber}</TableCell>
-                  <TableCell>{request.leaveType}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div>{format(new Date(request.fromDate), "MMM dd")}</div>
-                      <div className="text-muted-foreground">to {format(new Date(request.toDate), "MMM dd")}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{request.days} day{request.days > 1 ? 's' : ''}</TableCell>
-                  <TableCell className="max-w-xs truncate">{request.project}</TableCell>
-                  <TableCell>{getStatusBadge(request.status)}</TableCell>
-                  <TableCell>{format(new Date(request.submittedDate), "MMM dd, yyyy")}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-1">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedRequest(request)}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Leave Request Details</DialogTitle>
-                            <DialogDescription>
-                              Reference: {request.refNumber}
-                            </DialogDescription>
-                          </DialogHeader>
-                          {selectedRequest && (
-                            <div className="space-y-6">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-medium flex items-center">
-                                    <Calendar className="w-4 h-4 mr-2" />
-                                    Leave Period
-                                  </h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    {format(new Date(selectedRequest.fromDate), "PPP")} to {format(new Date(selectedRequest.toDate), "PPP")}
-                                  </p>
-                                  <p className="text-sm font-medium">{selectedRequest.days} days</p>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium flex items-center">
-                                    <Clock className="w-4 h-4 mr-2" />
-                                    Status
-                                  </h4>
-                                  {getStatusBadge(selectedRequest.status)}
-                                </div>
-                              </div>
-
-                              <div>
-                                <h4 className="font-medium flex items-center mb-2">
-                                  <FileText className="w-4 h-4 mr-2" />
-                                  Reason
-                                </h4>
-                                <p className="text-sm text-muted-foreground">{selectedRequest.reason}</p>
-                              </div>
-
-                              <div>
-                                <h4 className="font-medium flex items-center mb-2">
-                                  <User className="w-4 h-4 mr-2" />
-                                  Handover Details
-                                </h4>
-                                <p className="text-sm text-muted-foreground">{selectedRequest.handoverDetails}</p>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  <strong>Replacement:</strong> {selectedRequest.replacementPerson}
-                                </p>
-                              </div>
-
-                              {(selectedRequest.hrComments.length > 0 || selectedRequest.adminComments.length > 0) && (
-                                <div>
-                                  <h4 className="font-medium flex items-center mb-2">
-                                    <MessageSquare className="w-4 h-4 mr-2" />
-                                    Comments
-                                  </h4>
-                                  <div className="space-y-3">
-                                    {selectedRequest.hrComments.map((comment, index) => (
-                                      <div key={index} className="bg-blue-50 p-3 rounded">
-                                        <div className="flex justify-between items-start">
-                                          <strong className="text-sm">{comment.user}</strong>
-                                          <span className="text-xs text-muted-foreground">{format(new Date(comment.date), "PPP")}</span>
-                                        </div>
-                                        <p className="text-sm mt-1">{comment.message}</p>
-                                      </div>
-                                    ))}
-                                    {selectedRequest.adminComments.map((comment, index) => (
-                                      <div key={index} className="bg-green-50 p-3 rounded">
-                                        <div className="flex justify-between items-start">
-                                          <strong className="text-sm">{comment.user}</strong>
-                                          <span className="text-xs text-muted-foreground">{format(new Date(comment.date), "PPP")}</span>
-                                        </div>
-                                        <p className="text-sm mt-1">{comment.message}</p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-
-                      {canEdit(request.status) && (
-                        <Button variant="ghost" size="sm">
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                      )}
-
-                      {canDelete(request.status) && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Leave Request</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete request {request.refNumber}? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteRequest(request.id)}
-                                className="bg-destructive hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
+              {filteredRequests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    {searchTerm || statusFilter !== "all" 
+                      ? "No leave requests match your filters." 
+                      : "No leave requests submitted yet. Submit your first leave request to see it here."}
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredRequests.map((request) => (
+                  <TableRow key={request.id}>
+                    <TableCell className="font-medium">{request.refNumber}</TableCell>
+                    <TableCell>{request.leaveType}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{format(new Date(request.fromDate), "MMM dd")}</div>
+                        <div className="text-muted-foreground">to {format(new Date(request.toDate), "MMM dd")}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{request.days} day{request.days > 1 ? 's' : ''}</TableCell>
+                    <TableCell className="max-w-xs truncate">{request.project}</TableCell>
+                    <TableCell>{getStatusBadge(request.status)}</TableCell>
+                    <TableCell>{format(new Date(request.submittedDate), "MMM dd, yyyy")}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-1">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedRequest(request)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Leave Request Details</DialogTitle>
+                              <DialogDescription>
+                                Reference: {request.refNumber}
+                              </DialogDescription>
+                            </DialogHeader>
+                            {selectedRequest && (
+                              <div className="space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <h4 className="font-medium flex items-center">
+                                      <Calendar className="w-4 h-4 mr-2" />
+                                      Leave Period
+                                    </h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      {format(new Date(selectedRequest.fromDate), "PPP")} to {format(new Date(selectedRequest.toDate), "PPP")}
+                                    </p>
+                                    <p className="text-sm font-medium">{selectedRequest.days} days</p>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium flex items-center">
+                                      <Clock className="w-4 h-4 mr-2" />
+                                      Status
+                                    </h4>
+                                    {getStatusBadge(selectedRequest.status)}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-medium flex items-center mb-2">
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    Reason
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">{selectedRequest.reason}</p>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-medium flex items-center mb-2">
+                                    <User className="w-4 h-4 mr-2" />
+                                    Handover Details
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">{selectedRequest.handoverDetails}</p>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    <strong>Replacement:</strong> {selectedRequest.replacementPerson}
+                                  </p>
+                                </div>
+
+                                {(selectedRequest.hrComments.length > 0 || selectedRequest.adminComments.length > 0) && (
+                                  <div>
+                                    <h4 className="font-medium flex items-center mb-2">
+                                      <MessageSquare className="w-4 h-4 mr-2" />
+                                      Comments
+                                    </h4>
+                                    <div className="space-y-3">
+                                      {selectedRequest.hrComments.map((comment, index) => (
+                                        <div key={index} className="bg-blue-50 p-3 rounded">
+                                          <div className="flex justify-between items-start">
+                                            <strong className="text-sm">{comment.user}</strong>
+                                            <span className="text-xs text-muted-foreground">{format(new Date(comment.date), "PPP")}</span>
+                                          </div>
+                                          <p className="text-sm mt-1">{comment.message}</p>
+                                        </div>
+                                      ))}
+                                      {selectedRequest.adminComments.map((comment, index) => (
+                                        <div key={index} className="bg-green-50 p-3 rounded">
+                                          <div className="flex justify-between items-start">
+                                            <strong className="text-sm">{comment.user}</strong>
+                                            <span className="text-xs text-muted-foreground">{format(new Date(comment.date), "PPP")}</span>
+                                          </div>
+                                          <p className="text-sm mt-1">{comment.message}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        {canEdit(request.status) && (
+                          <Button variant="ghost" size="sm">
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
+
+                        {canDelete(request.status) && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Leave Request</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete request {request.refNumber}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteRequest(request.id)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

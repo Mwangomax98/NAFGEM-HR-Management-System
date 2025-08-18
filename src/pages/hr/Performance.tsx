@@ -17,51 +17,16 @@ const Performance = () => {
   const [isReviewDetailOpen, setIsReviewDetailOpen] = useState(false);
   const [isStartReviewOpen, setIsStartReviewOpen] = useState(false);
 
-  const [reviews, setReviews] = useState([
-    { 
-      id: 1, 
-      employee: "John Smith", 
-      reviewer: "Sarah Johnson", 
-      period: "Q4 2024", 
-      status: "In Progress", 
-      score: 4.5, 
-      dueDate: "2024-01-15",
-      department: "Engineering"
-    },
-    { 
-      id: 2, 
-      employee: "Emily Davis", 
-      reviewer: "Mike Wilson", 
-      period: "Q4 2024", 
-      status: "Completed", 
-      score: 4.8, 
-      dueDate: "2024-01-10",
-      department: "Marketing"
-    },
-    { 
-      id: 3, 
-      employee: "Michael Brown", 
-      reviewer: "Anna Rodriguez", 
-      period: "Q4 2024", 
-      status: "Pending", 
-      score: null, 
-      dueDate: "2024-01-20",
-      department: "Sales"
-    },
-  ]);
+  const [reviews, setReviews] = useState([]);
 
   const performanceStats = [
-    { title: "Active Reviews", value: "42", icon: Target, change: "Q4 2024 cycle" },
-    { title: "Avg Performance Score", value: "4.2", icon: TrendingUp, change: "+0.3 from last quarter" },
-    { title: "Pending Reviews", value: "18", icon: Calendar, change: "Due this week" },
-    { title: "Top Performers", value: "24", icon: Star, change: "Exceeds expectations" },
+    { title: "Active Reviews", value: "0", icon: Target, change: "No active reviews" },
+    { title: "Avg Performance Score", value: "0.0", icon: TrendingUp, change: "No data available" },
+    { title: "Pending Reviews", value: "0", icon: Calendar, change: "No pending reviews" },
+    { title: "Top Performers", value: "0", icon: Star, change: "No reviews completed" },
   ];
 
-  const goals = [
-    { id: 1, employee: "John Smith", title: "Complete React certification", progress: 75, dueDate: "2024-02-28", priority: "High" },
-    { id: 2, employee: "Emily Davis", title: "Lead marketing campaign", progress: 90, dueDate: "2024-01-31", priority: "Medium" },
-    { id: 3, employee: "Michael Brown", title: "Achieve 120% sales target", progress: 85, dueDate: "2024-03-31", priority: "High" },
-  ];
+  const goals = [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -145,65 +110,74 @@ const Performance = () => {
             <Button variant="outline">Filter</Button>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Reviewer</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Score</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reviews.map((review) => (
-                <TableRow key={review.id}>
-                  <TableCell className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="" />
-                      <AvatarFallback>{review.employee.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{review.employee}</div>
-                      <div className="text-sm text-muted-foreground">{review.department}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{review.reviewer}</TableCell>
-                  <TableCell>{review.period}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(review.status)}>
-                      {review.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {review.score ? (
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span>{review.score}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Pending</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{review.dueDate}</TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedReview(review);
-                        setIsReviewDetailOpen(true);
-                      }}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
+          {reviews.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardHeader>
+                <CardTitle className="text-muted-foreground">No Performance Reviews</CardTitle>
+                <CardDescription>No performance reviews have been started yet. Click "Start Review Cycle" to begin the review process.</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Reviewer</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {reviews.map((review) => (
+                  <TableRow key={review.id}>
+                    <TableCell className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="" />
+                        <AvatarFallback>{review.employee.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{review.employee}</div>
+                        <div className="text-sm text-muted-foreground">{review.department}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{review.reviewer}</TableCell>
+                    <TableCell>{review.period}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(review.status)}>
+                        {review.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {review.score ? (
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span>{review.score}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Pending</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{review.dueDate}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedReview(review);
+                          setIsReviewDetailOpen(true);
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-4">
@@ -215,39 +189,48 @@ const Performance = () => {
             </Button>
           </div>
 
-          <div className="space-y-4">
-            {goals.map((goal) => (
-              <Card key={goal.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{goal.title}</CardTitle>
-                      <CardDescription>Employee: {goal.employee}</CardDescription>
+          {goals.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardHeader>
+                <CardTitle className="text-muted-foreground">No Employee Goals</CardTitle>
+                <CardDescription>No employee goals have been set yet. Click "Add Goal" to create performance objectives for employees.</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {goals.map((goal) => (
+                <Card key={goal.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{goal.title}</CardTitle>
+                        <CardDescription>Employee: {goal.employee}</CardDescription>
+                      </div>
+                      <Badge className={getPriorityColor(goal.priority)}>
+                        {goal.priority}
+                      </Badge>
                     </div>
-                    <Badge className={getPriorityColor(goal.priority)}>
-                      {goal.priority}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progress</span>
-                      <span>{goal.progress}%</span>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progress</span>
+                        <span>{goal.progress}%</span>
+                      </div>
+                      <Progress value={goal.progress} className="h-2" />
                     </div>
-                    <Progress value={goal.progress} className="h-2" />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Due: {goal.dueDate}</span>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">Update Progress</Button>
-                      <Button variant="outline" size="sm">View Details</Button>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Due: {goal.dueDate}</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">Update Progress</Button>
+                        <Button variant="outline" size="sm">View Details</Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-4">
