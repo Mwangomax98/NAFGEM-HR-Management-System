@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, Clock, Plus, FileText } from "lucide-react";
 import { useState } from "react";
+import { TimesheetDetailModal } from "@/components/modals/TimesheetDetailModal";
 
 export default function Timesheets() {
   const [timesheets] = useState([
@@ -35,6 +36,14 @@ export default function Timesheets() {
       approvedBy: "John Smith"
     },
   ]);
+
+  const [selectedTimesheet, setSelectedTimesheet] = useState<typeof timesheets[0] | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const openTimesheetDetail = (timesheet: typeof timesheets[0]) => {
+    setSelectedTimesheet(timesheet);
+    setIsDetailModalOpen(true);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -144,7 +153,11 @@ export default function Timesheets() {
                   <TableCell>{new Date(timesheet.submittedDate).toLocaleDateString()}</TableCell>
                   <TableCell>{timesheet.approvedBy || "-"}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => openTimesheetDetail(timesheet)}
+                    >
                       <FileText className="w-4 h-4" />
                     </Button>
                   </TableCell>
@@ -154,6 +167,14 @@ export default function Timesheets() {
           </Table>
         </CardContent>
       </Card>
+
+      {selectedTimesheet && (
+        <TimesheetDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          timesheet={selectedTimesheet}
+        />
+      )}
     </div>
   );
 }

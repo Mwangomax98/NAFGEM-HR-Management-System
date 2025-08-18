@@ -8,9 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Search, Target, TrendingUp, Calendar, Star } from "lucide-react";
+import { ReviewDetailModal } from "@/components/modals/ReviewDetailModal";
 
 const Performance = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedReview, setSelectedReview] = useState<typeof reviews[0] | null>(null);
+  const [isReviewDetailOpen, setIsReviewDetailOpen] = useState(false);
 
   const performanceStats = [
     { title: "Active Reviews", value: "42", icon: Target, change: "Q4 2024 cycle" },
@@ -65,6 +68,11 @@ const Performance = () => {
       case "Pending": return "bg-yellow-500";
       default: return "bg-gray-500";
     }
+  };
+
+  const openReviewDetail = (review: typeof reviews[0]) => {
+    setSelectedReview(review);
+    setIsReviewDetailOpen(true);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -173,7 +181,13 @@ const Performance = () => {
                   </TableCell>
                   <TableCell>{review.dueDate}</TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm">View Details</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openReviewDetail(review)}
+                    >
+                      View Details
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -249,6 +263,14 @@ const Performance = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {selectedReview && (
+        <ReviewDetailModal
+          isOpen={isReviewDetailOpen}
+          onClose={() => setIsReviewDetailOpen(false)}
+          review={selectedReview}
+        />
+      )}
     </div>
   );
 };

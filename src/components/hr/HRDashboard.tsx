@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { WelcomeHeader } from "./WelcomeHeader";
+import { useNavigate } from "react-router-dom";
 import { 
   Users, 
   Clock, 
@@ -23,6 +24,7 @@ interface DashboardProps {
 }
 
 export function HRDashboard({ userRole, userName }: DashboardProps) {
+  const navigate = useNavigate();
   const [currentDate] = useState(new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -248,7 +250,17 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
                 </div>
                 <div className="flex items-center space-x-2">
                   {item.urgent && <Badge variant="destructive">Urgent</Badge>}
-                  <Button size="sm" variant="outline">Review</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      if (item.type === "Leave Request") navigate("/hr/leave-approvals");
+                      else if (item.type === "Timesheet") navigate("/hr/timesheet-approvals");
+                      else if (item.type === "Trip Request") navigate("/hr/trip-management");
+                    }}
+                  >
+                    Review
+                  </Button>
                 </div>
               </div>
             ))}

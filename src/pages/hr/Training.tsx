@@ -8,9 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Search, BookOpen, Users, Calendar, Award } from "lucide-react";
+import { CourseDetailModal } from "@/components/modals/CourseDetailModal";
 
 const Training = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState<typeof courses[0] | null>(null);
+  const [isCourseDetailOpen, setIsCourseDetailOpen] = useState(false);
 
   const trainingStats = [
     { title: "Active Courses", value: "24", icon: BookOpen, change: "+3 from last month" },
@@ -31,6 +34,11 @@ const Training = () => {
     { id: 2, name: "Emily Johnson", email: "emily.johnson@company.com", department: "Marketing", coursesCompleted: 8, currentCourses: 1, certifications: 5 },
     { id: 3, name: "Michael Brown", email: "michael.brown@company.com", department: "Sales", coursesCompleted: 6, currentCourses: 3, certifications: 4 },
   ];
+
+  const openCourseDetail = (course: typeof courses[0]) => {
+    setSelectedCourse(course);
+    setIsCourseDetailOpen(true);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,7 +128,14 @@ const Training = () => {
                     <Progress value={course.progress} className="h-2" />
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">View Details</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => openCourseDetail(course)}
+                    >
+                      View Details
+                    </Button>
                     <Button variant="outline" size="sm" className="flex-1">Manage</Button>
                   </div>
                 </CardContent>
@@ -191,6 +206,14 @@ const Training = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {selectedCourse && (
+        <CourseDetailModal
+          isOpen={isCourseDetailOpen}
+          onClose={() => setIsCourseDetailOpen(false)}
+          course={selectedCourse}
+        />
+      )}
     </div>
   );
 };
