@@ -34,7 +34,7 @@ const App = () => (
           <Route path="/leave" element={<Leave />} />
           <Route path="/trips" element={<Trips />} />
           <Route path="/exit" element={<Exit />} />
-          <Route path="/hr/employees" element={<EmployeeManagement />} />
+          <Route path="/hr/employee-management" element={<EmployeeManagement />} />
           <Route path="/hr/projects" element={<ProjectManagement />} />
           <Route path="/hr/timesheet-approvals" element={<TimesheetApprovals />} />
           <Route path="/hr/leave-approvals" element={<LeaveApprovals />} />

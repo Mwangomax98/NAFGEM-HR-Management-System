@@ -4,10 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Plus, Search, Filter, Mail, Phone, Edit, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Users, Plus, Search, Filter, Mail, Phone, Edit, Trash2, Eye } from "lucide-react";
 import { useState } from "react";
+import AddEmployeeForm from "@/components/employee/AddEmployeeForm";
+import EmployeeProfile from "@/components/employee/EmployeeProfile";
 
 export default function EmployeeManagement() {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [showProfile, setShowProfile] = useState(false);
   const [employees] = useState([
     {
       id: 1,
@@ -75,7 +81,7 @@ export default function EmployeeManagement() {
           <h1 className="text-3xl font-heading font-bold text-primary">Employee Management</h1>
           <p className="text-muted-foreground">Manage employee records and information</p>
         </div>
-        <Button>
+        <Button onClick={() => setShowAddForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Employee
         </Button>
@@ -207,6 +213,16 @@ export default function EmployeeManagement() {
                   <TableCell>{getStatusBadge(employee.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedEmployee(employee);
+                          setShowProfile(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="sm">
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -221,6 +237,99 @@ export default function EmployeeManagement() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Add Employee Dialog */}
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Employee</DialogTitle>
+          </DialogHeader>
+          <AddEmployeeForm
+            onSave={(data) => {
+              console.log("Employee data:", data);
+              setShowAddForm(false);
+            }}
+            onCancel={() => setShowAddForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Employee Profile Dialog */}
+      <Dialog open={showProfile} onOpenChange={setShowProfile}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Employee Profile</DialogTitle>
+          </DialogHeader>
+          {selectedEmployee && (
+            <EmployeeProfile
+              employee={{
+                personal: {
+                  nameFull: selectedEmployee.name.toUpperCase(),
+                  nationalId: "***********234",
+                  contactAddress: "Contact address placeholder",
+                  mobilePhones: [selectedEmployee.phone],
+                  designation: selectedEmployee.position,
+                  placeOfWork: "NAFGEM Headquarters",
+                  dateOfAppointment: new Date(selectedEmployee.joinDate),
+                  termsOfService: "Contract",
+                  nationality: "Country",
+                  dateOfBirth: new Date("1990-01-01"),
+                  placeOfBirth: "City, Country",
+                  maritalStatus: "Single",
+                },
+                family: {
+                  fatherName: "Father Name",
+                  fatherPlaceOfBirth: "Place",
+                  fatherNationality: "Nationality",
+                  motherName: "Mother Name", 
+                  motherPlaceOfBirth: "Place",
+                  motherNationality: "Nationality",
+                },
+                education: [
+                  {
+                    institution: "University Name",
+                    place: "City",
+                    fromDate: new Date("2010-01-01"),
+                    toDate: new Date("2014-01-01"),
+                  }
+                ],
+                nextOfKin: [
+                  {
+                    name: "Next of Kin",
+                    age: 30,
+                    relation: "Sibling",
+                    contact: "+1234567890",
+                    primary: true,
+                  }
+                ],
+                declaration: {
+                  text: "I hereby declare that the information provided is true.",
+                  signedBy: selectedEmployee.name,
+                  signedAt: new Date(),
+                },
+                employment: {
+                  employeeId: `EMP${selectedEmployee.id.toString().padStart(6, '0')}`,
+                  userRole: "Employee",
+                  status: selectedEmployee.status === "active" ? "Active" : selectedEmployee.status === "on-leave" ? "On Leave" : "Inactive",
+                  projects: [
+                    {
+                      projectName: `${selectedEmployee.department} Project`,
+                      donor: "Donor Name",
+                      code: `PROJ-${selectedEmployee.id}`,
+                      isPrimary: true,
+                    }
+                  ],
+                },
+              }}
+              canEdit={true}
+              onEdit={() => {
+                setShowProfile(false);
+                // Open edit form
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
