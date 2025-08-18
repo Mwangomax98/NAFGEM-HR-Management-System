@@ -7,64 +7,7 @@ import { Building2, Plus, Calendar, Users, DollarSign, BarChart3 } from "lucide-
 import { useState } from "react";
 
 export default function ProjectManagement() {
-  const [projects] = useState([
-    {
-      id: 1,
-      name: "Website Redesign",
-      description: "Complete overhaul of company website",
-      status: "in-progress",
-      progress: 65,
-      startDate: "2024-10-01",
-      endDate: "2024-12-15",
-      budget: 25000,
-      spent: 16250,
-      manager: "John Smith",
-      teamSize: 5,
-      priority: "high"
-    },
-    {
-      id: 2,
-      name: "Mobile App Development",
-      description: "Native mobile application for iOS and Android",
-      status: "planning",
-      progress: 20,
-      startDate: "2024-11-15",
-      endDate: "2025-03-30",
-      budget: 45000,
-      spent: 5000,
-      manager: "Emily Rodriguez",
-      teamSize: 8,
-      priority: "high"
-    },
-    {
-      id: 3,
-      name: "HR System Integration",
-      description: "Integration of new HR management system",
-      status: "completed",
-      progress: 100,
-      startDate: "2024-08-01",
-      endDate: "2024-10-30",
-      budget: 15000,
-      spent: 14800,
-      manager: "Sarah Johnson",
-      teamSize: 3,
-      priority: "medium"
-    },
-    {
-      id: 4,
-      name: "Marketing Campaign Q1",
-      description: "Q1 2025 marketing campaign planning and execution",
-      status: "planning",
-      progress: 10,
-      startDate: "2025-01-01",
-      endDate: "2025-03-31",
-      budget: 20000,
-      spent: 0,
-      manager: "Michael Chen",
-      teamSize: 4,
-      priority: "medium"
-    }
-  ]);
+  const [projects] = useState([]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -104,7 +47,13 @@ export default function ProjectManagement() {
           <h1 className="text-3xl font-heading font-bold text-primary">Project Management</h1>
           <p className="text-muted-foreground">Oversee and manage all company projects</p>
         </div>
-        <Button>
+        <Button 
+          onClick={() => {
+            console.log('New Project button clicked');
+            alert('Create new project functionality coming soon!');
+          }}
+          className="shadow-lg hover:shadow-xl transition-shadow"
+        >
           <Plus className="w-4 h-4 mr-2" />
           New Project
         </Button>
@@ -145,9 +94,9 @@ export default function ProjectManagement() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalBudget.toLocaleString()}</div>
+            <div className="text-2xl font-bold">TSh {totalBudget.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              ${totalSpent.toLocaleString()} spent
+              TSh {totalSpent.toLocaleString()} spent
             </p>
           </CardContent>
         </Card>
@@ -169,7 +118,29 @@ export default function ProjectManagement() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {projects.map((project) => (
+        {projects.length === 0 ? (
+          <div className="col-span-2">
+            <Card className="text-center py-12">
+              <CardContent>
+                <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Projects Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get started by creating your first project to track progress and manage resources.
+                </p>
+                <Button 
+                  onClick={() => {
+                    console.log('Create First Project button clicked');
+                    alert('Create new project functionality coming soon!');
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Project
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          projects.map((project) => (
           <Card key={project.id} className="hover:shadow-md transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -197,9 +168,9 @@ export default function ProjectManagement() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Budget</span>
-                  <span className="text-sm text-muted-foreground">
-                    ${project.spent.toLocaleString()} / ${project.budget.toLocaleString()}
-                  </span>
+                    <span className="text-sm text-muted-foreground">
+                      TSh {project.spent.toLocaleString()} / TSh {project.budget.toLocaleString()}
+                    </span>
                 </div>
                 <Progress 
                   value={(project.spent / project.budget) * 100} 
@@ -249,7 +220,8 @@ export default function ProjectManagement() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

@@ -68,74 +68,12 @@ interface Trip {
   conflicts: Conflict[];
 }
 
-// Mock data for demonstration
-const mockTrips: Trip[] = [
-  {
-    id: "TR-2024-001",
-    projectId: "WFP-001",
-    projectName: "Food Security Program",
-    donorName: "World Food Programme",
-    purpose: "Community Assessment Visit",
-    destination: "Makeni District",
-    pickupLocation: "Freetown Office",
-    dropLocation: "Makeni Community Center",
-    startDateTime: "2024-01-15T08:00:00",
-    endDateTime: "2024-01-15T17:00:00",
-    passengersCount: 3,
-    proposedDriverId: "emp-001",
-    proposedVehicleId: "veh-001",
-    assignedDriverId: null,
-    assignedVehicleId: null,
-    status: "HR_REVIEW",
-    requesterName: "John Kamara",
-    requesterDepartment: "Programs",
-    termsOfReference: "Assess community needs and distribute aid packages",
-    luggageNotes: "Medical supplies and food packages",
-    conflicts: [
-      {
-        type: "driver" as const,
-        message: "Driver has another trip scheduled 2:00-4:00 PM",
-        severity: "warning" as const,
-        suggestions: ["Suggest alternative driver", "Shift time to morning"]
-      }
-    ]
-  },
-  {
-    id: "TR-2024-002",
-    projectId: "UNICEF-002",
-    projectName: "Child Protection Initiative",
-    donorName: "UNICEF",
-    purpose: "School Visit & Monitoring",
-    destination: "Bo District",
-    pickupLocation: "Freetown Office",
-    dropLocation: "Bo Primary School",
-    startDateTime: "2024-01-16T09:00:00",
-    endDateTime: "2024-01-16T16:00:00",
-    passengersCount: 2,
-    proposedDriverId: "emp-002",
-    proposedVehicleId: "veh-002",
-    assignedDriverId: "emp-002",
-    assignedVehicleId: "veh-002",
-    status: "DRIVER_PENDING",
-    requesterName: "Sarah Johnson",
-    requesterDepartment: "Education",
-    termsOfReference: "Monitor school feeding program implementation",
-    luggageNotes: "Educational materials",
-    conflicts: []
-  }
-];
+// Clean slate - no demo data
+const mockTrips: Trip[] = [];
 
-const mockDrivers = [
-  { id: "emp-001", name: "Mohamed Sesay", availability: "busy", phone: "+232-77-123456" },
-  { id: "emp-002", name: "Ibrahim Kargbo", availability: "available", phone: "+232-76-789012" },
-  { id: "emp-003", name: "Fatima Bangura", availability: "available", phone: "+232-78-345678" }
-];
+const mockDrivers = [];
 
-const mockVehicles = [
-  { id: "veh-001", plate: "SL-001-ABC", model: "Toyota Hilux", capacity: 5, status: "available" },
-  { id: "veh-002", plate: "SL-002-DEF", model: "Nissan Patrol", capacity: 7, status: "maintenance" },
-  { id: "veh-003", plate: "SL-003-GHI", model: "Toyota Land Cruiser", capacity: 8, status: "available" }
-];
+const mockVehicles = [];
 
 export default function TripManagement() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -286,8 +224,6 @@ export default function TripManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Projects</SelectItem>
-                      <SelectItem value="WFP-001">WFP Food Security</SelectItem>
-                      <SelectItem value="UNICEF-002">UNICEF Child Protection</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -296,7 +232,18 @@ export default function TripManagement() {
 
             {/* Trip Cards */}
             <div className="space-y-4">
-              {filteredTrips.map((trip) => (
+              {filteredTrips.length === 0 ? (
+                <Card className="text-center py-12">
+                  <CardContent>
+                    <Car className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Trip Requests</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Trip requests from staff will appear here for your review and approval.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredTrips.map((trip) => (
                 <Card key={trip.id} className="border-l-4 border-l-primary">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -364,7 +311,8 @@ export default function TripManagement() {
                     )}
                   </CardContent>
                 </Card>
-              ))}
+                ))
+              )}
             </div>
           </TabsContent>
 
@@ -375,7 +323,16 @@ export default function TripManagement() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockDrivers.map((driver) => (
+                  {mockDrivers.length === 0 ? (
+                    <div className="text-center py-8">
+                      <User className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Drivers Available</h3>
+                      <p className="text-muted-foreground">
+                        Driver information will be displayed here when available.
+                      </p>
+                    </div>
+                  ) : (
+                    mockDrivers.map((driver) => (
                     <div key={driver.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <Avatar>
@@ -390,7 +347,8 @@ export default function TripManagement() {
                         {driver.availability}
                       </Badge>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -403,7 +361,16 @@ export default function TripManagement() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockVehicles.map((vehicle) => (
+                  {mockVehicles.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Car className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Vehicles Available</h3>
+                      <p className="text-muted-foreground">
+                        Vehicle fleet information will be displayed here when available.
+                      </p>
+                    </div>
+                  ) : (
+                    mockVehicles.map((vehicle) => (
                     <div key={vehicle.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <Car className="h-8 w-8 text-muted-foreground" />
@@ -418,7 +385,8 @@ export default function TripManagement() {
                         {vehicle.status}
                       </Badge>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

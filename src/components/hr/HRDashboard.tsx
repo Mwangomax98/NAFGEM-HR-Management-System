@@ -229,8 +229,8 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
           <CardContent className="space-y-4">
             {[
               { metric: "Training Completion", value: hrData.trainingProgress, color: "bg-accent" },
-              { metric: "Goal Achievement", value: 89, color: "bg-primary" },
-              { metric: "Attendance Rate", value: 96, color: "bg-secondary" },
+              { metric: "Goal Achievement", value: 0, color: "bg-primary" },
+              { metric: "Attendance Rate", value: 0, color: "bg-secondary" },
             ].map((item, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex justify-between">
@@ -310,8 +310,8 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {[
-              { metric: "Server Uptime", value: 99.9, status: "Excellent" },
-              { metric: "Response Time", value: 95, status: "Good" },
+              { metric: "Server Uptime", value: 100, status: "Operational" },
+              { metric: "Response Time", value: 100, status: "Good" },
               { metric: "Data Backup", value: 100, status: "Complete" },
             ].map((item, index) => (
               <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">

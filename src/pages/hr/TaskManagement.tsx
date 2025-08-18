@@ -13,53 +13,15 @@ const TaskManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const taskStats = [
-    { title: "Total Tasks", value: "127", icon: CheckSquare, change: "+8 this week" },
-    { title: "In Progress", value: "43", icon: Clock, change: "34% of total" },
-    { title: "Team Members", value: "28", icon: Users, change: "Across 5 departments" },
-    { title: "Overdue", value: "5", icon: AlertCircle, change: "Requires attention" },
+    { title: "Total Tasks", value: "0", icon: CheckSquare, change: "No tasks yet" },
+    { title: "In Progress", value: "0", icon: Clock, change: "Ready to start" },
+    { title: "Team Members", value: "0", icon: Users, change: "Waiting for assignment" },
+    { title: "Overdue", value: "0", icon: AlertCircle, change: "All up to date" },
   ];
 
-  const tasks = [
-    { 
-      id: 1, 
-      title: "Quarterly Performance Reviews", 
-      assignee: "Sarah Johnson", 
-      department: "HR", 
-      priority: "High", 
-      status: "In Progress", 
-      progress: 65,
-      dueDate: "2024-01-20",
-      description: "Complete Q4 performance evaluations for engineering team"
-    },
-    { 
-      id: 2, 
-      title: "New Employee Onboarding", 
-      assignee: "Mike Wilson", 
-      department: "HR", 
-      priority: "Medium", 
-      status: "Pending", 
-      progress: 0,
-      dueDate: "2024-01-25",
-      description: "Prepare onboarding materials for 3 new hires"
-    },
-    { 
-      id: 3, 
-      title: "Policy Documentation Update", 
-      assignee: "Anna Rodriguez", 
-      department: "HR", 
-      priority: "Low", 
-      status: "Completed", 
-      progress: 100,
-      dueDate: "2024-01-15",
-      description: "Update employee handbook with new remote work policies"
-    },
-  ];
+  const tasks = [];
 
-  const projects = [
-    { id: 1, name: "Employee Wellness Initiative", tasks: 12, completed: 8, team: "HR Team", deadline: "2024-03-31" },
-    { id: 2, name: "Recruitment Automation", tasks: 8, completed: 3, team: "HR Tech", deadline: "2024-02-28" },
-    { id: 3, name: "Training Platform Migration", tasks: 15, completed: 12, team: "L&D Team", deadline: "2024-02-15" },
-  ];
+  const projects = [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -87,7 +49,13 @@ const TaskManagement = () => {
           <h1 className="text-3xl font-bold">Task Management</h1>
           <p className="text-muted-foreground mt-2">Coordinate HR tasks and track team productivity</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button 
+          onClick={() => {
+            console.log('Create Task button clicked');
+            alert('Create new task functionality coming soon!');
+          }}
+          className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow"
+        >
           <Plus className="h-4 w-4" />
           Create Task
         </Button>
@@ -134,7 +102,27 @@ const TaskManagement = () => {
           </div>
 
           <div className="space-y-4">
-            {tasks.map((task) => (
+            {tasks.length === 0 ? (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <CheckSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Tasks Yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create your first task to start managing team assignments and tracking progress.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      console.log('Create First Task button clicked');
+                      alert('Create new task functionality coming soon!');
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Task
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              tasks.map((task) => (
               <Card key={task.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -184,13 +172,36 @@ const TaskManagement = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              ))
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="projects" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((project) => (
+            {projects.length === 0 ? (
+              <div className="col-span-3">
+                <Card className="text-center py-12">
+                  <CardContent>
+                    <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Projects Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start managing projects to organize tasks and track team collaboration.
+                    </p>
+                    <Button 
+                      onClick={() => {
+                        console.log('Create First Project button clicked');
+                        alert('Create new project functionality coming soon!');
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create First Project
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              projects.map((project) => (
               <Card key={project.id}>
                 <CardHeader>
                   <CardTitle className="text-lg">{project.name}</CardTitle>
@@ -215,7 +226,8 @@ const TaskManagement = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              ))
+            )}
           </div>
         </TabsContent>
 
