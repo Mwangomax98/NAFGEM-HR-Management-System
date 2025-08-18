@@ -17,6 +17,7 @@ import TimesheetApprovals from "./pages/hr/TimesheetApprovals";
 import LeaveApprovals from "./pages/hr/LeaveApprovals";
 import UserManagement from "./pages/admin/UserManagement";
 import SystemSettings from "./pages/admin/SystemSettings";
+import TripManagement from "./pages/hr/TripManagement";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/hr/projects" element={<ProjectManagement />} />
           <Route path="/hr/timesheet-approvals" element={<TimesheetApprovals />} />
           <Route path="/hr/leave-approvals" element={<LeaveApprovals />} />
+          <Route path="/hr/trip-management" element={<TripManagement />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/settings" element={<SystemSettings />} />
           <Route path="*" element={<NotFound />} />
