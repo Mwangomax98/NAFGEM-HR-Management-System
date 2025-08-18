@@ -65,7 +65,8 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
-        <div className="absolute inset-0 bg-gradient-primary/80"></div>
+        <div className="absolute inset-0 bg-black/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/40 to-primary/20"></div>
       </div>
 
       {/* Content */}
@@ -73,10 +74,10 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-4">
             <div>
-              <h1 className="text-4xl lg:text-5xl font-heading font-bold mb-2">
+              <h1 className="text-4xl lg:text-5xl font-heading font-bold mb-2 drop-shadow-lg">
                 {getGreeting()}, {userName}!
               </h1>
-              <p className="text-xl text-white/90 font-body">
+              <p className="text-xl text-white font-body drop-shadow-md">
                 {getRoleDescription()}
               </p>
             </div>
