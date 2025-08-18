@@ -46,7 +46,7 @@ const menuItems: SidebarItem[] = [
   { title: "Exit Management", url: "/exit", icon: LogOut, roles: ["employee", "hr", "admin"] },
   
   // HR Items
-  { title: "Employee Management", url: "/hr/employees", icon: Users, roles: ["hr", "admin"] },
+  { title: "Employee Management", url: "/hr/employee-management", icon: Users, roles: ["hr", "admin"] },
   { title: "Project Management", url: "/hr/projects", icon: Building2, roles: ["hr", "admin"] },
   { title: "Timesheet Approvals", url: "/hr/timesheet-approvals", icon: Clock, badge: "3", roles: ["hr", "admin"] },
   { title: "Task Management", url: "/hr/task-management", icon: CheckSquare, roles: ["hr", "admin"] },
