@@ -1,27 +1,84 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { HRSidebar } from "./HRSidebar";
 import { HRDashboard } from "./HRDashboard";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Bell, Settings, LogOut } from "lucide-react";
 import { NotificationDropdown } from "../notifications/NotificationDropdown";
 import { SettingsModal } from "../settings/SettingsModal";
 import { LogoutConfirmation } from "../auth/LogoutConfirmation";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 export function HRLayout({ children }: { children?: React.ReactNode }) {
-  const [currentUser] = useState({
-    name: "Sarah Johnson",
-    role: "hr" as const, // Start with HR role for demo
-    avatar: "SJ"
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState<"employee" | "hr" | "admin">("employee");
+  const [loading, setLoading] = useState(true);
 
-  const [roleDemo, setRoleDemo] = useState<"employee" | "hr" | "admin">("hr");
+  useEffect(() => {
+    // Get current user and profile
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        
+        // Get user profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileData) {
+          setProfile(profileData);
+        }
+
+        // Get user role
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (roleData) {
+          setUserRole(roleData.role);
+        }
+      }
+      setLoading(false);
+    };
+
+    getCurrentUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session?.user) {
+          getCurrentUser();
+        } else {
+          setUser(null);
+          setProfile(null);
+          setUserRole("employee");
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const displayName = profile?.full_name || user?.email || "User";
+  const initials = displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <HRSidebar userRole={roleDemo} userName={currentUser.name} />
+        <HRSidebar userRole={userRole} userName={displayName} />
         
         <div className="flex-1 flex flex-col">
           {/* Top Header */}
@@ -29,8 +86,12 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
             <div className="flex items-center space-x-4">
               <SidebarTrigger />
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <span className="text-lg font-bold text-white">HR</span>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/beb68246-34d9-4995-a2eb-6ba5fba6956b.png" 
+                    alt="NAFGEM Logo" 
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-xl font-heading font-bold text-primary">
@@ -41,24 +102,6 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Role Demo Switcher */}
-              <div className="flex items-center space-x-2 p-2 bg-accent/10 rounded-lg">
-                <span className="text-sm font-medium">Demo as:</span>
-                <div className="flex space-x-1">
-                  {(["employee", "hr", "admin"] as const).map((role) => (
-                    <Button
-                      key={role}
-                      size="sm"
-                      variant={roleDemo === role ? "default" : "ghost"}
-                      onClick={() => setRoleDemo(role)}
-                      className="capitalize text-xs"
-                    >
-                      {role}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
               {/* Notifications */}
               <NotificationDropdown />
 
@@ -68,13 +111,13 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
               {/* User Info */}
               <div className="flex items-center space-x-3 pl-4 border-l border-border">
                 <div className="text-right">
-                  <p className="text-sm font-medium">{currentUser.name}</p>
+                  <p className="text-sm font-medium">{displayName}</p>
                   <p className="text-xs text-muted-foreground capitalize">
-                    {roleDemo} Dashboard
+                    {userRole} Dashboard
                   </p>
                 </div>
                 <div className="w-9 h-9 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium">{currentUser.avatar}</span>
+                  <span className="text-sm font-medium">{initials}</span>
                 </div>
               </div>
 
@@ -85,7 +128,7 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto">
-            {children || <HRDashboard userRole={roleDemo} userName={currentUser.name} />}
+            {children || <HRDashboard userRole={userRole} userName={displayName} />}
           </main>
         </div>
       </div>

@@ -2,15 +2,15 @@ import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export function LogoutConfirmation() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = () => {
-    // In a real app, this would clear authentication tokens and redirect
-    console.log("Logging out...");
-    // window.location.href = "/login";
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setIsOpen(false);
+    window.location.href = "/";
   };
 
   return (
