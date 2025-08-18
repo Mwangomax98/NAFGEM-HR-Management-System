@@ -49,7 +49,13 @@ export default function Tasks() {
           <h1 className="text-3xl font-heading font-bold text-primary">My Tasks</h1>
           <p className="text-muted-foreground">Manage your assigned tasks and deadlines</p>
         </div>
-        <Button onClick={() => alert('Create new task functionality coming soon!')}>
+        <Button 
+          onClick={() => {
+            console.log('New Task button clicked');
+            alert('Create new task functionality coming soon!');
+          }}
+          className="shadow-lg hover:shadow-xl transition-shadow"
+        >
           <Plus className="w-4 h-4 mr-2" />
           New Task
         </Button>

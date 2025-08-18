@@ -37,7 +37,13 @@ export default function Timesheets() {
           <h1 className="text-3xl font-heading font-bold text-primary">My Timesheets</h1>
           <p className="text-muted-foreground">Track and manage your working hours</p>
         </div>
-        <Button onClick={() => alert('Create new timesheet functionality coming soon!')}>
+        <Button 
+          onClick={() => {
+            console.log('New Timesheet button clicked');
+            alert('Create new timesheet functionality coming soon!');
+          }}
+          className="shadow-lg hover:shadow-xl transition-shadow"
+        >
           <Plus className="w-4 h-4 mr-2" />
           New Timesheet
         </Button>
