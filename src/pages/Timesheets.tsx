@@ -7,35 +7,7 @@ import { useState } from "react";
 import { TimesheetDetailModal } from "@/components/modals/TimesheetDetailModal";
 
 export default function Timesheets() {
-  const [timesheets] = useState([
-    {
-      id: 1,
-      week: "Nov 11-17, 2024",
-      status: "approved",
-      totalHours: 40,
-      overtimeHours: 2,
-      submittedDate: "2024-11-18",
-      approvedBy: "John Smith"
-    },
-    {
-      id: 2,
-      week: "Nov 4-10, 2024",
-      status: "pending",
-      totalHours: 38,
-      overtimeHours: 0,
-      submittedDate: "2024-11-11",
-      approvedBy: null
-    },
-    {
-      id: 3,
-      week: "Oct 28-Nov 3, 2024",
-      status: "approved",
-      totalHours: 40,
-      overtimeHours: 4,
-      submittedDate: "2024-11-04",
-      approvedBy: "John Smith"
-    },
-  ]);
+  const [timesheets] = useState([]);
 
   const [selectedTimesheet, setSelectedTimesheet] = useState<typeof timesheets[0] | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -65,7 +37,7 @@ export default function Timesheets() {
           <h1 className="text-3xl font-heading font-bold text-primary">My Timesheets</h1>
           <p className="text-muted-foreground">Track and manage your working hours</p>
         </div>
-        <Button>
+        <Button onClick={() => alert('Create new timesheet functionality coming soon!')}>
           <Plus className="w-4 h-4 mr-2" />
           New Timesheet
         </Button>
@@ -78,9 +50,9 @@ export default function Timesheets() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">32h</div>
+            <div className="text-2xl font-bold">0h</div>
             <p className="text-xs text-muted-foreground">
-              +2h from yesterday
+              No hours logged yet
             </p>
           </CardContent>
         </Card>
@@ -91,9 +63,9 @@ export default function Timesheets() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">156h</div>
+            <div className="text-2xl font-bold">0h</div>
             <p className="text-xs text-muted-foreground">
-              +12h from last month
+              No hours logged yet
             </p>
           </CardContent>
         </Card>
@@ -104,9 +76,9 @@ export default function Timesheets() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">6h</div>
+            <div className="text-2xl font-bold">0h</div>
             <p className="text-xs text-muted-foreground">
-              This month
+              No overtime yet
             </p>
           </CardContent>
         </Card>
@@ -117,9 +89,9 @@ export default function Timesheets() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
-              Awaiting approval
+              No pending timesheets
             </p>
           </CardContent>
         </Card>
@@ -144,25 +116,33 @@ export default function Timesheets() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {timesheets.map((timesheet) => (
-                <TableRow key={timesheet.id}>
-                  <TableCell className="font-medium">{timesheet.week}</TableCell>
-                  <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
-                  <TableCell>{timesheet.totalHours}h</TableCell>
-                  <TableCell>{timesheet.overtimeHours}h</TableCell>
-                  <TableCell>{new Date(timesheet.submittedDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{timesheet.approvedBy || "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => openTimesheetDetail(timesheet)}
-                    >
-                      <FileText className="w-4 h-4" />
-                    </Button>
+              {timesheets.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    No timesheets submitted yet. Click "New Timesheet" to get started.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                timesheets.map((timesheet) => (
+                  <TableRow key={timesheet.id}>
+                    <TableCell className="font-medium">{timesheet.week}</TableCell>
+                    <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
+                    <TableCell>{timesheet.totalHours}h</TableCell>
+                    <TableCell>{timesheet.overtimeHours}h</TableCell>
+                    <TableCell>{new Date(timesheet.submittedDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{timesheet.approvedBy || "-"}</TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => openTimesheetDetail(timesheet)}
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

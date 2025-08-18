@@ -32,32 +32,32 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
     day: 'numeric' 
   }));
 
-  // Mock data - in real app, this would come from API
+  // Clean slate - no demo data
   const employeeData = {
-    tasksCompleted: 12,
-    totalTasks: 15,
-    hoursLogged: 38.5,
-    pendingLeaves: 1,
-    upcomingTrips: 2,
-    performance: 85
+    tasksCompleted: 0,
+    totalTasks: 0,
+    hoursLogged: 0,
+    pendingLeaves: 0,
+    upcomingTrips: 0,
+    performance: 0
   };
 
   const hrData = {
-    totalEmployees: 124,
-    pendingApprovals: 8,
-    activeProjects: 12,
-    thisMonthHires: 3,
-    trainingProgress: 78,
-    avgPerformance: 87
+    totalEmployees: 0,
+    pendingApprovals: 0,
+    activeProjects: 0,
+    thisMonthHires: 0,
+    trainingProgress: 0,
+    avgPerformance: 0
   };
 
   const adminData = {
-    systemHealth: 98,
-    totalUsers: 156,
-    activeProjects: 15,
-    monthlyExpenses: 125000,
-    completionRate: 92,
-    satisfaction: 4.8
+    systemHealth: 100,
+    totalUsers: 0,
+    activeProjects: 0,
+    monthlyExpenses: 0,
+    completionRate: 0,
+    satisfaction: 0
   };
 
   const getGreeting = () => {
@@ -131,21 +131,9 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
             <CardDescription>Your latest assignments and progress</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { task: "Complete Q4 Project Report", status: "In Progress", priority: "High" },
-              { task: "Attend Team Training Session", status: "Completed", priority: "Medium" },
-              { task: "Submit Expense Reports", status: "Pending", priority: "Low" },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div>
-                  <p className="font-medium">{item.task}</p>
-                  <p className="text-sm text-muted-foreground">{item.status}</p>
-                </div>
-                <Badge variant={item.priority === "High" ? "destructive" : item.priority === "Medium" ? "default" : "secondary"}>
-                  {item.priority}
-                </Badge>
-              </div>
-            ))}
+            <div className="text-center text-muted-foreground py-8">
+              <p>No recent tasks yet. Tasks will appear here when assigned to you.</p>
+            </div>
           </CardContent>
         </Card>
 
@@ -155,20 +143,9 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
             <CardDescription>Your schedule for the next few days</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { event: "Team Meeting", date: "Tomorrow 10:00 AM", type: "Meeting" },
-              { event: "Project Deadline", date: "Dec 15, 2024", type: "Deadline" },
-              { event: "Training Session", date: "Dec 18, 2024", type: "Training" },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 border border-border rounded-lg">
-                <div className="w-2 h-2 bg-accent rounded-full"></div>
-                <div>
-                  <p className="font-medium">{item.event}</p>
-                  <p className="text-sm text-muted-foreground">{item.date}</p>
-                </div>
-                <Badge variant="outline">{item.type}</Badge>
-              </div>
-            ))}
+            <div className="text-center text-muted-foreground py-8">
+              <p>No upcoming events. Your schedule will appear here.</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -238,32 +215,9 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
             <CardDescription>Items requiring your immediate attention</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { type: "Leave Request", employee: "John Smith", status: "Pending", urgent: true },
-              { type: "Timesheet", employee: "Sarah Wilson", status: "Review", urgent: false },
-              { type: "Trip Request", employee: "Mike Johnson", status: "Pending", urgent: true },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div>
-                  <p className="font-medium">{item.type} - {item.employee}</p>
-                  <p className="text-sm text-muted-foreground">{item.status}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {item.urgent && <Badge variant="destructive">Urgent</Badge>}
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => {
-                      if (item.type === "Leave Request") navigate("/hr/leave-approvals");
-                      else if (item.type === "Timesheet") navigate("/hr/timesheet-approvals");
-                      else if (item.type === "Trip Request") navigate("/hr/trip-management");
-                    }}
-                  >
-                    Review
-                  </Button>
-                </div>
-              </div>
-            ))}
+            <div className="text-center text-muted-foreground py-8">
+              <p>No pending approvals. Items requiring review will appear here.</p>
+            </div>
           </CardContent>
         </Card>
 
@@ -327,7 +281,7 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
             <DollarSign className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-highlight">${(adminData.monthlyExpenses / 1000).toFixed(0)}K</div>
+            <div className="text-2xl font-bold font-highlight">TSh {(adminData.monthlyExpenses / 1000).toFixed(0)}K</div>
             <p className="text-xs text-muted-foreground">
               Within budget limits
             </p>
@@ -379,20 +333,9 @@ export function HRDashboard({ userRole, userName }: DashboardProps) {
             <CardDescription>System-wide activities and updates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { activity: "System Backup Completed", time: "2 hours ago", type: "System" },
-              { activity: "New User Registration", time: "4 hours ago", type: "User" },
-              { activity: "Security Update Applied", time: "1 day ago", type: "Security" },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 border border-border rounded-lg">
-                <div className="w-2 h-2 bg-accent rounded-full"></div>
-                <div>
-                  <p className="font-medium">{item.activity}</p>
-                  <p className="text-sm text-muted-foreground">{item.time}</p>
-                </div>
-                <Badge variant="outline">{item.type}</Badge>
-              </div>
-            ))}
+            <div className="text-center text-muted-foreground py-8">
+              <p>No recent activities. System activities will be logged here.</p>
+            </div>
           </CardContent>
         </Card>
       </div>

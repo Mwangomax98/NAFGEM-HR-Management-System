@@ -110,26 +110,26 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
             <div className="grid grid-cols-2 gap-4">
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-highlight font-bold text-white">94%</div>
-                  <div className="text-sm text-white/80">System Health</div>
+                  <div className="text-2xl font-highlight font-bold text-white">0</div>
+                  <div className="text-sm text-white/80">Tasks</div>
                 </CardContent>
               </Card>
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-highlight font-bold text-white">156</div>
-                  <div className="text-sm text-white/80">Active Users</div>
+                  <div className="text-2xl font-highlight font-bold text-white">0h</div>
+                  <div className="text-sm text-white/80">Hours Logged</div>
                 </CardContent>
               </Card>
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-highlight font-bold text-white">12</div>
-                  <div className="text-sm text-white/80">Open Tasks</div>
+                  <div className="text-2xl font-highlight font-bold text-white">0</div>
+                  <div className="text-sm text-white/80">Pending</div>
                 </CardContent>
               </Card>
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-highlight font-bold text-white">85%</div>
-                  <div className="text-sm text-white/80">Performance</div>
+                  <div className="text-2xl font-highlight font-bold text-white">0</div>
+                  <div className="text-sm text-white/80">Notifications</div>
                 </CardContent>
               </Card>
             </div>

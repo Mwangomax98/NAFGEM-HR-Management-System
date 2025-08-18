@@ -6,38 +6,7 @@ import { Plus, Calendar, User, Clock } from "lucide-react";
 import { useState } from "react";
 
 export default function Tasks() {
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: "Complete Q4 Performance Reviews",
-      description: "Review and complete performance evaluations for all team members",
-      priority: "high",
-      status: "in-progress",
-      dueDate: "2024-11-25",
-      assignedBy: "John Smith",
-      project: "HR Operations"
-    },
-    {
-      id: 2,
-      title: "Update Employee Handbook",
-      description: "Revise sections 3-5 of the employee handbook for policy updates",
-      priority: "medium",
-      status: "pending",
-      dueDate: "2024-11-30",
-      assignedBy: "Sarah Wilson",
-      project: "Policy Management"
-    },
-    {
-      id: 3,
-      title: "Organize Team Building Event",
-      description: "Plan and coordinate monthly team building activities",
-      priority: "low",
-      status: "completed",
-      dueDate: "2024-11-15",
-      assignedBy: "Mike Johnson",
-      project: "Employee Engagement"
-    },
-  ]);
+  const [tasks, setTasks] = useState([]);
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -80,7 +49,7 @@ export default function Tasks() {
           <h1 className="text-3xl font-heading font-bold text-primary">My Tasks</h1>
           <p className="text-muted-foreground">Manage your assigned tasks and deadlines</p>
         </div>
-        <Button>
+        <Button onClick={() => alert('Create new task functionality coming soon!')}>
           <Plus className="w-4 h-4 mr-2" />
           New Task
         </Button>
@@ -141,46 +110,55 @@ export default function Tasks() {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {tasks.map((task) => (
-          <Card key={task.id} className="hover:shadow-md transition-shadow">
+        {tasks.length === 0 ? (
+          <Card className="text-center py-12">
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                  <Checkbox 
-                    checked={task.status === "completed"}
-                    onCheckedChange={() => toggleTaskStatus(task.id)}
-                    className="mt-1"
-                  />
-                  <div className="space-y-1">
-                    <CardTitle className={`text-lg ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
-                      {task.title}
-                    </CardTitle>
-                    <CardDescription>{task.description}</CardDescription>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  {getPriorityBadge(task.priority)}
-                  {getStatusBadge(task.status)}
-                </div>
-              </div>
+              <CardTitle className="text-muted-foreground">No Tasks Assigned</CardTitle>
+              <CardDescription>You don't have any tasks assigned yet. New tasks will appear here when they're assigned to you.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+          </Card>
+        ) : (
+          tasks.map((task) => (
+            <Card key={task.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox 
+                      checked={task.status === "completed"}
+                      onCheckedChange={() => toggleTaskStatus(task.id)}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1">
+                      <CardTitle className={`text-lg ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
+                        {task.title}
+                      </CardTitle>
+                      <CardDescription>{task.description}</CardDescription>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <User className="w-4 h-4" />
-                    <span>Assigned by: {task.assignedBy}</span>
+                  <div className="flex space-x-2">
+                    {getPriorityBadge(task.priority)}
+                    {getStatusBadge(task.status)}
                   </div>
                 </div>
-                <Badge variant="outline">{task.project}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <User className="w-4 h-4" />
+                      <span>Assigned by: {task.assignedBy}</span>
+                    </div>
+                  </div>
+                  <Badge variant="outline">{task.project}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

@@ -7,41 +7,7 @@ import { Clock, Check, X, Eye } from "lucide-react";
 import { useState } from "react";
 
 export default function TimesheetApprovals() {
-  const [pendingTimesheets, setPendingTimesheets] = useState([
-    {
-      id: 1,
-      employeeName: "Michael Chen",
-      employeeAvatar: "MC",
-      week: "Nov 11-17, 2024",
-      totalHours: 42,
-      overtimeHours: 2,
-      submittedDate: "2024-11-18",
-      department: "Engineering",
-      status: "pending"
-    },
-    {
-      id: 2,
-      employeeName: "Emily Rodriguez",
-      employeeAvatar: "ER",
-      week: "Nov 11-17, 2024",
-      totalHours: 40,
-      overtimeHours: 0,
-      submittedDate: "2024-11-18",
-      department: "Marketing",
-      status: "pending"
-    },
-    {
-      id: 3,
-      employeeName: "David Thompson",
-      employeeAvatar: "DT",
-      week: "Nov 11-17, 2024",
-      totalHours: 38,
-      overtimeHours: 0,
-      submittedDate: "2024-11-17",
-      department: "Sales",
-      status: "pending"
-    }
-  ]);
+  const [pendingTimesheets, setPendingTimesheets] = useState([]);
 
   const handleApproval = (id: number, action: 'approve' | 'reject') => {
     setPendingTimesheets(timesheets => 
@@ -144,87 +110,95 @@ export default function TimesheetApprovals() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingTimesheets.map((timesheet) => (
-                <TableRow key={timesheet.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {timesheet.employeeAvatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{timesheet.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{timesheet.department}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{timesheet.week}</TableCell>
-                  <TableCell>{timesheet.totalHours - timesheet.overtimeHours}h</TableCell>
-                  <TableCell>
-                    {timesheet.overtimeHours > 0 ? (
-                      <span className="text-amber-600 font-medium">{timesheet.overtimeHours}h</span>
-                    ) : (
-                      "0h"
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{timesheet.totalHours}h</TableCell>
-                  <TableCell>{new Date(timesheet.submittedDate).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {timesheet.status === "pending" && (
-                      <Badge variant="secondary">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Pending
-                      </Badge>
-                    )}
-                    {timesheet.status === "approved" && (
-                      <Badge variant="default" className="bg-green-500">
-                        <Check className="w-3 h-3 mr-1" />
-                        Approved
-                      </Badge>
-                    )}
-                    {timesheet.status === "rejected" && (
-                      <Badge variant="destructive">
-                        <X className="w-3 h-3 mr-1" />
-                        Rejected
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {timesheet.status === "pending" ? (
-                      <div className="flex items-center justify-end space-x-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-green-600 hover:text-green-700"
-                          onClick={() => handleApproval(timesheet.id, 'approve')}
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleApproval(timesheet.id, 'reject')}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">
-                        {timesheet.status === "approved" ? "Approved" : "Rejected"}
-                      </span>
-                    )}
+              {pendingTimesheets.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    No timesheet submissions to review yet.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                pendingTimesheets.map((timesheet) => (
+                  <TableRow key={timesheet.id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {timesheet.employeeAvatar}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{timesheet.employeeName}</p>
+                          <p className="text-sm text-muted-foreground">{timesheet.department}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{timesheet.week}</TableCell>
+                    <TableCell>{timesheet.totalHours - timesheet.overtimeHours}h</TableCell>
+                    <TableCell>
+                      {timesheet.overtimeHours > 0 ? (
+                        <span className="text-amber-600 font-medium">{timesheet.overtimeHours}h</span>
+                      ) : (
+                        "0h"
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{timesheet.totalHours}h</TableCell>
+                    <TableCell>{new Date(timesheet.submittedDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {timesheet.status === "pending" && (
+                        <Badge variant="secondary">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Pending
+                        </Badge>
+                      )}
+                      {timesheet.status === "approved" && (
+                        <Badge variant="default" className="bg-green-500">
+                          <Check className="w-3 h-3 mr-1" />
+                          Approved
+                        </Badge>
+                      )}
+                      {timesheet.status === "rejected" && (
+                        <Badge variant="destructive">
+                          <X className="w-3 h-3 mr-1" />
+                          Rejected
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {timesheet.status === "pending" ? (
+                        <div className="flex items-center justify-end space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => handleApproval(timesheet.id, 'approve')}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleApproval(timesheet.id, 'reject')}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          {timesheet.status === "approved" ? "Approved" : "Rejected"}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
