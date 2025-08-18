@@ -11,6 +11,7 @@ import Tasks from "./pages/Tasks";
 import Leave from "./pages/Leave";
 import Trips from "./pages/Trips";
 import Exit from "./pages/Exit";
+import Auth from "./pages/Auth";
 import EmployeeManagement from "./pages/hr/EmployeeManagement";
 import ProjectManagement from "./pages/hr/ProjectManagement";
 import TimesheetApprovals from "./pages/hr/TimesheetApprovals";
@@ -33,6 +34,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/timesheets" element={<Timesheets />} />
           <Route path="/tasks" element={<Tasks />} />
