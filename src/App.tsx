@@ -18,6 +18,10 @@ import LeaveApprovals from "./pages/hr/LeaveApprovals";
 import UserManagement from "./pages/admin/UserManagement";
 import SystemSettings from "./pages/admin/SystemSettings";
 import TripManagement from "./pages/hr/TripManagement";
+import Training from "./pages/hr/Training";
+import Performance from "./pages/hr/Performance";
+import TaskManagement from "./pages/hr/TaskManagement";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +44,10 @@ const App = () => (
           <Route path="/hr/timesheet-approvals" element={<TimesheetApprovals />} />
           <Route path="/hr/leave-approvals" element={<LeaveApprovals />} />
           <Route path="/hr/trip-management" element={<TripManagement />} />
+          <Route path="/hr/training" element={<Training />} />
+          <Route path="/hr/performance" element={<Performance />} />
+          <Route path="/hr/task-management" element={<TaskManagement />} />
+          <Route path="/reports" element={<Reports />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/settings" element={<SystemSettings />} />
           <Route path="*" element={<NotFound />} />
