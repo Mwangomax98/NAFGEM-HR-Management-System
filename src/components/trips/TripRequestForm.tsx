@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,19 +26,10 @@ const projects = [
   { id: "proj-3", name: "Healthcare Access Project", donor: "EU Commission", budget: 180000 },
 ];
 
-const drivers = [
-  { id: "drv-1", name: "James Mwangi", license: "Class B", homeBase: "Nairobi", availability: "available" },
-  { id: "drv-2", name: "Sarah Kamau", license: "Class A", homeBase: "Mombasa", availability: "busy" },
-  { id: "drv-3", name: "Peter Ochieng", license: "Class B", homeBase: "Kisumu", availability: "available" },
-];
-
-const vehicles = [
-  { id: "veh-1", plate: "KCA 123A", type: "Toyota Hilux", capacity: 5, fuel: "Diesel", status: "available" },
-  { id: "veh-2", plate: "KBA 456B", type: "Mitsubishi L200", capacity: 4, fuel: "Petrol", status: "maintenance" },
-  { id: "veh-3", plate: "KAA 789C", type: "Toyota Land Cruiser", capacity: 7, fuel: "Diesel", status: "available" },
-];
-
 export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }: TripRequestFormProps) {
+  const [drivers, setDrivers] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     projectId: existingTrip?.projectId || "",
     purpose: existingTrip?.purpose || "",
@@ -58,6 +50,41 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
   });
 
   const [conflicts, setConflicts] = useState<string[]>([]);
+
+  // Fetch drivers and vehicles from database
+  useEffect(() => {
+    fetchDriversAndVehicles();
+  }, []);
+
+  const fetchDriversAndVehicles = async () => {
+    try {
+      const [driversResponse, vehiclesResponse] = await Promise.all([
+        supabase.from('drivers').select('*').eq('availability', true).order('name'),
+        supabase.from('vehicles').select('*').eq('availability', true).order('make')
+      ]);
+
+      if (driversResponse.data) {
+        setDrivers(driversResponse.data.map(driver => ({
+          id: driver.id,
+          name: driver.name,
+          status: driver.status
+        })));
+      }
+
+      if (vehiclesResponse.data) {
+        setVehicles(vehiclesResponse.data.map(vehicle => ({
+          id: vehicle.id,
+          name: `${vehicle.make} ${vehicle.model} (${vehicle.plate_number})`,
+          status: vehicle.status,
+          capacity: vehicle.capacity
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching drivers and vehicles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkConflicts = () => {
     const newConflicts = [];

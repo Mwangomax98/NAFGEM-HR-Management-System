@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      drivers: {
+        Row: {
+          availability: boolean
+          created_at: string
+          email: string | null
+          home_base: string | null
+          id: string
+          license_expiry: string | null
+          license_number: string | null
+          license_type: string | null
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          availability?: boolean
+          created_at?: string
+          email?: string | null
+          home_base?: string | null
+          id?: string
+          license_expiry?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          availability?: boolean
+          created_at?: string
+          email?: string | null
+          home_base?: string | null
+          id?: string
+          license_expiry?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -44,6 +89,107 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_requests: {
+        Row: {
+          assigned_driver_id: string | null
+          assigned_vehicle_id: string | null
+          created_at: string
+          destination: string
+          drop_location: string | null
+          end_datetime: string
+          expected_outcomes: string | null
+          id: string
+          luggage_notes: string | null
+          objectives: string | null
+          passengers_count: number
+          pickup_location: string
+          project_id: string
+          proposed_driver_id: string | null
+          proposed_vehicle_id: string | null
+          purpose: string
+          requester_id: string
+          start_datetime: string
+          status: string
+          terms_of_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          assigned_vehicle_id?: string | null
+          created_at?: string
+          destination: string
+          drop_location?: string | null
+          end_datetime: string
+          expected_outcomes?: string | null
+          id?: string
+          luggage_notes?: string | null
+          objectives?: string | null
+          passengers_count: number
+          pickup_location: string
+          project_id: string
+          proposed_driver_id?: string | null
+          proposed_vehicle_id?: string | null
+          purpose: string
+          requester_id: string
+          start_datetime: string
+          status?: string
+          terms_of_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          assigned_vehicle_id?: string | null
+          created_at?: string
+          destination?: string
+          drop_location?: string | null
+          end_datetime?: string
+          expected_outcomes?: string | null
+          id?: string
+          luggage_notes?: string | null
+          objectives?: string | null
+          passengers_count?: number
+          pickup_location?: string
+          project_id?: string
+          proposed_driver_id?: string | null
+          proposed_vehicle_id?: string | null
+          purpose?: string
+          requester_id?: string
+          start_datetime?: string
+          status?: string
+          terms_of_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_requests_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_requests_assigned_vehicle_id_fkey"
+            columns: ["assigned_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_requests_proposed_driver_id_fkey"
+            columns: ["proposed_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_requests_proposed_vehicle_id_fkey"
+            columns: ["proposed_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_at: string
@@ -65,6 +211,57 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          availability: boolean
+          capacity: number | null
+          created_at: string
+          fuel_type: string | null
+          id: string
+          insurance_expiry: string | null
+          last_maintenance: string | null
+          make: string
+          mileage: number | null
+          model: string
+          plate_number: string
+          status: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          availability?: boolean
+          capacity?: number | null
+          created_at?: string
+          fuel_type?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          last_maintenance?: string | null
+          make: string
+          mileage?: number | null
+          model: string
+          plate_number: string
+          status?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          availability?: boolean
+          capacity?: number | null
+          created_at?: string
+          fuel_type?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          last_maintenance?: string | null
+          make?: string
+          mileage?: number | null
+          model?: string
+          plate_number?: string
+          status?: string
+          updated_at?: string
+          year?: number | null
         }
         Relationships: []
       }
