@@ -14,7 +14,7 @@ import TripStatusBadge from "@/components/trips/TripStatusBadge";
 import { AddDriverModal } from "@/components/modals/AddDriverModal";
 import { AddVehicleModal } from "@/components/modals/AddVehicleModal";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast, toast } from "@/hooks/use-toast";
 
 type TripStatus = 
   | "DRAFT" 
