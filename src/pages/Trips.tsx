@@ -7,18 +7,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Car, Plus, MapPin, Calendar, Clock, Filter, Search, Users, Fuel, AlertTriangle, CheckCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import TripRequestForm from "@/components/trips/TripRequestForm";
 import TripStatusBadge from "@/components/trips/TripStatusBadge";
 import TripDetailModal from "@/components/trips/TripDetailModal";
+import { useToast, toast } from "@/hooks/use-toast";
 
 export default function Trips() {
-  const [currentUser] = useState({
-    id: "emp-1",
-    name: "John Doe",
-    role: "Employee",
-    isDriver: false
-  });
+  const { toast } = useToast();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState("my-trips");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -27,76 +27,107 @@ export default function Trips() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [trips, setTrips] = useState([
-    {
-      id: "trip-1",
-      projectId: "proj-1",
-      projectName: "Clean Water Initiative",
-      donorName: "World Bank",
-      requesterId: "emp-1",
-      requesterName: "John Doe",
-      purpose: "Site inspection and community meeting",
-      destination: "Mombasa, Kenya",
-      pickupLocation: "Nairobi Office",
-      dropLocation: "Nairobi Office",
-      startDate: "2024-12-15",
-      endDate: "2024-12-16",
-      startTime: "09:00",
-      endTime: "17:00",
-      passengersCount: 3,
-      status: "SCHEDULED",
-      proposedDriverId: "drv-1",
-      proposedVehicleId: "veh-1",
-      assignedDriverId: "drv-1",
-      assignedVehicleId: "veh-1",
-      assignedDriverName: "James Mwangi",
-      assignedVehicle: "KCA 123A Toyota Hilux",
-      createdAt: "2024-12-01T10:00:00Z",
-      objectives: "Assess water system installation progress and meet with community leaders",
-      expectedOutcomes: "Updated project timeline and community feedback report"
-    },
-    {
-      id: "trip-2",
-      projectId: "proj-2",
-      projectName: "Education Support Program",
-      donorName: "USAID",
-      requesterId: "emp-2",
-      requesterName: "Jane Smith",
-      purpose: "Training delivery",
-      destination: "Kisumu, Kenya",
-      startDate: "2024-12-10",
-      endDate: "2024-12-11",
-      passengersCount: 2,
-      status: "HR_REVIEW",
-      proposedDriverId: "drv-3",
-      proposedVehicleId: "veh-3",
-      createdAt: "2024-11-28T14:30:00Z"
-    },
-    {
-      id: "trip-3",
-      projectId: "proj-1",
-      projectName: "Clean Water Initiative", 
-      donorName: "World Bank",
-      requesterId: "emp-1",
-      requesterName: "John Doe",
-      purpose: "Equipment delivery",
-      destination: "Nakuru, Kenya",
-      startDate: "2024-11-25",
-      endDate: "2024-11-25",
-      passengersCount: 1,
-      status: "COMPLETED",
-      assignedDriverId: "drv-2",
-      assignedVehicleId: "veh-2",
-      assignedDriverName: "Sarah Kamau",
-      assignedVehicle: "KBA 456B Mitsubishi L200",
-      createdAt: "2024-11-20T09:15:00Z"
-    }
-  ]);
+  const [trips, setTrips] = useState([]);
 
-  const myTrips = trips.filter(trip => trip.requesterId === currentUser.id);
-  const driverTrips = currentUser.isDriver ? trips.filter(trip => 
-    trip.assignedDriverId === currentUser.id || trip.proposedDriverId === currentUser.id
-  ) : [];
+  // Fetch current user and their role
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  // Fetch trips when user is loaded
+  useEffect(() => {
+    if (currentUser) {
+      fetchTrips();
+    }
+  }, [currentUser]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        setCurrentUser({ id: user.id, ...profile });
+        setUserRole(roleData?.role || 'employee');
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTrips = async () => {
+    try {
+      let query = supabase
+        .from('trip_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      // If not HR/Admin, only fetch user's own trips
+      if (userRole !== 'hr' && userRole !== 'admin') {
+        query = query.eq('requester_id', currentUser.id);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+
+      // Transform data to match component expectations
+      const transformedTrips = data?.map(trip => ({
+        id: trip.id,
+        projectId: trip.project_id,
+        projectName: trip.project_id, // You may want to join with projects table
+        donorName: "", // You may want to join with projects table
+        requesterId: trip.requester_id,
+        requesterName: "User", // Simplified for now
+        purpose: trip.purpose,
+        destination: trip.destination,
+        pickupLocation: trip.pickup_location,
+        dropLocation: trip.drop_location,
+        startDate: trip.start_datetime ? new Date(trip.start_datetime).toISOString().split('T')[0] : "",
+        endDate: trip.end_datetime ? new Date(trip.end_datetime).toISOString().split('T')[0] : "",
+        startTime: trip.start_datetime ? new Date(trip.start_datetime).toTimeString().slice(0, 5) : "",
+        endTime: trip.end_datetime ? new Date(trip.end_datetime).toTimeString().slice(0, 5) : "",
+        passengersCount: trip.passengers_count,
+        status: trip.status?.toUpperCase(),
+        proposedDriverId: trip.proposed_driver_id,
+        proposedVehicleId: trip.proposed_vehicle_id,
+        assignedDriverId: trip.assigned_driver_id,
+        assignedVehicleId: trip.assigned_vehicle_id,
+        assignedDriverName: "", // Simplified for now
+        assignedVehicle: "", // Simplified for now
+        createdAt: trip.created_at,
+        objectives: trip.objectives,
+        expectedOutcomes: trip.expected_outcomes,
+        termsOfReference: trip.terms_of_reference
+      })) || [];
+
+      setTrips(transformedTrips);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch trip requests",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const myTrips = currentUser ? trips.filter(trip => trip.requesterId === currentUser.id) : [];
+  const driverTrips = []; // TODO: Implement driver functionality
 
   const filteredTrips = (tripList: typeof trips) => {
     return tripList.filter(trip => {
@@ -109,12 +140,12 @@ export default function Trips() {
   };
 
   const handleCreateTrip = (tripData: any) => {
-    setTrips(prev => [...prev, tripData]);
+    fetchTrips(); // Refresh trips after creating
     setShowCreateDialog(false);
   };
 
   const handleSaveDraft = (tripData: any) => {
-    setTrips(prev => [...prev, tripData]);
+    fetchTrips(); // Refresh trips after saving draft
     setShowCreateDialog(false);
   };
 
@@ -132,12 +163,34 @@ export default function Trips() {
     setShowTripDetail(true);
   };
 
-  const handleStatusUpdate = (tripId: string, newStatus: string, reason?: string) => {
-    setTrips(prev => prev.map(trip => 
-      trip.id === tripId 
-        ? { ...trip, status: newStatus, lastUpdated: new Date().toISOString() }
-        : trip
-    ));
+  const handleStatusUpdate = async (tripId: string, newStatus: string, reason?: string) => {
+    try {
+      const { error } = await supabase
+        .from('trip_requests')
+        .update({ 
+          status: newStatus.toLowerCase(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tripId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Status Updated",
+        description: `Trip request status changed to ${newStatus}`,
+      });
+
+      fetchTrips(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating trip status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update trip status",
+        variant: "destructive"
+      });
+    }
   };
 
   const renderTripTable = (tripList: typeof trips, showRequester = false) => (
@@ -220,6 +273,17 @@ export default function Trips() {
     </Table>
   );
 
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -249,11 +313,11 @@ export default function Trips() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="my-trips">My Trips</TabsTrigger>
-          <TabsTrigger value="hr-inbox" disabled={!["HR", "Admin"].includes(currentUser.role)}>
+          <TabsTrigger value="hr-inbox" disabled={!["hr", "admin"].includes(userRole)}>
             HR Inbox
           </TabsTrigger>
-          <TabsTrigger value="driver-routes" disabled={!currentUser.isDriver}>
-            Driver Routes
+          <TabsTrigger value="driver-routes" disabled>
+            Driver Routes (Coming Soon)
           </TabsTrigger>
         </TabsList>
 
@@ -349,7 +413,7 @@ export default function Trips() {
           </Card>
         </TabsContent>
 
-        {/* HR Inbox Tab */}
+      {/* HR Inbox Tab */}
         <TabsContent value="hr-inbox" className="space-y-6">
           <Card>
             <CardHeader>
@@ -362,7 +426,7 @@ export default function Trips() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {renderTripTable(trips.filter(t => ["SUBMITTED", "HR_REVIEW", "DRIVER_PENDING"].includes(t.status)), true)}
+              {renderTripTable(trips.filter(t => ["PENDING", "HR_REVIEW", "DRIVER_PENDING"].includes(t.status)), true)}
             </CardContent>
           </Card>
         </TabsContent>
@@ -387,13 +451,15 @@ export default function Trips() {
       </Tabs>
 
       {/* Trip Detail Modal */}
-      <TripDetailModal
-        trip={selectedTrip}
-        isOpen={showTripDetail}
-        onClose={() => setShowTripDetail(false)}
-        userRole={currentUser.role}
-        onStatusUpdate={handleStatusUpdate}
-      />
+        {selectedTrip && (
+          <TripDetailModal
+            trip={selectedTrip}
+            isOpen={showTripDetail}
+            onClose={() => setShowTripDetail(false)}
+            userRole={userRole}
+            onStatusUpdate={handleStatusUpdate}
+          />
+        )}
     </div>
   );
 }

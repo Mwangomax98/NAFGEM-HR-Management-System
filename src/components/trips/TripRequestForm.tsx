@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon, AlertTriangle, Users, MapPin, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useToast, toast } from "@/hooks/use-toast";
 
 interface TripRequestFormProps {
   onSubmit: (trip: any) => void;
@@ -27,9 +28,13 @@ const projects = [
 ];
 
 export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }: TripRequestFormProps) {
+  const { toast } = useToast();
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     projectId: existingTrip?.projectId || "",
     purpose: existingTrip?.purpose || "",
@@ -51,10 +56,32 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
 
   const [conflicts, setConflicts] = useState<string[]>([]);
 
-  // Fetch drivers and vehicles from database
+  // Fetch current user and load data
   useEffect(() => {
+    fetchCurrentUser();
     fetchDriversAndVehicles();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        setCurrentUser({ id: user.id, ...profile });
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      toast({
+        title: "Authentication Error",
+        description: "Please sign in to create trip requests",
+        variant: "destructive"
+      });
+    }
+  };
 
   const fetchDriversAndVehicles = async () => {
     try {
@@ -92,33 +119,142 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
     const selectedDriver = drivers.find(d => d.id === formData.proposedDriverId);
     const selectedVehicle = vehicles.find(v => v.id === formData.proposedVehicleId);
     
-    if (selectedDriver?.availability === "busy") {
+    if (selectedDriver?.status === "busy") {
       newConflicts.push(`Driver ${selectedDriver.name} may not be available`);
     }
     
     if (selectedVehicle?.status === "maintenance") {
-      newConflicts.push(`Vehicle ${selectedVehicle.plate} is in maintenance`);
+      newConflicts.push(`Vehicle ${selectedVehicle.name} is in maintenance`);
     }
     
     setConflicts(newConflicts);
   };
 
-  const handleSubmit = (isDraft = false) => {
-    const tripData = {
-      ...formData,
-      id: existingTrip?.id || `trip-${Date.now()}`,
-      status: isDraft ? "DRAFT" : "SUBMITTED",
-      requesterId: "emp-1", // Mock current user
-      requesterName: "John Doe",
-      createdAt: new Date().toISOString(),
-      projectName: projects.find(p => p.id === formData.projectId)?.name || "",
-      donorName: projects.find(p => p.id === formData.projectId)?.donor || "",
-    };
+  // Check for conflicts and validation when form data changes
+  useEffect(() => {
+    checkConflicts();
+    validateForm(true);
+  }, [formData.proposedDriverId, formData.proposedVehicleId, formData]);
 
-    if (isDraft) {
-      onSaveDraft(tripData);
-    } else {
-      onSubmit(tripData);
+  const validateForm = (isDraft = false) => {
+    const errors = [];
+    
+    if (!isDraft) {
+      if (!formData.projectId) errors.push("Project is required");
+      if (!formData.purpose) errors.push("Purpose is required");
+      if (!formData.destination) errors.push("Destination is required");
+      if (!formData.startDate) errors.push("Start date is required");
+      if (!formData.endDate) errors.push("End date is required");
+      if (!formData.objectives) errors.push("Objectives are required");
+      if (!formData.expectedOutcomes) errors.push("Expected outcomes are required");
+      
+      if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
+        errors.push("End date must be after start date");
+      }
+      
+      if (formData.passengersCount < 1) {
+        errors.push("At least 1 passenger is required");
+      }
+      
+      const selectedVehicle = vehicles.find(v => v.id === formData.proposedVehicleId);
+      if (selectedVehicle && selectedVehicle.capacity && formData.passengersCount > selectedVehicle.capacity) {
+        errors.push(`Vehicle capacity (${selectedVehicle.capacity}) exceeded by passenger count`);
+      }
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
+  const handleSubmit = async (isDraft = false) => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create trip requests",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!validateForm(isDraft)) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the validation errors before submitting",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSaving(true);
+    
+    try {
+      const startDateTime = formData.startDate && formData.startTime
+        ? new Date(`${format(formData.startDate, 'yyyy-MM-dd')}T${formData.startTime}`)
+        : null;
+      
+      const endDateTime = formData.endDate && formData.endTime
+        ? new Date(`${format(formData.endDate, 'yyyy-MM-dd')}T${formData.endTime}`)
+        : null;
+
+      const tripData = {
+        project_id: formData.projectId,
+        purpose: formData.purpose,
+        destination: formData.destination,
+        pickup_location: formData.pickupLocation,
+        drop_location: formData.dropLocation,
+        start_datetime: startDateTime?.toISOString(),
+        end_datetime: endDateTime?.toISOString(),
+        passengers_count: formData.passengersCount,
+        luggage_notes: formData.luggageNotes,
+        proposed_driver_id: formData.proposedDriverId || null,
+        proposed_vehicle_id: formData.proposedVehicleId || null,
+        objectives: formData.objectives,
+        expected_outcomes: formData.expectedOutcomes,
+        terms_of_reference: formData.termsOfReference,
+        status: isDraft ? "pending" : "pending", // All start as pending for HR review
+        requester_id: currentUser.id,
+      };
+
+      let result;
+      if (existingTrip?.id) {
+        const { data, error } = await supabase
+          .from('trip_requests')
+          .update(tripData)
+          .eq('id', existingTrip.id)
+          .select()
+          .single();
+        result = { data, error };
+      } else {
+        const { data, error } = await supabase
+          .from('trip_requests')
+          .insert([tripData])
+          .select()
+          .single();
+        result = { data, error };
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      toast({
+        title: isDraft ? "Draft Saved" : "Trip Request Submitted",
+        description: isDraft 
+          ? "Your trip request has been saved as a draft"
+          : "Your trip request has been submitted for HR review",
+      });
+
+      onSubmit(result.data);
+      
+    } catch (error) {
+      console.error('Error saving trip request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save trip request. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -337,15 +473,12 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                       <div className="flex items-center justify-between w-full">
                         <div>
                           <span className="font-medium">{driver.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {driver.license} • {driver.homeBase}
-                          </span>
                         </div>
                         <Badge 
-                          variant={driver.availability === "available" ? "default" : "destructive"}
+                          variant={driver.status === "available" ? "default" : "destructive"}
                           className="ml-2"
                         >
-                          {driver.availability}
+                          {driver.status}
                         </Badge>
                       </div>
                     </SelectItem>
@@ -367,10 +500,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                     <SelectItem key={vehicle.id} value={vehicle.id}>
                       <div className="flex items-center justify-between w-full">
                         <div>
-                          <span className="font-medium">{vehicle.plate}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {vehicle.type} • {vehicle.capacity} seats • {vehicle.fuel}
-                          </span>
+                          <span className="font-medium">{vehicle.name}</span>
                         </div>
                         <Badge 
                           variant={vehicle.status === "available" ? "default" : "secondary"}
@@ -385,6 +515,21 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
               </Select>
             </div>
           </div>
+
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-1">
+                  <p className="font-medium">Please fix the following errors:</p>
+                  {validationErrors.map((error, index) => (
+                    <p key={index} className="text-sm">• {error}</p>
+                  ))}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Conflict Warnings */}
           {conflicts.length > 0 && (
@@ -439,16 +584,17 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
             <Button
               variant="outline"
               onClick={() => handleSubmit(true)}
+              disabled={saving || !currentUser}
               className="flex-1"
             >
-              Save as Draft
+              {saving ? "Saving..." : "Save as Draft"}
             </Button>
             <Button
               onClick={() => handleSubmit(false)}
+              disabled={saving || !currentUser || validationErrors.length > 0}
               className="flex-1"
-              disabled={!formData.projectId || !formData.purpose || !formData.startDate}
             >
-              Submit Request
+              {saving ? "Submitting..." : "Submit Request"}
             </Button>
           </div>
         </CardContent>

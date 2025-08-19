@@ -3,9 +3,8 @@ import { Clock, CheckCircle, XCircle, AlertCircle, Calendar, Play, Flag } from "
 
 type TripStatus = 
   | "DRAFT" 
-  | "SUBMITTED" 
-  | "HR_REVIEW" 
-  | "DRIVER_PENDING" 
+  | "PENDING"
+  | "APPROVED" 
   | "SCHEDULED" 
   | "IN_PROGRESS" 
   | "COMPLETED" 
@@ -13,13 +12,14 @@ type TripStatus =
   | "REJECTED";
 
 interface TripStatusBadgeProps {
-  status: TripStatus;
+  status: string;
   size?: "sm" | "md" | "lg";
 }
 
 export default function TripStatusBadge({ status, size = "md" }: TripStatusBadgeProps) {
-  const getStatusConfig = (status: TripStatus) => {
-    switch (status) {
+  const getStatusConfig = (status: string) => {
+    const upperStatus = status?.toUpperCase();
+    switch (upperStatus) {
       case "DRAFT":
         return {
           variant: "outline" as const,
@@ -27,26 +27,19 @@ export default function TripStatusBadge({ status, size = "md" }: TripStatusBadge
           label: "Draft",
           className: "text-muted-foreground"
         };
-      case "SUBMITTED":
+      case "PENDING":
         return {
           variant: "secondary" as const,
           icon: AlertCircle,
-          label: "Submitted",
-          className: "text-blue-600 bg-blue-50 border-blue-200"
-        };
-      case "HR_REVIEW":
-        return {
-          variant: "secondary" as const,
-          icon: Clock,
-          label: "HR Review",
+          label: "Pending Review",
           className: "text-orange-600 bg-orange-50 border-orange-200"
         };
-      case "DRIVER_PENDING":
+      case "APPROVED":
         return {
           variant: "secondary" as const,
-          icon: AlertCircle,
-          label: "Driver Pending",
-          className: "text-purple-600 bg-purple-50 border-purple-200"
+          icon: CheckCircle,
+          label: "Approved",
+          className: "text-blue-600 bg-blue-50 border-blue-200"
         };
       case "SCHEDULED":
         return {

@@ -17,9 +17,9 @@ interface TripDetailModalProps {
 export default function TripDetailModal({ trip, isOpen, onClose, userRole, onStatusUpdate }: TripDetailModalProps) {
   if (!trip) return null;
 
-  const canApprove = userRole === "HR" || userRole === "Admin";
-  const canEditAssignment = userRole === "HR" || userRole === "Admin";
-  const isDriver = trip.assignedDriverId === "current-user-id"; // Mock check
+  const canApprove = userRole === "hr" || userRole === "admin";
+  const canEditAssignment = userRole === "hr" || userRole === "admin";
+  const isDriver = false; // TODO: Implement driver check
 
   const handleStatusUpdate = (newStatus: string, reason?: string) => {
     onStatusUpdate?.(trip.id, newStatus, reason);
@@ -27,12 +27,11 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
   };
 
   const statusTimeline = [
-    { status: "SUBMITTED", label: "Submitted", completed: true, date: trip.createdAt },
-    { status: "HR_REVIEW", label: "HR Review", completed: ["HR_REVIEW", "DRIVER_PENDING", "SCHEDULED", "IN_PROGRESS", "COMPLETED"].includes(trip.status), date: trip.hrReviewAt },
-    { status: "DRIVER_PENDING", label: "Driver Confirmation", completed: ["DRIVER_PENDING", "SCHEDULED", "IN_PROGRESS", "COMPLETED"].includes(trip.status), date: trip.driverResponseAt },
-    { status: "SCHEDULED", label: "Scheduled", completed: ["SCHEDULED", "IN_PROGRESS", "COMPLETED"].includes(trip.status), date: trip.scheduledAt },
-    { status: "IN_PROGRESS", label: "In Progress", completed: ["IN_PROGRESS", "COMPLETED"].includes(trip.status), date: trip.startedAt },
-    { status: "COMPLETED", label: "Completed", completed: trip.status === "COMPLETED", date: trip.completedAt }
+    { status: "PENDING", label: "Submitted", completed: true, date: trip.createdAt },
+    { status: "APPROVED", label: "HR Approved", completed: ["APPROVED", "SCHEDULED", "IN_PROGRESS", "COMPLETED"].includes(trip.status?.toUpperCase()), date: trip.hrReviewAt },
+    { status: "SCHEDULED", label: "Scheduled", completed: ["SCHEDULED", "IN_PROGRESS", "COMPLETED"].includes(trip.status?.toUpperCase()), date: trip.scheduledAt },
+    { status: "IN_PROGRESS", label: "In Progress", completed: ["IN_PROGRESS", "COMPLETED"].includes(trip.status?.toUpperCase()), date: trip.startedAt },
+    { status: "COMPLETED", label: "Completed", completed: trip.status?.toUpperCase() === "COMPLETED", date: trip.completedAt }
   ];
 
   return (
@@ -161,13 +160,13 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
                   </div>
                 </div>
 
-                {canEditAssignment && trip.status === "HR_REVIEW" && (
+                {canEditAssignment && trip.status?.toUpperCase() === "PENDING" && (
                   <div className="flex gap-2 pt-2">
                     <Button variant="outline" size="sm">
-                      Change Driver
+                      Assign Driver
                     </Button>
                     <Button variant="outline" size="sm">
-                      Change Vehicle
+                      Assign Vehicle
                     </Button>
                   </div>
                 )}
@@ -243,66 +242,30 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
               </CardHeader>
               <CardContent className="space-y-2">
                 {/* HR/Admin Actions */}
-                {canApprove && trip.status === "HR_REVIEW" && (
+                {canApprove && trip.status?.toUpperCase() === "PENDING" && (
                   <>
                     <Button 
                       className="w-full" 
-                      onClick={() => handleStatusUpdate("DRIVER_PENDING")}
+                      onClick={() => handleStatusUpdate("approved")}
                     >
-                      Approve & Send to Driver
+                      Approve Request
                     </Button>
                     <Button 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => handleStatusUpdate("REJECTED")}
+                      onClick={() => handleStatusUpdate("rejected")}
                     >
                       Reject Request
                     </Button>
                   </>
                 )}
 
-                {/* Driver Actions */}
-                {isDriver && trip.status === "DRIVER_PENDING" && (
-                  <>
-                    <Button 
-                      className="w-full" 
-                      onClick={() => handleStatusUpdate("SCHEDULED")}
-                    >
-                      Accept Trip
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => handleStatusUpdate("DRIVER_PENDING")}
-                    >
-                      Decline Trip
-                    </Button>
-                  </>
-                )}
-
-                {/* In Progress Actions */}
-                {isDriver && trip.status === "SCHEDULED" && (
+                {canApprove && trip.status?.toUpperCase() === "APPROVED" && (
                   <Button 
                     className="w-full" 
-                    onClick={() => handleStatusUpdate("IN_PROGRESS")}
+                    onClick={() => handleStatusUpdate("scheduled")}
                   >
-                    Start Trip
-                  </Button>
-                )}
-
-                {isDriver && trip.status === "IN_PROGRESS" && (
-                  <Button 
-                    className="w-full" 
-                    onClick={() => handleStatusUpdate("COMPLETED")}
-                  >
-                    Complete Trip
-                  </Button>
-                )}
-
-                {/* Post-Trip Actions */}
-                {trip.status === "COMPLETED" && trip.requesterId === "current-user-id" && (
-                  <Button variant="outline" className="w-full">
-                    Submit Post-Trip Report
+                    Schedule Trip
                   </Button>
                 )}
 
