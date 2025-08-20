@@ -13,6 +13,10 @@ import ConflictAlert from "@/components/trips/ConflictAlert";
 import TripStatusBadge from "@/components/trips/TripStatusBadge";
 import { AddDriverModal } from "@/components/modals/AddDriverModal";
 import { AddVehicleModal } from "@/components/modals/AddVehicleModal";
+import { TripCalendar } from "@/components/calendar/TripCalendar";
+import { ConflictDetector } from "@/components/scheduling/ConflictDetector";
+import { AutoAssignment } from "@/components/scheduling/AutoAssignment";
+import { TripAnalyticsDashboard } from "@/components/analytics/TripAnalyticsDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast, toast } from "@/hooks/use-toast";
 
@@ -229,6 +233,8 @@ export default function TripManagement() {
             <TabsTrigger value="drivers">Driver Management</TabsTrigger>
             <TabsTrigger value="vehicles">Vehicle Management</TabsTrigger>
             <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+            <TabsTrigger value="scheduling">Smart Scheduling</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
 
@@ -498,19 +504,19 @@ export default function TripManagement() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="calendar" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Calendar View</CardTitle>
-                <CardDescription>View trips and vehicle schedules in calendar format</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Calendar view coming soon</p>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="calendar">
+            <TripCalendar />
+          </TabsContent>
+
+          <TabsContent value="scheduling">
+            <div className="space-y-6">
+              <ConflictDetector />
+              <AutoAssignment />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <TripAnalyticsDashboard />
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
@@ -522,7 +528,7 @@ export default function TripManagement() {
               <CardContent>
                 <div className="text-center py-8">
                   <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Reports coming soon</p>
+                  <p className="text-muted-foreground">Additional reports coming soon</p>
                 </div>
               </CardContent>
             </Card>

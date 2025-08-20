@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_availability: {
+        Row: {
+          availability_type: string
+          created_at: string
+          driver_id: string
+          end_datetime: string
+          id: string
+          notes: string | null
+          start_datetime: string
+          updated_at: string
+        }
+        Insert: {
+          availability_type: string
+          created_at?: string
+          driver_id: string
+          end_datetime: string
+          id?: string
+          notes?: string | null
+          start_datetime: string
+          updated_at?: string
+        }
+        Update: {
+          availability_type?: string
+          created_at?: string
+          driver_id?: string
+          end_datetime?: string
+          id?: string
+          notes?: string | null
+          start_datetime?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_availability_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           availability: boolean
@@ -58,6 +99,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          trip_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          trip_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          trip_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trip_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -190,6 +272,54 @@ export type Database = {
           },
         ]
       }
+      trip_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          destination: string
+          estimated_duration_hours: number
+          id: string
+          is_recurring: boolean
+          name: string
+          passengers_count: number
+          pickup_location: string
+          project_id: string
+          purpose: string
+          recurrence_pattern: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          destination: string
+          estimated_duration_hours: number
+          id?: string
+          is_recurring?: boolean
+          name: string
+          passengers_count: number
+          pickup_location: string
+          project_id: string
+          purpose: string
+          recurrence_pattern?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          destination?: string
+          estimated_duration_hours?: number
+          id?: string
+          is_recurring?: boolean
+          name?: string
+          passengers_count?: number
+          pickup_location?: string
+          project_id?: string
+          purpose?: string
+          recurrence_pattern?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string
@@ -213,6 +343,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicle_maintenance: {
+        Row: {
+          completed_date: string | null
+          cost: number | null
+          created_at: string
+          id: string
+          maintenance_type: string
+          notes: string | null
+          scheduled_date: string
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string
+          id?: string
+          maintenance_type: string
+          notes?: string | null
+          scheduled_date: string
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string
+          id?: string
+          maintenance_type?: string
+          notes?: string | null
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_maintenance_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicles: {
         Row: {
