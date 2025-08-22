@@ -209,13 +209,19 @@ const Communications = () => {
   };
 
   const deleteConversation = async (conversationId: string) => {
+    console.log('Attempting to delete conversation:', conversationId);
     try {
       const { error } = await supabase
         .from('task_conversations')
         .delete()
         .eq('task_evaluation_id', conversationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+
+      console.log('Delete successful');
 
       // If the deleted conversation was selected, clear selection
       if (selectedConversation === conversationId) {
