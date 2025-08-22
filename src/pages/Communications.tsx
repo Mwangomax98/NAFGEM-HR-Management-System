@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { MessageCircle, Plus, Send, Search, Filter } from 'lucide-react';
+import { MessageCircle, Plus, Send, Search, Filter, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ConversationSummary {
@@ -208,6 +208,37 @@ const Communications = () => {
     }
   };
 
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('task_conversations')
+        .delete()
+        .eq('task_evaluation_id', conversationId);
+
+      if (error) throw error;
+
+      // If the deleted conversation was selected, clear selection
+      if (selectedConversation === conversationId) {
+        setSelectedConversation(null);
+        setMessages([]);
+      }
+
+      loadConversations();
+
+      toast({
+        title: "Conversation deleted",
+        description: "The conversation has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete conversation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const createNewConversation = async () => {
     if (!newConversationTitle.trim()) return;
 
@@ -373,35 +404,51 @@ const Communications = () => {
         {/* Conversations */}
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.map((conv) => (
-            <div
-              key={conv.task_evaluation_id}
-              className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 ${
-                selectedConversation === conv.task_evaluation_id ? 'bg-muted' : ''
-              }`}
-              onClick={() => setSelectedConversation(conv.task_evaluation_id)}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium truncate">
-                  {conv.conversation_title || `${conv.conversation_type} conversation`}
-                </h3>
-                {conv.unread_count > 0 && (
-                  <Badge variant="destructive" className="text-xs">
-                    {conv.unread_count}
+            <div key={conv.task_evaluation_id} className="group relative">
+              <div
+                className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 ${
+                  selectedConversation === conv.task_evaluation_id ? 'bg-muted' : ''
+                }`}
+                onClick={() => setSelectedConversation(conv.task_evaluation_id)}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-medium truncate">
+                    {conv.conversation_title || `${conv.conversation_type} conversation`}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    {conv.unread_count > 0 && (
+                      <Badge variant="destructive" className="text-xs">
+                        {conv.unread_count}
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm('Are you sure you want to delete this conversation?')) {
+                          deleteConversation(conv.task_evaluation_id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className={`text-xs ${getConversationTypeColor(conv.conversation_type)} text-white`}>
+                    {conv.conversation_type.replace('_', ' ')}
                   </Badge>
-                )}
+                  <span className="text-xs text-muted-foreground">
+                    {conv.message_count} messages
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground truncate">{conv.last_message}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {format(new Date(conv.last_message_at), 'MMM d, h:mm a')}
+                </p>
               </div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge className={`text-xs ${getConversationTypeColor(conv.conversation_type)} text-white`}>
-                  {conv.conversation_type.replace('_', ' ')}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {conv.message_count} messages
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground truncate">{conv.last_message}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(conv.last_message_at), 'MMM d, h:mm a')}
-              </p>
             </div>
           ))}
           
