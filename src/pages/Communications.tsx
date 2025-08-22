@@ -176,7 +176,8 @@ const Communications = () => {
           task_evaluation_id: selectedConversation,
           sender_id: currentUser?.id,
           message: newMessage.trim(),
-          conversation_type: conversations.find(c => c.task_evaluation_id === selectedConversation)?.conversation_type || 'general'
+          conversation_type: conversations.find(c => c.task_evaluation_id === selectedConversation)?.conversation_type || 'general',
+          message_type: 'text'
         });
 
       if (error) throw error;
@@ -203,21 +204,33 @@ const Communications = () => {
     if (!newConversationTitle.trim()) return;
 
     try {
-      // Create a unique conversation ID
+      console.log('Creating conversation with:', {
+        title: newConversationTitle,
+        type: newConversationType,
+        userId: currentUser?.id,
+        userRole: userRole
+      });
+
+      // Create a unique conversation ID that doesn't require task_evaluation
       const conversationId = crypto.randomUUID();
 
       const { error } = await supabase
         .from('task_conversations')
         .insert({
-          task_evaluation_id: conversationId,
+          task_evaluation_id: conversationId, // Use as conversation identifier
           sender_id: currentUser?.id,
           message: `Started conversation: ${newConversationTitle}`,
           conversation_type: newConversationType,
-          conversation_title: newConversationTitle
+          conversation_title: newConversationTitle,
+          message_type: 'system'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
 
+      console.log('Conversation created successfully');
       setIsNewConversationOpen(false);
       setNewConversationTitle('');
       setNewConversationType('general');
@@ -231,7 +244,7 @@ const Communications = () => {
       console.error('Error creating conversation:', error);
       toast({
         title: "Error",
-        description: "Failed to create conversation. Please try again.",
+        description: `Failed to create conversation: ${error.message || 'Please try again.'}`,
         variant: "destructive",
       });
     }
