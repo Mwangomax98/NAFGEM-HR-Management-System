@@ -171,6 +171,144 @@ export type Database = {
         }
         Relationships: []
       }
+      task_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          message_type: string
+          sender_id: string
+          task_evaluation_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          message_type?: string
+          sender_id: string
+          task_evaluation_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          message_type?: string
+          sender_id?: string
+          task_evaluation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_conversations_task_evaluation_id_fkey"
+            columns: ["task_evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "task_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_evaluations: {
+        Row: {
+          completion_assessment: string | null
+          created_at: string
+          evaluation_date: string
+          evaluator_id: string
+          feedback: string | null
+          id: string
+          performance_score: number | null
+          requires_explanation: boolean | null
+          task_submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          completion_assessment?: string | null
+          created_at?: string
+          evaluation_date?: string
+          evaluator_id: string
+          feedback?: string | null
+          id?: string
+          performance_score?: number | null
+          requires_explanation?: boolean | null
+          task_submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          completion_assessment?: string | null
+          created_at?: string
+          evaluation_date?: string
+          evaluator_id?: string
+          feedback?: string | null
+          id?: string
+          performance_score?: number | null
+          requires_explanation?: boolean | null
+          task_submission_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_evaluations_task_submission_id_fkey"
+            columns: ["task_submission_id"]
+            isOneToOne: true
+            referencedRelation: "task_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_submissions: {
+        Row: {
+          actual_hours: number | null
+          completion_percentage: number | null
+          completion_status: string
+          created_at: string
+          estimated_hours: number | null
+          id: string
+          notes: string | null
+          priority: string
+          task_description: string | null
+          task_title: string
+          updated_at: string
+          weekly_task_id: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          completion_percentage?: number | null
+          completion_status?: string
+          created_at?: string
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          task_description?: string | null
+          task_title: string
+          updated_at?: string
+          weekly_task_id: string
+        }
+        Update: {
+          actual_hours?: number | null
+          completion_percentage?: number | null
+          completion_status?: string
+          created_at?: string
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          task_description?: string | null
+          task_title?: string
+          updated_at?: string
+          weekly_task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_submissions_weekly_task_id_fkey"
+            columns: ["weekly_task_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_requests: {
         Row: {
           assigned_driver_id: string | null
@@ -439,6 +577,39 @@ export type Database = {
           status?: string
           updated_at?: string
           year?: number | null
+        }
+        Relationships: []
+      }
+      weekly_tasks: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          week_end_date?: string
+          week_start_date?: string
         }
         Relationships: []
       }

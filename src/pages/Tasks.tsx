@@ -2,8 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Calendar, User, Clock } from "lucide-react";
 import { useState } from "react";
+import WeeklyTaskSubmission from "@/components/tasks/WeeklyTaskSubmission";
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -60,6 +62,18 @@ export default function Tasks() {
           New Task
         </Button>
       </div>
+
+      <Tabs defaultValue="weekly" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
+          <TabsTrigger value="all">All Tasks</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="weekly">
+          <WeeklyTaskSubmission />
+        </TabsContent>
+
+        <TabsContent value="all" className="space-y-6">
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -165,7 +179,9 @@ export default function Tasks() {
             </Card>
           ))
         )}
-      </div>
+        </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

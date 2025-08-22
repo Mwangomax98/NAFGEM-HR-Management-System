@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Plus, Search, Target, TrendingUp, Calendar, Star } from "lucide-react";
 import { ReviewDetailModal } from "@/components/modals/ReviewDetailModal";
 import { StartReviewModal } from "@/components/modals/StartReviewModal";
+import WeeklyPerformanceReview from "@/components/hr/WeeklyPerformanceReview";
 
 const Performance = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,6 +92,7 @@ const Performance = () => {
       <Tabs defaultValue="reviews" className="space-y-4">
         <TabsList>
           <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
           <TabsTrigger value="goals">Goals & Objectives</TabsTrigger>
           <TabsTrigger value="templates">Review Templates</TabsTrigger>
           <TabsTrigger value="analytics">Performance Analytics</TabsTrigger>
@@ -178,6 +180,10 @@ const Performance = () => {
               </TableBody>
             </Table>
           )}
+        </TabsContent>
+
+        <TabsContent value="weekly" className="space-y-4">
+          <WeeklyPerformanceReview />
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-4">
