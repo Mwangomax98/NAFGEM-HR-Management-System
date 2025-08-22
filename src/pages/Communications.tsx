@@ -123,17 +123,12 @@ const Communications = () => {
   };
 
   const loadMessages = async (conversationId: string) => {
-    console.log('Loading messages for conversation:', conversationId);
-    
     try {
       const { data, error } = await supabase
         .from('task_conversations')
         .select('*')
         .eq('task_evaluation_id', conversationId)
         .order('created_at', { ascending: true });
-
-      console.log('Raw message data:', data);
-      console.log('Message query error:', error);
 
       if (error) {
         console.error('Error loading messages:', error);
@@ -142,7 +137,6 @@ const Communications = () => {
 
       // Get sender information separately
       const senderIds = [...new Set(data?.map(msg => msg.sender_id) || [])];
-      console.log('Sender IDs:', senderIds);
       
       const { data: senderProfiles } = await supabase
         .from('profiles')
@@ -154,9 +148,6 @@ const Communications = () => {
         .select('user_id, role')
         .in('user_id', senderIds);
 
-      console.log('Sender profiles:', senderProfiles);
-      console.log('Sender roles:', senderRoles);
-
       const messagesWithSenderInfo = data?.map(msg => {
         const profile = senderProfiles?.find(p => p.id === msg.sender_id);
         const role = senderRoles?.find(r => r.user_id === msg.sender_id);
@@ -167,7 +158,6 @@ const Communications = () => {
         };
       }) || [];
 
-      console.log('Messages with sender info:', messagesWithSenderInfo);
       setMessages(messagesWithSenderInfo);
 
       // Mark messages as read
@@ -388,10 +378,7 @@ const Communications = () => {
               className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 ${
                 selectedConversation === conv.task_evaluation_id ? 'bg-muted' : ''
               }`}
-              onClick={() => {
-                console.log('Selecting conversation:', conv.task_evaluation_id, conv);
-                setSelectedConversation(conv.task_evaluation_id);
-              }}
+              onClick={() => setSelectedConversation(conv.task_evaluation_id)}
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-medium truncate">
@@ -439,67 +426,79 @@ const Communications = () => {
               </h2>
             </div>
 
-            {/* Messages List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Messages List - WhatsApp Style */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex gap-3 ${message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}
                 >
-                  {message.sender_id !== currentUser?.id && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs">
-                        {message.sender_name?.charAt(0) || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  
-                  <div className={`max-w-[70%] ${message.sender_id === currentUser?.id ? 'order-first' : ''}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">{message.sender_name}</span>
-                      <Badge className={`text-xs ${getRoleBadgeColor(message.sender_role || 'employee')}`}>
-                        {message.sender_role || 'employee'}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(message.created_at), 'MMM d, h:mm a')}
-                      </span>
-                    </div>
-                    <div className={`p-3 rounded-lg ${
+                  <div className={`max-w-[75%] ${message.sender_id === currentUser?.id ? 'mr-2' : 'ml-2'}`}>
+                    {/* Sender info - only show for others */}
+                    {message.sender_id !== currentUser?.id && (
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium text-muted-foreground">{message.sender_name}</span>
+                        <Badge variant="outline" className="text-xs h-4 px-1">
+                          {message.sender_role || 'employee'}
+                        </Badge>
+                      </div>
+                    )}
+                    
+                    {/* Message bubble */}
+                    <div className={`relative p-3 rounded-2xl shadow-sm ${
                       message.sender_id === currentUser?.id 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted'
+                        ? 'bg-primary text-primary-foreground rounded-br-md' 
+                        : 'bg-background border rounded-bl-md'
                     }`}>
                       <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                      
+                      {/* Timestamp */}
+                      <div className={`text-xs mt-1 ${
+                        message.sender_id === currentUser?.id 
+                          ? 'text-primary-foreground/70 text-right' 
+                          : 'text-muted-foreground'
+                      }`}>
+                        {format(new Date(message.created_at), 'h:mm a')}
+                      </div>
                     </div>
                   </div>
-
-                  {message.sender_id === currentUser?.id && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs">
-                        {currentUser?.profile?.full_name?.charAt(0) || 'You'}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
                 </div>
               ))}
+              
+              {messages.length === 0 && (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                    <p className="text-lg font-medium">No messages yet</p>
+                    <p className="text-sm">Start the conversation by sending a message</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Message Input */}
-            <div className="p-4 border-t border-border">
-              <div className="flex gap-2">
-                <Textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="min-h-[80px] resize-none"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                />
-                <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+            {/* Send Message - WhatsApp Style */}
+            <div className="p-4 border-t border-border bg-background">
+              <div className="flex gap-3 items-end">
+                <div className="flex-1 relative">
+                  <Textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 min-h-[44px] max-h-32 resize-none rounded-full px-4 py-3 border-2 focus:border-primary/50"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                  />
+                </div>
+                <Button 
+                  onClick={sendMessage} 
+                  disabled={!newMessage.trim()}
+                  size="icon"
+                  className="h-11 w-11 rounded-full bg-primary hover:bg-primary/90 transition-all duration-200 disabled:opacity-50"
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
