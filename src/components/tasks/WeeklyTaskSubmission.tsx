@@ -259,6 +259,7 @@ export default function WeeklyTaskSubmission() {
   if (!weeklyTask) return null;
 
   const canEdit = weeklyTask.status === 'draft' || weeklyTask.status === 'under_review';
+  const canEditProgress = weeklyTask.status === 'draft' || weeklyTask.status === 'under_review' || weeklyTask.status === 'submitted';
   const isSubmitted = weeklyTask.status === 'submitted' || weeklyTask.status === 'under_review' || weeklyTask.status === 'evaluated';
 
   return (
@@ -368,37 +369,37 @@ export default function WeeklyTaskSubmission() {
                           disabled={!canEdit}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Status</Label>
-                        <Select
-                          value={task.completion_status}
-                          onValueChange={(value) => updateTask(index, 'completion_status', value)}
-                          disabled={!canEdit}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="not_started">Not Started</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="blocked">Blocked</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                       <div className="space-y-2">
+                         <Label>Status</Label>
+                         <Select
+                           value={task.completion_status}
+                           onValueChange={(value) => updateTask(index, 'completion_status', value)}
+                           disabled={!canEditProgress}
+                         >
+                           <SelectTrigger>
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="not_started">Not Started</SelectItem>
+                             <SelectItem value="in_progress">In Progress</SelectItem>
+                             <SelectItem value="completed">Completed</SelectItem>
+                             <SelectItem value="blocked">Blocked</SelectItem>
+                           </SelectContent>
+                         </Select>
+                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Completion Percentage: {task.completion_percentage}%</Label>
-                      <Slider
-                        value={[task.completion_percentage]}
-                        onValueChange={(value) => updateTask(index, 'completion_percentage', value[0])}
-                        max={100}
-                        step={5}
-                        disabled={!canEdit}
-                        className="w-full"
-                      />
-                    </div>
+                     <div className="space-y-2">
+                       <Label>Completion Percentage: {task.completion_percentage}%</Label>
+                       <Slider
+                         value={[task.completion_percentage]}
+                         onValueChange={(value) => updateTask(index, 'completion_percentage', value[0])}
+                         max={100}
+                         step={5}
+                         disabled={!canEditProgress}
+                         className="w-full"
+                       />
+                     </div>
 
                     <div className="space-y-2">
                       <Label>Notes</Label>
@@ -441,6 +442,19 @@ export default function WeeklyTaskSubmission() {
                 >
                   <Send className="h-4 w-4 mr-2" />
                   Submit for Review
+                </Button>
+              </div>
+            )}
+
+            {!canEdit && canEditProgress && weeklyTask.tasks.length > 0 && (
+              <div className="flex gap-4 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => saveWeeklyTask(false)}
+                  className="w-full"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Update Progress
                 </Button>
               </div>
             )}

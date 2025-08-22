@@ -35,11 +35,17 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    
     if (isOpen) {
       loadCurrentUser();
       loadMessages();
-      setupRealtimeSubscription();
+      cleanup = setupRealtimeSubscription();
     }
+
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, [isOpen, evaluationId]);
 
   useEffect(() => {
@@ -124,7 +130,7 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
 
   const setupRealtimeSubscription = () => {
     const channel = supabase
-      .channel('task-chat')
+      .channel(`task-chat-${evaluationId}`)
       .on(
         'postgres_changes',
         {
@@ -133,13 +139,17 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
           table: 'task_conversations',
           filter: `task_evaluation_id=eq.${evaluationId}`
         },
-        () => {
+        (payload) => {
+          console.log('New message received:', payload);
           loadMessages();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up chat subscription');
       supabase.removeChannel(channel);
     };
   };
