@@ -18,10 +18,10 @@ const Reports = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const analyticsStats = [
-    { title: "Total Employees", value: "248", icon: Users, change: "+12 this month", trend: "up" },
-    { title: "Avg Performance", value: "4.3", icon: TrendingUp, change: "+0.2 from last quarter", trend: "up" },
-    { title: "Training Hours", value: "1,240", icon: Clock, change: "+15% this quarter", trend: "up" },
-    { title: "Cost Per Employee", value: "$3,450", icon: DollarSign, change: "-5% optimized", trend: "down" },
+    { title: "Total Employees", value: "0", icon: Users, change: "No data", trend: "up" },
+    { title: "Avg Performance", value: "0", icon: TrendingUp, change: "No data", trend: "up" },
+    { title: "Training Hours", value: "0", icon: Clock, change: "No data", trend: "up" },
+    { title: "Cost Per Employee", value: "$0", icon: DollarSign, change: "No data", trend: "down" },
   ];
 
   const reportCategories = [
@@ -51,12 +51,7 @@ const Reports = () => {
     },
   ];
 
-  const recentReports = [
-    { id: 1, name: "Q4 2024 Performance Summary", type: "Performance", generatedBy: "Sarah Johnson", date: "2024-01-15", status: "Ready" },
-    { id: 2, name: "Employee Satisfaction Survey", type: "Employee", generatedBy: "Mike Wilson", date: "2024-01-14", status: "Processing" },
-    { id: 3, name: "Training ROI Analysis", type: "Training", generatedBy: "Anna Rodriguez", date: "2024-01-13", status: "Ready" },
-    { id: 4, name: "Compensation Benchmarking", type: "Financial", generatedBy: "David Kim", date: "2024-01-12", status: "Ready" },
-  ];
+  const recentReports: any[] = [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -203,29 +198,7 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Exceeds Expectations</span>
-                      <span>24 employees</span>
-                    </div>
-                    <Progress value={24} className="h-2" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Meets Expectations</span>
-                      <span>186 employees</span>
-                    </div>
-                    <Progress value={75} className="h-2" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Needs Improvement</span>
-                      <span>38 employees</span>
-                    </div>
-                    <Progress value={15} className="h-2" />
-                  </div>
-                </div>
+                  <p className="text-muted-foreground">No performance data available</p>
               </CardContent>
             </Card>
 
@@ -257,18 +230,8 @@ const Reports = () => {
               <CardHeader>
                 <CardTitle>Recent Reports</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {recentReports.slice(0, 3).map((report) => (
-                  <div key={report.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">{report.name}</div>
-                      <div className="text-sm text-muted-foreground">{report.date}</div>
-                    </div>
-                    <Badge className={getStatusColor(report.status)}>
-                      {report.status}
-                    </Badge>
-                  </div>
-                ))}
+              <CardContent>
+                <p className="text-muted-foreground">No recent reports available</p>
               </CardContent>
             </Card>
           </div>
