@@ -183,7 +183,7 @@ export type Database = {
           related_record_id: string | null
           related_record_type: string | null
           sender_id: string
-          task_evaluation_id: string
+          task_evaluation_id: string | null
         }
         Insert: {
           conversation_title?: string | null
@@ -196,7 +196,7 @@ export type Database = {
           related_record_id?: string | null
           related_record_type?: string | null
           sender_id: string
-          task_evaluation_id: string
+          task_evaluation_id?: string | null
         }
         Update: {
           conversation_title?: string | null
@@ -209,17 +209,9 @@ export type Database = {
           related_record_id?: string | null
           related_record_type?: string | null
           sender_id?: string
-          task_evaluation_id?: string
+          task_evaluation_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "task_conversations_task_evaluation_id_fkey"
-            columns: ["task_evaluation_id"]
-            isOneToOne: false
-            referencedRelation: "task_evaluations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       task_evaluations: {
         Row: {
@@ -640,15 +632,7 @@ export type Database = {
           task_evaluation_id: string | null
           unread_count: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "task_conversations_task_evaluation_id_fkey"
-            columns: ["task_evaluation_id"]
-            isOneToOne: false
-            referencedRelation: "task_evaluations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
