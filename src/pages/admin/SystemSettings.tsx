@@ -12,18 +12,18 @@ import { useState } from "react";
 export default function SystemSettings() {
   const [settings, setSettings] = useState({
     general: {
-      companyName: "NAFGEM HR Management System",
-      timezone: "UTC-5",
-      dateFormat: "MM/DD/YYYY",
-      currency: "USD",
+      companyName: "",
+      timezone: "UTC+3",
+      dateFormat: "DD/MM/YYYY",
+      currency: "TZS",
       fiscalYearStart: "01-01"
     },
     email: {
-      smtpServer: "smtp.nafgem.com",
-      smtpPort: "587",
-      username: "hr-system@nafgem.com",
-      enableTLS: true,
-      enableNotifications: true
+      smtpServer: "",
+      smtpPort: "",
+      username: "",
+      enableTLS: false,
+      enableNotifications: false
     },
     security: {
       passwordExpiry: 90,
@@ -31,21 +31,21 @@ export default function SystemSettings() {
       requireMFA: false,
       sessionTimeout: 480,
       loginAttempts: 5,
-      enableAuditLog: true
+      enableAuditLog: false
     },
     leave: {
-      defaultVacationDays: 25,
-      defaultSickDays: 10,
-      defaultPersonalDays: 5,
-      carryOverLimit: 5,
-      requireApproval: true
+      defaultVacationDays: 0,
+      defaultSickDays: 0,
+      defaultPersonalDays: 0,
+      carryOverLimit: 0,
+      requireApproval: false
     },
     timesheet: {
       weekStartDay: "monday",
       defaultWorkHours: 8,
-      enableOvertime: true,
+      enableOvertime: false,
       overtimeThreshold: 40,
-      requireApproval: true
+      requireApproval: false
     }
   });
 
@@ -96,9 +96,9 @@ export default function SystemSettings() {
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">99.9%</div>
+            <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
-              Uptime this month
+              No data available
             </p>
           </CardContent>
         </Card>
@@ -108,9 +108,9 @@ export default function SystemSettings() {
             <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.4GB</div>
+            <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
-              of 10GB allocated
+              No data available
             </p>
           </CardContent>
         </Card>
@@ -120,9 +120,9 @@ export default function SystemSettings() {
             <CardTitle className="text-sm font-medium">Last Backup</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2h ago</div>
+            <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
-              Automated daily backup
+              No backup configured
             </p>
           </CardContent>
         </Card>
@@ -178,9 +178,9 @@ export default function SystemSettings() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
-                      <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
+                      <SelectItem value="UTC+3">East Africa Time (UTC+3)</SelectItem>
                       <SelectItem value="UTC+0">GMT (UTC+0)</SelectItem>
+                      <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -210,9 +210,7 @@ export default function SystemSettings() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USD">USD - US Dollar</SelectItem>
-                      <SelectItem value="EUR">EUR - Euro</SelectItem>
-                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                      <SelectItem value="TZS">TZS - Tanzanian Shilling</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
