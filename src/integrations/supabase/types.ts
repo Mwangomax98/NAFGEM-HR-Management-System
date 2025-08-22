@@ -173,29 +173,41 @@ export type Database = {
       }
       task_conversations: {
         Row: {
+          conversation_title: string | null
+          conversation_type: string
           created_at: string
           id: string
           is_read: boolean | null
           message: string
           message_type: string
+          related_record_id: string | null
+          related_record_type: string | null
           sender_id: string
           task_evaluation_id: string
         }
         Insert: {
+          conversation_title?: string | null
+          conversation_type?: string
           created_at?: string
           id?: string
           is_read?: boolean | null
           message: string
           message_type?: string
+          related_record_id?: string | null
+          related_record_type?: string | null
           sender_id: string
           task_evaluation_id: string
         }
         Update: {
+          conversation_title?: string | null
+          conversation_type?: string
           created_at?: string
           id?: string
           is_read?: boolean | null
           message?: string
           message_type?: string
+          related_record_id?: string | null
+          related_record_type?: string | null
           sender_id?: string
           task_evaluation_id?: string
         }
@@ -615,7 +627,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      conversation_summaries: {
+        Row: {
+          conversation_title: string | null
+          conversation_type: string | null
+          last_message: string | null
+          last_message_at: string | null
+          message_count: number | null
+          participants: string[] | null
+          related_record_id: string | null
+          related_record_type: string | null
+          task_evaluation_id: string | null
+          unread_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_conversations_task_evaluation_id_fkey"
+            columns: ["task_evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "task_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {

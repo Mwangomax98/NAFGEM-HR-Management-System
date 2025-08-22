@@ -22,6 +22,7 @@ import TripManagement from "./pages/hr/TripManagement";
 import Training from "./pages/hr/Training";
 import Performance from "./pages/hr/Performance";
 import TaskManagement from "./pages/hr/TaskManagement";
+import Communications from "./pages/Communications";
 import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/hr/training" element={<Training />} />
           <Route path="/hr/performance" element={<Performance />} />
           <Route path="/hr/task-management" element={<TaskManagement />} />
+          <Route path="/communications" element={<Communications />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/settings" element={<SystemSettings />} />

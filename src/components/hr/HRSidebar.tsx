@@ -11,7 +11,8 @@ import {
   Settings,
   User,
   Building2,
-  Shield
+  Shield,
+  MessageCircle
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -39,6 +40,7 @@ interface SidebarItem {
 const menuItems: SidebarItem[] = [
   // Employee Items
   { title: "My Profile", url: "/profile", icon: User, roles: ["employee", "hr", "admin"] },
+  { title: "Communications", url: "/communications", icon: MessageCircle, roles: ["employee", "hr", "admin"] },
   { title: "My Timesheets", url: "/timesheets", icon: Clock, roles: ["employee", "hr", "admin"] },
   { title: "My Tasks", url: "/tasks", icon: CheckSquare, roles: ["employee", "hr", "admin"] },
   { title: "Leave Requests", url: "/leave", icon: Calendar, roles: ["employee", "hr", "admin"] },
