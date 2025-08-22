@@ -123,15 +123,27 @@ const Communications = () => {
   };
 
   const loadMessages = async (conversationId: string) => {
+    console.log('Loading messages for conversation:', conversationId);
+    
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('task_conversations')
         .select('*')
         .eq('task_evaluation_id', conversationId)
         .order('created_at', { ascending: true });
 
+      console.log('Raw message data:', data);
+      console.log('Message query error:', error);
+
+      if (error) {
+        console.error('Error loading messages:', error);
+        throw error;
+      }
+
       // Get sender information separately
       const senderIds = [...new Set(data?.map(msg => msg.sender_id) || [])];
+      console.log('Sender IDs:', senderIds);
+      
       const { data: senderProfiles } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -141,6 +153,9 @@ const Communications = () => {
         .from('user_roles')
         .select('user_id, role')
         .in('user_id', senderIds);
+
+      console.log('Sender profiles:', senderProfiles);
+      console.log('Sender roles:', senderRoles);
 
       const messagesWithSenderInfo = data?.map(msg => {
         const profile = senderProfiles?.find(p => p.id === msg.sender_id);
@@ -152,14 +167,17 @@ const Communications = () => {
         };
       }) || [];
 
+      console.log('Messages with sender info:', messagesWithSenderInfo);
       setMessages(messagesWithSenderInfo);
 
       // Mark messages as read
-      await supabase
-        .from('task_conversations')
-        .update({ is_read: true })
-        .eq('task_evaluation_id', conversationId)
-        .neq('sender_id', currentUser?.id);
+      if (data && data.length > 0) {
+        await supabase
+          .from('task_conversations')
+          .update({ is_read: true })
+          .eq('task_evaluation_id', conversationId)
+          .neq('sender_id', currentUser?.id);
+      }
 
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -370,7 +388,10 @@ const Communications = () => {
               className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 ${
                 selectedConversation === conv.task_evaluation_id ? 'bg-muted' : ''
               }`}
-              onClick={() => setSelectedConversation(conv.task_evaluation_id)}
+              onClick={() => {
+                console.log('Selecting conversation:', conv.task_evaluation_id, conv);
+                setSelectedConversation(conv.task_evaluation_id);
+              }}
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-medium truncate">
