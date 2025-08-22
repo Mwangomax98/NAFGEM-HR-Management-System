@@ -3,59 +3,81 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Shield, Plus, Search, Filter, Edit, Trash2, UserPlus } from "lucide-react";
+import { Shield, Plus, Search, Filter, Edit, Trash2, UserPlus, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import AddUserModal from "@/components/modals/AddUserModal";
+import AssignRoleModal from "@/components/modals/AssignRoleModal";
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  project: string;
+  title: string;
+  created_at: string;
+  roles?: { role: string }[];
+}
 
 export default function UserManagement() {
-  const [users] = useState([
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah.johnson@nafgem.com",
-      role: "hr",
-      department: "Human Resources",
-      status: "active",
-      lastLogin: "2024-11-20T14:30:00Z",
-      permissions: ["manage_employees", "approve_leave", "view_reports"],
-      avatar: "SJ"
-    },
-    {
-      id: 2,
-      name: "John Smith",
-      email: "john.smith@nafgem.com", 
-      role: "admin",
-      department: "IT",
-      status: "active",
-      lastLogin: "2024-11-20T09:15:00Z",
-      permissions: ["full_access", "system_admin", "user_management"],
-      avatar: "JS"
-    },
-    {
-      id: 3,
-      name: "Michael Chen",
-      email: "michael.chen@nafgem.com",
-      role: "employee",
-      department: "Engineering",
-      status: "active",
-      lastLogin: "2024-11-19T16:45:00Z",
-      permissions: ["view_profile", "submit_timesheet"],
-      avatar: "MC"
-    },
-    {
-      id: 4,
-      name: "Emily Rodriguez",
-      email: "emily.rodriguez@nafgem.com",
-      role: "employee",
-      department: "Marketing",
-      status: "inactive",
-      lastLogin: "2024-11-10T11:20:00Z",
-      permissions: ["view_profile", "submit_timesheet"],
-      avatar: "ER"
-    }
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isAssignRoleOpen, setIsAssignRoleOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const getRoleBadge = (role: string) => {
+  const fetchUsers = async () => {
+    try {
+      const { data: profiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("*");
+
+      if (profileError) throw profileError;
+
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) throw rolesError;
+
+      const usersWithRoles = profiles?.map(profile => ({
+        ...profile,
+        roles: roles?.filter(role => role.user_id === profile.id) || [],
+      })) || [];
+
+      setUsers(usersWithRoles);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch users",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleUserAdded = () => {
+    fetchUsers();
+  };
+
+  const handleRoleAssigned = () => {
+    fetchUsers();
+  };
+
+  const getRoleBadge = (user: User) => {
+    if (!user.roles || user.roles.length === 0) {
+      return <Badge variant="outline">No Role</Badge>;
+    }
+    
+    const role = user.roles[0].role;
     switch (role) {
       case "admin":
         return <Badge variant="destructive">Admin</Badge>;
@@ -68,36 +90,22 @@ export default function UserManagement() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default" className="bg-green-500">Active</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
-      case "suspended":
-        return <Badge variant="destructive">Suspended</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleDateString();
   };
 
-  const formatLastLogin = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
-    if (diffInHours < 1) {
-      return "Just now";
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  const activeUsers = users.filter(u => u.status === "active").length;
-  const adminUsers = users.filter(u => u.role === "admin").length;
-  const hrUsers = users.filter(u => u.role === "hr").length;
+  const adminUsers = users.filter(u => u.roles?.some(r => r.role === "admin")).length;
+  const hrUsers = users.filter(u => u.roles?.some(r => r.role === "hr")).length;
+  const employeeUsers = users.filter(u => u.roles?.some(r => r.role === "employee")).length;
 
   return (
     <div className="p-6 space-y-6">
@@ -106,7 +114,7 @@ export default function UserManagement() {
           <h1 className="text-3xl font-heading font-bold text-primary">User Management</h1>
           <p className="text-muted-foreground">Manage user accounts, roles, and permissions</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsAddUserOpen(true)}>
           <UserPlus className="w-4 h-4 mr-2" />
           Add User
         </Button>
@@ -131,7 +139,7 @@ export default function UserManagement() {
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{activeUsers}</div>
+            <div className="text-2xl font-bold text-green-600">{users.length}</div>
             <p className="text-xs text-muted-foreground">
               Currently active
             </p>
@@ -191,59 +199,73 @@ export default function UserManagement() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>Project</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last Login</TableHead>
-                <TableHead>Permissions</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Title</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {user.avatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell>{user.department}</TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
-                  <TableCell>{formatLastLogin(user.lastLogin)}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {user.permissions.slice(0, 2).map((permission) => (
-                        <Badge key={permission} variant="outline" className="text-xs">
-                          {permission.replace('_', ' ')}
-                        </Badge>
-                      ))}
-                      {user.permissions.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{user.permissions.length - 2} more
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-1">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    Loading users...
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No users found. Click "Add User" to create the first user.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {getInitials(user.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{user.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getRoleBadge(user)}</TableCell>
+                    <TableCell>{user.project || "Not assigned"}</TableCell>
+                    <TableCell>
+                      <Badge variant="default" className="bg-green-500">Active</Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(user.created_at)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {user.title || "No title"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setIsAssignRoleOpen(true);
+                          }}
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -277,9 +299,7 @@ export default function UserManagement() {
                   <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
                   <span className="text-sm">Employees</span>
                 </div>
-                <span className="text-sm font-medium">
-                  {users.filter(u => u.role === "employee").length} users
-                </span>
+                <span className="text-sm font-medium">{employeeUsers} users</span>
               </div>
             </div>
           </CardContent>
@@ -314,6 +334,19 @@ export default function UserManagement() {
           </CardContent>
         </Card>
       </div>
+
+      <AddUserModal
+        open={isAddUserOpen}
+        onOpenChange={setIsAddUserOpen}
+        onUserAdded={handleUserAdded}
+      />
+
+      <AssignRoleModal
+        open={isAssignRoleOpen}
+        onOpenChange={setIsAssignRoleOpen}
+        user={selectedUser}
+        onRoleAssigned={handleRoleAssigned}
+      />
     </div>
   );
 }
