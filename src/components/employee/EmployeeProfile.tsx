@@ -89,9 +89,10 @@ interface EmployeeProfileProps {
   employee: EmployeeData;
   canEdit?: boolean;
   onEdit?: () => void;
+  onExportPDF?: () => void;
 }
 
-export default function EmployeeProfile({ employee, canEdit = false, onEdit }: EmployeeProfileProps) {
+export default function EmployeeProfile({ employee, canEdit = false, onEdit, onExportPDF }: EmployeeProfileProps) {
   const getStatusBadge = (status: string) => {
     const statusStyles = {
       "Active": "bg-teal text-white",
@@ -131,7 +132,7 @@ export default function EmployeeProfile({ employee, canEdit = false, onEdit }: E
             <p className="text-muted-foreground">Personal Particulars</p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={onExportPDF}>
               <Download className="w-4 h-4 mr-2" />
               Export PDF
             </Button>

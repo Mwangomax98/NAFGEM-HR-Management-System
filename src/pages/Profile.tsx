@@ -1,5 +1,8 @@
 import { useState } from "react";
 import EmployeeProfile from "@/components/employee/EmployeeProfile";
+import EditProfileModal from "@/components/modals/EditProfileModal";
+import { exportProfileToPDF } from "@/utils/pdfExport";
+import { useToast } from "@/hooks/use-toast";
 
 // Employee data will be loaded from Supabase
 const mockEmployee = {
@@ -47,18 +50,44 @@ const mockEmployee = {
 };
 
 export default function Profile() {
-  const [employee] = useState(mockEmployee);
+  const [employee, setEmployee] = useState(mockEmployee);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleEdit = () => {
     console.log("Edit profile clicked");
-    // Navigate to edit form or open edit modal
+    setIsEditModalOpen(true);
+  };
+
+  const handleExportPDF = () => {
+    console.log("Export PDF clicked");
+    exportProfileToPDF(employee);
+    toast({
+      title: "PDF Export",
+      description: "Profile PDF is being generated and will open in a new window.",
+    });
+  };
+
+  const handleSaveProfile = (updatedEmployee: any) => {
+    setEmployee(updatedEmployee);
+    console.log("Profile updated:", updatedEmployee);
   };
 
   return (
-    <EmployeeProfile
-      employee={employee}
-      canEdit={true}
-      onEdit={handleEdit}
-    />
+    <>
+      <EmployeeProfile
+        employee={employee}
+        canEdit={true}
+        onEdit={handleEdit}
+        onExportPDF={handleExportPDF}
+      />
+      
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        employee={employee}
+        onSave={handleSaveProfile}
+      />
+    </>
   );
 }
