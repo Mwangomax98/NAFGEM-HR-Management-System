@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { MessageCircle, Plus, Send, Search, Filter, Trash2 } from 'lucide-react';
+import { MessageCircle, Plus, Send, Search, Filter, Trash2, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ConversationSummary {
@@ -49,6 +50,8 @@ const Communications = () => {
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false);
   const [newConversationTitle, setNewConversationTitle] = useState('');
   const [newConversationType, setNewConversationType] = useState('general');
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [participantSearch, setParticipantSearch] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -253,18 +256,28 @@ const Communications = () => {
         title: newConversationTitle,
         type: newConversationType,
         userId: currentUser?.id,
-        userRole: userRole
+        userRole: userRole,
+        participants: selectedParticipants
       });
 
       // Create a unique conversation ID that doesn't require task_evaluation
       const conversationId = crypto.randomUUID();
+
+      // Create initial system message with participant information
+      let systemMessage = `Started conversation: ${newConversationTitle}`;
+      if (selectedParticipants.length > 0) {
+        const participantNames = selectedParticipants.map(id => 
+          profiles.find(p => p.id === id)?.full_name || 'Unknown'
+        ).join(', ');
+        systemMessage += ` with ${participantNames}`;
+      }
 
       const { error } = await supabase
         .from('task_conversations')
         .insert({
           task_evaluation_id: conversationId, // Use as conversation identifier
           sender_id: currentUser?.id,
-          message: `Started conversation: ${newConversationTitle}`,
+          message: systemMessage,
           conversation_type: newConversationType,
           conversation_title: newConversationTitle,
           message_type: 'system'
@@ -279,6 +292,8 @@ const Communications = () => {
       setIsNewConversationOpen(false);
       setNewConversationTitle('');
       setNewConversationType('general');
+      setSelectedParticipants([]);
+      setParticipantSearch('');
       loadConversations();
 
       toast({
@@ -294,6 +309,20 @@ const Communications = () => {
       });
     }
   };
+
+  const toggleParticipant = (userId: string) => {
+    setSelectedParticipants(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const filteredProfiles = profiles.filter(profile => 
+    profile.id !== currentUser?.id && // Exclude current user
+    (profile.full_name?.toLowerCase().includes(participantSearch.toLowerCase()) ||
+     profile.email?.toLowerCase().includes(participantSearch.toLowerCase()))
+  );
 
   const getConversationTypeColor = (type: string) => {
     switch (type) {
@@ -345,37 +374,140 @@ const Communications = () => {
                   New
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Start New Conversation</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Title</label>
-                    <Input
-                      value={newConversationTitle}
-                      onChange={(e) => setNewConversationTitle(e.target.value)}
-                      placeholder="Enter conversation title"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Type</label>
-                    <Select value={newConversationType} onValueChange={setNewConversationType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="performance">Performance</SelectItem>
-                        <SelectItem value="leave">Leave Request</SelectItem>
-                        <SelectItem value="training">Training</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={createNewConversation} className="w-full">
-                    Create Conversation
-                  </Button>
-                </div>
+                
+                <Tabs defaultValue="general" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="general">General</TabsTrigger>
+                    <TabsTrigger value="person">With Person</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="general" className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Title</label>
+                      <Input
+                        value={newConversationTitle}
+                        onChange={(e) => setNewConversationTitle(e.target.value)}
+                        placeholder="Enter conversation title"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Type</label>
+                      <Select value={newConversationType} onValueChange={setNewConversationType}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border shadow-lg z-50">
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="performance">Performance</SelectItem>
+                          <SelectItem value="leave">Leave Request</SelectItem>
+                          <SelectItem value="training">Training</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={createNewConversation} className="w-full">
+                      Create Conversation
+                    </Button>
+                  </TabsContent>
+                  
+                  <TabsContent value="person" className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Title</label>
+                      <Input
+                        value={newConversationTitle}
+                        onChange={(e) => setNewConversationTitle(e.target.value)}
+                        placeholder="Enter conversation title"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Search People</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={participantSearch}
+                          onChange={(e) => setParticipantSearch(e.target.value)}
+                          placeholder="Search by name or email"
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Select People</label>
+                      <div className="max-h-40 overflow-y-auto border rounded-md">
+                        {filteredProfiles.map((profile) => (
+                          <div
+                            key={profile.id}
+                            className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 border-b last:border-b-0 ${
+                              selectedParticipants.includes(profile.id) ? 'bg-primary/10' : ''
+                            }`}
+                            onClick={() => toggleParticipant(profile.id)}
+                          >
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                {profile.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{profile.full_name || 'Unknown User'}</div>
+                              <div className="text-xs text-muted-foreground">{profile.email}</div>
+                            </div>
+                            {selectedParticipants.includes(profile.id) && (
+                              <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {filteredProfiles.length === 0 && (
+                          <div className="p-4 text-center text-muted-foreground text-sm">
+                            <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            No people found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {selectedParticipants.length > 0 && (
+                      <div>
+                        <label className="text-sm font-medium">Selected ({selectedParticipants.length})</label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selectedParticipants.map(id => {
+                            const profile = profiles.find(p => p.id === id);
+                            return (
+                              <Badge key={id} variant="secondary" className="text-xs">
+                                {profile?.full_name || 'Unknown'}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="text-sm font-medium">Type</label>
+                      <Select value={newConversationType} onValueChange={setNewConversationType}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border shadow-lg z-50">
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="performance">Performance</SelectItem>
+                          <SelectItem value="leave">Leave Request</SelectItem>
+                          <SelectItem value="training">Training</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <Button onClick={createNewConversation} className="w-full">
+                      Create Conversation
+                    </Button>
+                  </TabsContent>
+                </Tabs>
               </DialogContent>
             </Dialog>
           </div>
@@ -395,7 +527,7 @@ const Communications = () => {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border border-border shadow-lg z-50">
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="task_related">Task Related</SelectItem>
                 <SelectItem value="general">General</SelectItem>
