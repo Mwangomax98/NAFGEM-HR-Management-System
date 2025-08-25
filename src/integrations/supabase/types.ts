@@ -313,6 +313,139 @@ export type Database = {
           },
         ]
       }
+      timesheet_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          timesheet_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          timesheet_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          timesheet_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_attachments_timesheet_id_fkey"
+            columns: ["timesheet_id"]
+            isOneToOne: false
+            referencedRelation: "timesheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheet_entries: {
+        Row: {
+          created_at: string
+          description: string | null
+          entry_date: string
+          hours_worked: number
+          id: string
+          project_name: string
+          timesheet_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          entry_date: string
+          hours_worked?: number
+          id?: string
+          project_name: string
+          timesheet_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          entry_date?: string
+          hours_worked?: number
+          id?: string
+          project_name?: string
+          timesheet_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_entries_timesheet_id_fkey"
+            columns: ["timesheet_id"]
+            isOneToOne: false
+            referencedRelation: "timesheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheets: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          overtime_hours: number | null
+          rejection_reason: string | null
+          status: string
+          submitted_at: string | null
+          total_hours: number | null
+          updated_at: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          rejection_reason?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_hours?: number | null
+          updated_at?: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          rejection_reason?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_hours?: number | null
+          updated_at?: string
+          week_end_date?: string
+          week_start_date?: string
+        }
+        Relationships: []
+      }
       trip_requests: {
         Row: {
           assigned_driver_id: string | null

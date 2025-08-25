@@ -4,18 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Clock, Calendar, User, FileText, Download } from "lucide-react";
+import { format } from "date-fns";
 
 interface TimesheetDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   timesheet: {
-    id: number;
-    week: string;
+    id: string;
+    week_start_date: string;
+    week_end_date: string;
     status: string;
-    totalHours: number;
-    overtimeHours: number;
-    submittedDate: string;
-    approvedBy: string | null;
+    total_hours: number;
+    overtime_hours: number;
+    submitted_at: string;
+    approved_by?: string;
+    notes?: string;
   };
 }
 
@@ -46,7 +49,7 @@ export function TimesheetDetailModal({ isOpen, onClose, timesheet }: TimesheetDe
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            Timesheet Details - {timesheet.week}
+            Timesheet Details - {format(new Date(timesheet.week_start_date), 'MMM dd')} - {format(new Date(timesheet.week_end_date), 'MMM dd, yyyy')}
             {getStatusBadge(timesheet.status)}
           </DialogTitle>
           <DialogDescription>
@@ -63,7 +66,7 @@ export function TimesheetDetailModal({ isOpen, onClose, timesheet }: TimesheetDe
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{timesheet.totalHours}h</div>
+                <div className="text-2xl font-bold">{timesheet.total_hours}h</div>
               </CardContent>
             </Card>
 
@@ -73,7 +76,7 @@ export function TimesheetDetailModal({ isOpen, onClose, timesheet }: TimesheetDe
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{timesheet.overtimeHours}h</div>
+                <div className="text-2xl font-bold">{timesheet.overtime_hours}h</div>
               </CardContent>
             </Card>
 
@@ -83,7 +86,7 @@ export function TimesheetDetailModal({ isOpen, onClose, timesheet }: TimesheetDe
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-sm font-bold">{new Date(timesheet.submittedDate).toLocaleDateString()}</div>
+                <div className="text-sm font-bold">{timesheet.submitted_at ? new Date(timesheet.submitted_at).toLocaleDateString() : "Not submitted"}</div>
               </CardContent>
             </Card>
 
@@ -93,7 +96,7 @@ export function TimesheetDetailModal({ isOpen, onClose, timesheet }: TimesheetDe
                 <User className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-sm font-bold">{timesheet.approvedBy || "Pending"}</div>
+                <div className="text-sm font-bold">{timesheet.approved_by || "Pending"}</div>
               </CardContent>
             </Card>
           </div>

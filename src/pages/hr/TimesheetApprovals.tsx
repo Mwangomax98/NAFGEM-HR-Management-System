@@ -4,24 +4,97 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Clock, Check, X, Eye } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { toast } from "sonner";
+
+interface TimesheetWithProfile {
+  id: string;
+  employee_id: string;
+  week_start_date: string;
+  week_end_date: string;
+  total_hours: number;
+  overtime_hours: number;
+  status: string;
+  submitted_at: string;
+  notes?: string;
+  profiles: {
+    full_name: string;
+    email: string;
+  } | null;
+}
 
 export default function TimesheetApprovals() {
-  const [pendingTimesheets, setPendingTimesheets] = useState([]);
+  const [pendingTimesheets, setPendingTimesheets] = useState<TimesheetWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleApproval = (id: number, action: 'approve' | 'reject') => {
-    setPendingTimesheets(timesheets => 
-      timesheets.map(timesheet => 
-        timesheet.id === id 
-          ? { ...timesheet, status: action === 'approve' ? 'approved' : 'rejected' }
-          : timesheet
-      )
-    );
+  useEffect(() => {
+    fetchPendingTimesheets();
+  }, []);
+
+  const fetchPendingTimesheets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('timesheets')
+        .select(`
+          id,
+          employee_id,
+          week_start_date,
+          week_end_date,
+          total_hours,
+          overtime_hours,
+          status,
+          submitted_at,
+          notes,
+          profiles (
+            full_name,
+            email
+          )
+        `)
+        .eq('status', 'pending')
+        .order('submitted_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingTimesheets((data as unknown as TimesheetWithProfile[]) || []);
+    } catch (error) {
+      console.error('Error fetching timesheets:', error);
+      toast.error('Failed to load timesheets');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const pendingCount = pendingTimesheets.filter(t => t.status === 'pending').length;
-  const totalHours = pendingTimesheets.reduce((sum, t) => sum + t.totalHours, 0);
-  const totalOvertime = pendingTimesheets.reduce((sum, t) => sum + t.overtimeHours, 0);
+  const handleApproval = async (id: string, action: 'approve' | 'reject') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
+        .from('timesheets')
+        .update({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setPendingTimesheets(timesheets => 
+        timesheets.filter(timesheet => timesheet.id !== id)
+      );
+
+      toast.success(`Timesheet ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+    } catch (error: any) {
+      console.error('Error updating timesheet:', error);
+      toast.error(error.message || `Failed to ${action} timesheet`);
+    }
+  };
+
+  const pendingCount = pendingTimesheets.length;
+  const totalHours = pendingTimesheets.reduce((sum, t) => sum + t.total_hours, 0);
+  const totalOvertime = pendingTimesheets.reduce((sum, t) => sum + t.overtime_hours, 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -110,7 +183,13 @@ export default function TimesheetApprovals() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingTimesheets.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    Loading timesheets...
+                  </TableCell>
+                </TableRow>
+              ) : pendingTimesheets.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     No timesheet submissions to review yet.
@@ -123,78 +202,60 @@ export default function TimesheetApprovals() {
                       <div className="flex items-center space-x-3">
                         <Avatar>
                           <AvatarFallback className="bg-primary text-primary-foreground">
-                            {timesheet.employeeAvatar}
+                            {timesheet.profiles?.full_name?.slice(0, 2).toUpperCase() || 'UN'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{timesheet.employeeName}</p>
-                          <p className="text-sm text-muted-foreground">{timesheet.department}</p>
+                          <p className="font-medium">{timesheet.profiles?.full_name || 'Unknown'}</p>
+                          <p className="text-sm text-muted-foreground">{timesheet.profiles?.email}</p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{timesheet.week}</TableCell>
-                    <TableCell>{timesheet.totalHours - timesheet.overtimeHours}h</TableCell>
+                    <TableCell className="font-medium">
+                      {format(new Date(timesheet.week_start_date), 'MMM dd')} - {format(new Date(timesheet.week_end_date), 'MMM dd, yyyy')}
+                    </TableCell>
+                    <TableCell>{timesheet.total_hours - timesheet.overtime_hours}h</TableCell>
                     <TableCell>
-                      {timesheet.overtimeHours > 0 ? (
-                        <span className="text-amber-600 font-medium">{timesheet.overtimeHours}h</span>
+                      {timesheet.overtime_hours > 0 ? (
+                        <span className="text-amber-600 font-medium">{timesheet.overtime_hours}h</span>
                       ) : (
                         "0h"
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">{timesheet.totalHours}h</TableCell>
-                    <TableCell>{new Date(timesheet.submittedDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-medium">{timesheet.total_hours}h</TableCell>
+                    <TableCell>{new Date(timesheet.submitted_at).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      {timesheet.status === "pending" && (
-                        <Badge variant="secondary">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Pending
-                        </Badge>
-                      )}
-                      {timesheet.status === "approved" && (
-                        <Badge variant="default" className="bg-green-500">
-                          <Check className="w-3 h-3 mr-1" />
-                          Approved
-                        </Badge>
-                      )}
-                      {timesheet.status === "rejected" && (
-                        <Badge variant="destructive">
-                          <X className="w-3 h-3 mr-1" />
-                          Rejected
-                        </Badge>
-                      )}
+                      <Badge variant="secondary">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Pending
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {timesheet.status === "pending" ? (
-                        <div className="flex items-center justify-end space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-green-600 hover:text-green-700"
-                            onClick={() => handleApproval(timesheet.id, 'approve')}
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleApproval(timesheet.id, 'reject')}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">
-                          {timesheet.status === "approved" ? "Approved" : "Rejected"}
-                        </span>
-                      )}
+                      <div className="flex items-center justify-end space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-green-600 hover:text-green-700"
+                          onClick={() => handleApproval(timesheet.id, 'approve')}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleApproval(timesheet.id, 'reject')}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -204,44 +265,6 @@ export default function TimesheetApprovals() {
         </CardContent>
       </Card>
 
-      {pendingTimesheets.filter(t => t.status !== 'pending').length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Actions</CardTitle>
-            <CardDescription>Recently processed timesheets</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pendingTimesheets.filter(t => t.status !== 'pending').map((timesheet) => (
-                <div key={`processed-${timesheet.id}`} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {timesheet.employeeAvatar}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{timesheet.employeeName}'s timesheet</p>
-                      <p className="text-sm text-muted-foreground">{timesheet.week} - {timesheet.totalHours}h total</p>
-                    </div>
-                  </div>
-                  {timesheet.status === "approved" ? (
-                    <Badge variant="default" className="bg-green-500">
-                      <Check className="w-3 h-3 mr-1" />
-                      Approved
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive">
-                      <X className="w-3 h-3 mr-1" />
-                      Rejected
-                    </Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

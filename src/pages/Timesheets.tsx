@@ -3,16 +3,94 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, Clock, Plus, FileText } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TimesheetDetailModal } from "@/components/modals/TimesheetDetailModal";
+import { CreateTimesheetModal } from "@/components/modals/CreateTimesheetModal";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+
+interface Timesheet {
+  id: string;
+  week_start_date: string;
+  week_end_date: string;
+  total_hours: number;
+  overtime_hours: number;
+  status: string;
+  submitted_at: string;
+  approved_by?: string;
+  notes?: string;
+}
 
 export default function Timesheets() {
-  const [timesheets] = useState([]);
-
-  const [selectedTimesheet, setSelectedTimesheet] = useState<typeof timesheets[0] | null>(null);
+  const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [selectedTimesheet, setSelectedTimesheet] = useState<Timesheet | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    thisWeekHours: 0,
+    thisMonthHours: 0,
+    overtimeHours: 0,
+    pendingCount: 0
+  });
 
-  const openTimesheetDetail = (timesheet: typeof timesheets[0]) => {
+  useEffect(() => {
+    fetchTimesheets();
+  }, []);
+
+  const fetchTimesheets = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('timesheets')
+        .select('*')
+        .eq('employee_id', user.id)
+        .order('week_start_date', { ascending: false });
+
+      if (error) throw error;
+
+      setTimesheets(data || []);
+      calculateStats(data || []);
+    } catch (error) {
+      console.error('Error fetching timesheets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (timesheetData: Timesheet[]) => {
+    const now = new Date();
+    const currentWeekStart = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let thisWeekHours = 0;
+    let thisMonthHours = 0;
+    let overtimeHours = 0;
+    let pendingCount = 0;
+
+    timesheetData.forEach(timesheet => {
+      const weekStart = new Date(timesheet.week_start_date);
+      
+      if (weekStart >= currentWeekStart) {
+        thisWeekHours += timesheet.total_hours;
+      }
+      
+      if (weekStart >= currentMonthStart) {
+        thisMonthHours += timesheet.total_hours;
+        overtimeHours += timesheet.overtime_hours;
+      }
+      
+      if (timesheet.status === 'pending') {
+        pendingCount++;
+      }
+    });
+
+    setStats({ thisWeekHours, thisMonthHours, overtimeHours, pendingCount });
+  };
+
+  const openTimesheetDetail = (timesheet: Timesheet) => {
     setSelectedTimesheet(timesheet);
     setIsDetailModalOpen(true);
   };
@@ -38,10 +116,7 @@ export default function Timesheets() {
           <p className="text-muted-foreground">Track and manage your working hours</p>
         </div>
         <Button 
-          onClick={() => {
-            console.log('New Timesheet button clicked');
-            alert('Create new timesheet functionality coming soon!');
-          }}
+          onClick={() => setIsCreateModalOpen(true)}
           className="shadow-lg hover:shadow-xl transition-shadow"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -56,9 +131,9 @@ export default function Timesheets() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0h</div>
+            <div className="text-2xl font-bold">{stats.thisWeekHours}h</div>
             <p className="text-xs text-muted-foreground">
-              No hours logged yet
+              {stats.thisWeekHours === 0 ? "No hours logged yet" : "Hours logged this week"}
             </p>
           </CardContent>
         </Card>
@@ -69,9 +144,9 @@ export default function Timesheets() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0h</div>
+            <div className="text-2xl font-bold">{stats.thisMonthHours}h</div>
             <p className="text-xs text-muted-foreground">
-              No hours logged yet
+              {stats.thisMonthHours === 0 ? "No hours logged yet" : "Hours logged this month"}
             </p>
           </CardContent>
         </Card>
@@ -82,9 +157,9 @@ export default function Timesheets() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0h</div>
+            <div className="text-2xl font-bold">{stats.overtimeHours}h</div>
             <p className="text-xs text-muted-foreground">
-              No overtime yet
+              {stats.overtimeHours === 0 ? "No overtime yet" : "Overtime hours"}
             </p>
           </CardContent>
         </Card>
@@ -95,9 +170,9 @@ export default function Timesheets() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{stats.pendingCount}</div>
             <p className="text-xs text-muted-foreground">
-              No pending timesheets
+              {stats.pendingCount === 0 ? "No pending timesheets" : "Awaiting HR review"}
             </p>
           </CardContent>
         </Card>
@@ -122,7 +197,13 @@ export default function Timesheets() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {timesheets.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    Loading timesheets...
+                  </TableCell>
+                </TableRow>
+              ) : timesheets.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No timesheets submitted yet. Click "New Timesheet" to get started.
@@ -131,12 +212,14 @@ export default function Timesheets() {
               ) : (
                 timesheets.map((timesheet) => (
                   <TableRow key={timesheet.id}>
-                    <TableCell className="font-medium">{timesheet.week}</TableCell>
+                    <TableCell className="font-medium">
+                      {format(new Date(timesheet.week_start_date), 'MMM dd')} - {format(new Date(timesheet.week_end_date), 'MMM dd, yyyy')}
+                    </TableCell>
                     <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
-                    <TableCell>{timesheet.totalHours}h</TableCell>
-                    <TableCell>{timesheet.overtimeHours}h</TableCell>
-                    <TableCell>{new Date(timesheet.submittedDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{timesheet.approvedBy || "-"}</TableCell>
+                    <TableCell>{timesheet.total_hours}h</TableCell>
+                    <TableCell>{timesheet.overtime_hours}h</TableCell>
+                    <TableCell>{timesheet.submitted_at ? new Date(timesheet.submitted_at).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell>{timesheet.approved_by || "-"}</TableCell>
                     <TableCell className="text-right">
                       <Button 
                         variant="ghost" 
@@ -153,6 +236,12 @@ export default function Timesheets() {
           </Table>
         </CardContent>
       </Card>
+
+      <CreateTimesheetModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={fetchTimesheets}
+      />
 
       {selectedTimesheet && (
         <TimesheetDetailModal
