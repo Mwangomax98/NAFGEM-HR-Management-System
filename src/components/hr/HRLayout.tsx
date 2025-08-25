@@ -7,12 +7,14 @@ import { SettingsModal } from "../settings/SettingsModal";
 import { LogoutConfirmation } from "../auth/LogoutConfirmation";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { useUserRole } from "@/hooks/useUserRole";
+import { AppRole } from "@/lib/roles";
 
 export function HRLayout({ children }: { children?: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [userRole, setUserRole] = useState<"employee" | "hr" | "admin">("employee");
   const [loading, setLoading] = useState(true);
+  const { userRole, loading: roleLoading } = useUserRole();
 
   useEffect(() => {
     // Get current user and profile
@@ -31,17 +33,6 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
         if (profileData) {
           setProfile(profileData);
         }
-
-        // Get user role
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (roleData) {
-          setUserRole(roleData.role);
-        }
       }
       setLoading(false);
     };
@@ -56,7 +47,6 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
         } else {
           setUser(null);
           setProfile(null);
-          setUserRole("employee");
         }
       }
     );
@@ -64,7 +54,7 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

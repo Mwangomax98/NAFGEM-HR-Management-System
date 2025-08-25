@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AddUserModal from "@/components/modals/AddUserModal";
 import AssignRoleModal from "@/components/modals/AssignRoleModal";
+import { ROLES, getRoleLabel } from "@/lib/roles";
 
 interface User {
   id: string;
@@ -77,17 +78,11 @@ export default function UserManagement() {
       return <Badge variant="outline">No Role</Badge>;
     }
     
-    const role = user.roles[0].role;
-    switch (role) {
-      case "admin":
-        return <Badge variant="destructive">Admin</Badge>;
-      case "hr":
-        return <Badge variant="default">HR</Badge>;
-      case "employee":
-        return <Badge variant="secondary">Employee</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
+    const role = user.roles[0].role.toLowerCase();
+    const variant = role === ROLES.ADMIN ? "destructive" : 
+                   role === ROLES.HR ? "default" : "secondary";
+    
+    return <Badge variant={variant}>{getRoleLabel(role)}</Badge>;
   };
 
   const formatDate = (timestamp: string) => {
@@ -103,9 +98,9 @@ export default function UserManagement() {
       .slice(0, 2);
   };
 
-  const adminUsers = users.filter(u => u.roles?.some(r => r.role === "admin")).length;
-  const hrUsers = users.filter(u => u.roles?.some(r => r.role === "hr")).length;
-  const employeeUsers = users.filter(u => u.roles?.some(r => r.role === "employee")).length;
+  const adminUsers = users.filter(u => u.roles?.some(r => r.role.toLowerCase() === ROLES.ADMIN)).length;
+  const hrUsers = users.filter(u => u.roles?.some(r => r.role.toLowerCase() === ROLES.HR)).length;
+  const employeeUsers = users.filter(u => u.roles?.some(r => r.role.toLowerCase() === ROLES.EMPLOYEE)).length;
 
   return (
     <div className="p-6 space-y-6">

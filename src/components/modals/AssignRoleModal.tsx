@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, AppRole } from "@/lib/roles";
 
 interface User {
   id: string;
@@ -27,9 +28,9 @@ export default function AssignRoleModal({ open, onOpenChange, user, onRoleAssign
   const { toast } = useToast();
 
   const roles = [
-    { value: "admin", label: "Administrator", description: "Full system access" },
-    { value: "hr", label: "HR Staff", description: "HR management access" },
-    { value: "employee", label: "Employee", description: "Basic employee access" },
+    { value: ROLES.ADMIN, label: ROLE_LABELS[ROLES.ADMIN], description: ROLE_DESCRIPTIONS[ROLES.ADMIN] },
+    { value: ROLES.HR, label: ROLE_LABELS[ROLES.HR], description: ROLE_DESCRIPTIONS[ROLES.HR] },
+    { value: ROLES.EMPLOYEE, label: ROLE_LABELS[ROLES.EMPLOYEE], description: ROLE_DESCRIPTIONS[ROLES.EMPLOYEE] },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,23 +46,34 @@ export default function AssignRoleModal({ open, onOpenChange, user, onRoleAssign
 
     setIsLoading(true);
     try {
-      // First, remove existing role if any
-      const { error: deleteError } = await supabase
+      // Check if user already has this role
+      const { data: existingRole } = await supabase
         .from("user_roles")
-        .delete()
-        .eq("user_id", user.id);
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
 
-      if (deleteError) throw deleteError;
+      if (existingRole?.role === selectedRole) {
+        toast({
+          title: "Info",
+          description: `User already has the ${selectedRole} role`,
+        });
+        onOpenChange(false);
+        return;
+      }
 
-      // Then add the new role
-      const { error: insertError } = await supabase
+      // Update existing role or insert new one
+      const { error } = await supabase
         .from("user_roles")
-        .insert({
+        .upsert({
           user_id: user.id,
-          role: selectedRole as "admin" | "hr" | "employee",
+          role: selectedRole as AppRole,
+          assigned_by: (await supabase.auth.getUser()).data.user?.id
+        }, {
+          onConflict: 'user_id'
         });
 
-      if (insertError) throw insertError;
+      if (error) throw error;
 
       toast({
         title: "Success",
