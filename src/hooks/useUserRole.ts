@@ -32,17 +32,17 @@ export const useUserRole = (userId?: string): UseUserRoleReturn => {
         .from('user_roles')
         .select('role')
         .eq('user_id', finalUserId)
-        .single();
+        .maybeSingle();
 
       if (roleError) {
-        if (roleError.code === 'PGRST116') {
-          // No role found, default to employee
-          setUserRole('employee');
-        } else {
-          throw roleError;
-        }
-      } else {
+        throw roleError;
+      }
+
+      if (data) {
         setUserRole(data.role as AppRole);
+      } else {
+        // No role found, default to employee
+        setUserRole('employee');
       }
     } catch (err: any) {
       console.error('Error fetching user role:', err);
