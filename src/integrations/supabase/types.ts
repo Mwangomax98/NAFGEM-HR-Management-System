@@ -325,42 +325,54 @@ export type Database = {
       }
       task_submissions: {
         Row: {
+          actual_completion_date: string | null
           actual_hours: number | null
+          completion_explanation: string | null
           completion_percentage: number | null
           completion_status: string
           created_at: string
           estimated_hours: number | null
           id: string
           notes: string | null
+          planned_completion_date: string | null
           priority: string
+          task_category: string | null
           task_description: string | null
           task_title: string
           updated_at: string
           weekly_task_id: string
         }
         Insert: {
+          actual_completion_date?: string | null
           actual_hours?: number | null
+          completion_explanation?: string | null
           completion_percentage?: number | null
           completion_status?: string
           created_at?: string
           estimated_hours?: number | null
           id?: string
           notes?: string | null
+          planned_completion_date?: string | null
           priority?: string
+          task_category?: string | null
           task_description?: string | null
           task_title: string
           updated_at?: string
           weekly_task_id: string
         }
         Update: {
+          actual_completion_date?: string | null
           actual_hours?: number | null
+          completion_explanation?: string | null
           completion_percentage?: number | null
           completion_status?: string
           created_at?: string
           estimated_hours?: number | null
           id?: string
           notes?: string | null
+          planned_completion_date?: string | null
           priority?: string
+          task_category?: string | null
           task_description?: string | null
           task_title?: string
           updated_at?: string

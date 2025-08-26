@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Plus, Trash2, Send, Save, Calendar } from "lucide-react";
+import { Plus, Trash2, Send, Save, Calendar, Target, Clock, CheckCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
@@ -22,6 +23,10 @@ interface TaskSubmission {
   completion_status: 'not_started' | 'in_progress' | 'completed' | 'blocked';
   completion_percentage: number;
   notes: string;
+  planned_completion_date: string | null;
+  actual_completion_date: string | null;
+  completion_explanation: string;
+  task_category: string;
 }
 
 interface WeeklyTask {
@@ -84,7 +89,11 @@ export default function WeeklyTaskSubmission() {
             actual_hours: task.actual_hours || 0,
             completion_status: task.completion_status as 'not_started' | 'in_progress' | 'completed' | 'blocked',
             completion_percentage: task.completion_percentage || 0,
-            notes: task.notes || ''
+            notes: task.notes || '',
+            planned_completion_date: task.planned_completion_date || null,
+            actual_completion_date: task.actual_completion_date || null,
+            completion_explanation: task.completion_explanation || '',
+            task_category: task.task_category || 'general'
           }))
         });
       } else {
@@ -107,6 +116,10 @@ export default function WeeklyTaskSubmission() {
   const addNewTask = () => {
     if (!weeklyTask) return;
     
+    // Set planned completion date to Friday of current week by default
+    const friday = new Date(currentWeek.start);
+    friday.setDate(friday.getDate() + 4);
+    
     const newTask: TaskSubmission = {
       task_title: '',
       task_description: '',
@@ -115,7 +128,11 @@ export default function WeeklyTaskSubmission() {
       actual_hours: 0,
       completion_status: 'not_started',
       completion_percentage: 0,
-      notes: ''
+      notes: '',
+      planned_completion_date: format(friday, 'yyyy-MM-dd'),
+      actual_completion_date: null,
+      completion_explanation: '',
+      task_category: 'general'
     };
 
     setWeeklyTask({
@@ -203,7 +220,11 @@ export default function WeeklyTaskSubmission() {
           actual_hours: task.actual_hours,
           completion_status: task.completion_status,
           completion_percentage: task.completion_percentage,
-          notes: task.notes
+          notes: task.notes,
+          planned_completion_date: task.planned_completion_date,
+          actual_completion_date: task.actual_completion_date,
+          completion_explanation: task.completion_explanation,
+          task_category: task.task_category
         }));
 
         const { error: insertError } = await supabase
@@ -308,105 +329,194 @@ export default function WeeklyTaskSubmission() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Planning Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                        <Target className="h-4 w-4" />
+                        Task Planning
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Task Title *</Label>
+                          <Input
+                            value={task.task_title}
+                            onChange={(e) => updateTask(index, 'task_title', e.target.value)}
+                            placeholder="Enter task title"
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Category</Label>
+                          <Select
+                            value={task.task_category}
+                            onValueChange={(value) => updateTask(index, 'task_category', value)}
+                            disabled={!canEdit}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="development">Development</SelectItem>
+                              <SelectItem value="research">Research</SelectItem>
+                              <SelectItem value="meetings">Meetings</SelectItem>
+                              <SelectItem value="documentation">Documentation</SelectItem>
+                              <SelectItem value="training">Training</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
-                        <Label>Task Title *</Label>
-                        <Input
-                          value={task.task_title}
-                          onChange={(e) => updateTask(index, 'task_title', e.target.value)}
-                          placeholder="Enter task title"
+                        <Label>Description</Label>
+                        <Textarea
+                          value={task.task_description}
+                          onChange={(e) => updateTask(index, 'task_description', e.target.value)}
+                          placeholder="Describe the task details"
                           disabled={!canEdit}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Priority</Label>
-                        <Select
-                          value={task.priority}
-                          onValueChange={(value) => updateTask(index, 'priority', value)}
-                          disabled={!canEdit}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                            <SelectItem value="urgent">Urgent</SelectItem>
-                          </SelectContent>
-                        </Select>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Priority</Label>
+                          <Select
+                            value={task.priority}
+                            onValueChange={(value) => updateTask(index, 'priority', value)}
+                            disabled={!canEdit}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="urgent">Urgent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Estimated Hours</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={task.estimated_hours}
+                            onChange={(e) => updateTask(index, 'estimated_hours', parseInt(e.target.value) || 0)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Planned Completion</Label>
+                          <Input
+                            type="date"
+                            value={task.planned_completion_date || ''}
+                            onChange={(e) => updateTask(index, 'planned_completion_date', e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
                       </div>
                     </div>
 
+                    <Separator />
+
+                    {/* Progress Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                        <Clock className="h-4 w-4" />
+                        Progress Tracking
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Status</Label>
+                          <Select
+                            value={task.completion_status}
+                            onValueChange={(value) => updateTask(index, 'completion_status', value)}
+                            disabled={!canEditProgress}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="not_started">Not Started</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="blocked">Blocked</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Actual Hours</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={task.actual_hours}
+                            onChange={(e) => updateTask(index, 'actual_hours', parseInt(e.target.value) || 0)}
+                            disabled={!canEditProgress}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Actual Completion</Label>
+                          <Input
+                            type="date"
+                            value={task.actual_completion_date || ''}
+                            onChange={(e) => updateTask(index, 'actual_completion_date', e.target.value)}
+                            disabled={!canEditProgress}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Completion Percentage: {task.completion_percentage}%</Label>
+                        <Slider
+                          value={[task.completion_percentage]}
+                          onValueChange={(value) => updateTask(index, 'completion_percentage', value[0])}
+                          max={100}
+                          step={5}
+                          disabled={!canEditProgress}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Completion Explanation Section - Only show when completed */}
+                    {task.completion_status === 'completed' && (
+                      <>
+                        <Separator />
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                            <CheckCircle className="h-4 w-4" />
+                            Completion Details
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Completion Explanation *</Label>
+                            <Textarea
+                              value={task.completion_explanation}
+                              onChange={(e) => updateTask(index, 'completion_explanation', e.target.value)}
+                              placeholder="Explain what was accomplished, any challenges faced, and outcomes achieved..."
+                              disabled={!canEditProgress}
+                              className="min-h-[100px]"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Please provide a detailed explanation of what was completed for this task.
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <Separator />
+
+                    {/* Notes Section */}
                     <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea
-                        value={task.task_description}
-                        onChange={(e) => updateTask(index, 'task_description', e.target.value)}
-                        placeholder="Describe the task details"
-                        disabled={!canEdit}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Estimated Hours</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={task.estimated_hours}
-                          onChange={(e) => updateTask(index, 'estimated_hours', parseInt(e.target.value) || 0)}
-                          disabled={!canEdit}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Actual Hours</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={task.actual_hours}
-                          onChange={(e) => updateTask(index, 'actual_hours', parseInt(e.target.value) || 0)}
-                          disabled={!canEdit}
-                        />
-                      </div>
-                       <div className="space-y-2">
-                         <Label>Status</Label>
-                         <Select
-                           value={task.completion_status}
-                           onValueChange={(value) => updateTask(index, 'completion_status', value)}
-                           disabled={!canEditProgress}
-                         >
-                           <SelectTrigger>
-                             <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent>
-                             <SelectItem value="not_started">Not Started</SelectItem>
-                             <SelectItem value="in_progress">In Progress</SelectItem>
-                             <SelectItem value="completed">Completed</SelectItem>
-                             <SelectItem value="blocked">Blocked</SelectItem>
-                           </SelectContent>
-                         </Select>
-                       </div>
-                    </div>
-
-                     <div className="space-y-2">
-                       <Label>Completion Percentage: {task.completion_percentage}%</Label>
-                       <Slider
-                         value={[task.completion_percentage]}
-                         onValueChange={(value) => updateTask(index, 'completion_percentage', value[0])}
-                         max={100}
-                         step={5}
-                         disabled={!canEditProgress}
-                         className="w-full"
-                       />
-                     </div>
-
-                    <div className="space-y-2">
-                      <Label>Notes</Label>
+                      <Label>Additional Notes</Label>
                       <Textarea
                         value={task.notes}
                         onChange={(e) => updateTask(index, 'notes', e.target.value)}
-                        placeholder="Additional notes or comments"
+                        placeholder="Any additional notes, blockers, or comments..."
                         disabled={!canEdit}
                       />
                     </div>
