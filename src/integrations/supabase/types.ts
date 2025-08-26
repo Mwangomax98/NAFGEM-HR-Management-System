@@ -100,6 +100,96 @@ export type Database = {
         }
         Relationships: []
       }
+      kpi_values: {
+        Row: {
+          actual_value: number
+          comment: string | null
+          created_at: string | null
+          entered_by: string | null
+          id: string
+          kpi_id: string | null
+          reporting_period: string
+        }
+        Insert: {
+          actual_value: number
+          comment?: string | null
+          created_at?: string | null
+          entered_by?: string | null
+          id?: string
+          kpi_id?: string | null
+          reporting_period: string
+        }
+        Update: {
+          actual_value?: number
+          comment?: string | null
+          created_at?: string | null
+          entered_by?: string | null
+          id?: string
+          kpi_id?: string | null
+          reporting_period?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_values_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_gaps"
+            referencedColumns: ["kpi_id"]
+          },
+          {
+            foreignKeyName: "kpi_values_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpis: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          project_id: string
+          responsible_user_id: string | null
+          target_value: number
+          timeframe: string
+          title: string
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          project_id: string
+          responsible_user_id?: string | null
+          target_value: number
+          timeframe?: string
+          title: string
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          project_id?: string
+          responsible_user_id?: string | null
+          target_value?: number
+          timeframe?: string
+          title?: string
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -333,6 +423,7 @@ export type Database = {
           created_at: string
           estimated_hours: number | null
           id: string
+          linked_kpi_id: string | null
           notes: string | null
           planned_completion_date: string | null
           priority: string
@@ -351,6 +442,7 @@ export type Database = {
           created_at?: string
           estimated_hours?: number | null
           id?: string
+          linked_kpi_id?: string | null
           notes?: string | null
           planned_completion_date?: string | null
           priority?: string
@@ -369,6 +461,7 @@ export type Database = {
           created_at?: string
           estimated_hours?: number | null
           id?: string
+          linked_kpi_id?: string | null
           notes?: string | null
           planned_completion_date?: string | null
           priority?: string
@@ -379,6 +472,20 @@ export type Database = {
           weekly_task_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "task_submissions_linked_kpi_id_fkey"
+            columns: ["linked_kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_gaps"
+            referencedColumns: ["kpi_id"]
+          },
+          {
+            foreignKeyName: "task_submissions_linked_kpi_id_fkey"
+            columns: ["linked_kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "task_submissions_weekly_task_id_fkey"
             columns: ["weekly_task_id"]
@@ -839,6 +946,24 @@ export type Database = {
           related_record_type: string | null
           task_evaluation_id: string | null
           unread_count: number | null
+        }
+        Relationships: []
+      }
+      kpi_gaps: {
+        Row: {
+          actual_value: number | null
+          category: string | null
+          description: string | null
+          gap_value: number | null
+          kpi_id: string | null
+          latest_comment: string | null
+          project_id: string | null
+          reporting_period: string | null
+          status: string | null
+          target_value: number | null
+          timeframe: string | null
+          title: string | null
+          unit: string | null
         }
         Relationships: []
       }
