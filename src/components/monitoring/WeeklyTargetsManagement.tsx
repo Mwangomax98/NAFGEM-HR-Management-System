@@ -68,7 +68,7 @@ export function WeeklyTargetsManagement() {
     description: "",
     target_value: "",
     priority: "medium",
-    kpi_id: "",
+    kpi_id: "none",
     assigned_to: "",
     week_start_date: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
   });
@@ -132,7 +132,7 @@ export function WeeklyTargetsManagement() {
         description: formData.description || null,
         target_value: parseFloat(formData.target_value),
         priority: formData.priority,
-        kpi_id: formData.kpi_id || null,
+        kpi_id: formData.kpi_id === "none" ? null : formData.kpi_id || null,
         assigned_to: formData.assigned_to,
         week_start_date: format(weekStart, 'yyyy-MM-dd'),
         week_end_date: format(weekEnd, 'yyyy-MM-dd'),
@@ -183,7 +183,7 @@ export function WeeklyTargetsManagement() {
       description: "",
       target_value: "",
       priority: "medium",
-      kpi_id: "",
+      kpi_id: "none",
       assigned_to: "",
       week_start_date: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
     });
@@ -197,7 +197,7 @@ export function WeeklyTargetsManagement() {
       description: target.description || "",
       target_value: target.target_value.toString(),
       priority: target.priority,
-      kpi_id: target.kpi_id || "",
+      kpi_id: target.kpi_id || "none",
       assigned_to: target.assigned_to,
       week_start_date: target.week_start_date,
     });
@@ -326,7 +326,7 @@ export function WeeklyTargetsManagement() {
                       <SelectValue placeholder="Select KPI" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No KPI</SelectItem>
+                      <SelectItem value="none">No KPI</SelectItem>
                       {kpis.map((kpi) => (
                         <SelectItem key={kpi.id} value={kpi.id}>
                           {kpi.title} ({kpi.unit})
