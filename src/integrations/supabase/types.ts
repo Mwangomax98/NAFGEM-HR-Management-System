@@ -431,6 +431,7 @@ export type Database = {
           task_description: string | null
           task_title: string
           updated_at: string
+          weekly_target_id: string | null
           weekly_task_id: string
         }
         Insert: {
@@ -450,6 +451,7 @@ export type Database = {
           task_description?: string | null
           task_title: string
           updated_at?: string
+          weekly_target_id?: string | null
           weekly_task_id: string
         }
         Update: {
@@ -469,6 +471,7 @@ export type Database = {
           task_description?: string | null
           task_title?: string
           updated_at?: string
+          weekly_target_id?: string | null
           weekly_task_id?: string
         }
         Relationships: [
@@ -484,6 +487,20 @@ export type Database = {
             columns: ["linked_kpi_id"]
             isOneToOne: false
             referencedRelation: "kpis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_submissions_weekly_target_id_fkey"
+            columns: ["weekly_target_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_target_progress"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_submissions_weekly_target_id_fkey"
+            columns: ["weekly_target_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_targets"
             referencedColumns: ["id"]
           },
           {
@@ -899,6 +916,69 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_targets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          kpi_id: string | null
+          priority: string
+          status: string
+          target_value: number
+          title: string
+          updated_at: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          kpi_id?: string | null
+          priority?: string
+          status?: string
+          target_value: number
+          title: string
+          updated_at?: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          kpi_id?: string | null
+          priority?: string
+          status?: string
+          target_value?: number
+          title?: string
+          updated_at?: string
+          week_end_date?: string
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_targets_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_gaps"
+            referencedColumns: ["kpi_id"]
+          },
+          {
+            foreignKeyName: "weekly_targets_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_tasks: {
         Row: {
           created_at: string
@@ -966,6 +1046,44 @@ export type Database = {
           unit: string | null
         }
         Relationships: []
+      }
+      weekly_target_progress: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          kpi_id: string | null
+          kpi_title: string | null
+          kpi_unit: string | null
+          priority: string | null
+          status: string | null
+          target_value: number | null
+          task_count: number | null
+          title: string | null
+          total_progress: number | null
+          updated_at: string | null
+          week_end_date: string | null
+          week_start_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_targets_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_gaps"
+            referencedColumns: ["kpi_id"]
+          },
+          {
+            foreignKeyName: "weekly_targets_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

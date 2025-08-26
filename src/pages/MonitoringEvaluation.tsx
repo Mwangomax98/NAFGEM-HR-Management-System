@@ -11,6 +11,8 @@ import { HRSidebar } from "@/components/hr/HRSidebar";
 import { KPIDashboard } from "@/components/monitoring/KPIDashboard";
 import { KPIManagement } from "@/components/monitoring/KPIManagement";
 import { GapAnalysis } from "@/components/monitoring/GapAnalysis";
+import { WeeklyTargetsManagement } from "@/components/monitoring/WeeklyTargetsManagement";
+import { MyWeeklyTargets } from "@/components/monitoring/MyWeeklyTargets";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export default function MonitoringEvaluation() {
@@ -49,9 +51,11 @@ export default function MonitoringEvaluation() {
 
         {/* Main Content */}
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${isHROrAdmin ? 'grid-cols-5' : 'grid-cols-3'}`}>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="gaps">Gap Analysis</TabsTrigger>
+            <TabsTrigger value="my-targets">My Targets</TabsTrigger>
+            {isHROrAdmin && <TabsTrigger value="weekly-targets">Weekly Targets</TabsTrigger>}
             {isHROrAdmin && <TabsTrigger value="management">KPI Management</TabsTrigger>}
           </TabsList>
 
@@ -62,6 +66,16 @@ export default function MonitoringEvaluation() {
           <TabsContent value="gaps" className="space-y-6">
             <GapAnalysis />
           </TabsContent>
+
+          <TabsContent value="my-targets" className="space-y-6">
+            <MyWeeklyTargets />
+          </TabsContent>
+
+          {isHROrAdmin && (
+            <TabsContent value="weekly-targets" className="space-y-6">
+              <WeeklyTargetsManagement />
+            </TabsContent>
+          )}
 
           {isHROrAdmin && (
             <TabsContent value="management" className="space-y-6">

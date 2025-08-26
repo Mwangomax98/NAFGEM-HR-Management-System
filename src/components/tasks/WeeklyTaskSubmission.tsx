@@ -11,6 +11,14 @@ import { Plus, Trash2, Send, Save, Calendar, Target, Clock, CheckCircle } from "
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { KPIGapSuggestions } from "@/components/monitoring/KPIGapSuggestions";
+
+interface TaskSuggestion {
+  targetId?: string;
+  title: string;
+  description: string;
+  priority: string;
+  estimatedHours: number;
+}
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 
@@ -41,6 +49,7 @@ interface WeeklyTask {
 
 export default function WeeklyTaskSubmission() {
   const [weeklyTask, setWeeklyTask] = useState<WeeklyTask | null>(null);
+  const [taskSuggestions, setTaskSuggestions] = useState<TaskSuggestion[]>([]);
   const [currentWeek, setCurrentWeek] = useState(() => {
     const now = new Date();
     const monday = startOfWeek(now, { weekStartsOn: 1 });
@@ -54,7 +63,13 @@ export default function WeeklyTaskSubmission() {
 
   useEffect(() => {
     loadWeeklyTasks();
+    loadTaskSuggestions();
   }, [currentWeek]);
+
+  const loadTaskSuggestions = () => {
+    const suggestions = JSON.parse(localStorage.getItem('taskSuggestions') || '[]');
+    setTaskSuggestions(suggestions);
+  };
 
   const loadWeeklyTasks = async () => {
     try {
@@ -115,7 +130,7 @@ export default function WeeklyTaskSubmission() {
     }
   };
 
-  const addNewTask = () => {
+  const addNewTask = (taskData?: Partial<TaskSubmission>) => {
     if (!weeklyTask) return;
     
     // Set planned completion date to Friday of current week by default
@@ -123,10 +138,10 @@ export default function WeeklyTaskSubmission() {
     friday.setDate(friday.getDate() + 4);
     
     const newTask: TaskSubmission = {
-      task_title: '',
-      task_description: '',
-      priority: 'medium',
-      estimated_hours: 8,
+      task_title: taskData?.task_title || '',
+      task_description: taskData?.task_description || '',
+      priority: taskData?.priority || 'medium',
+      estimated_hours: taskData?.estimated_hours || 8,
       actual_hours: 0,
       completion_status: 'not_started',
       completion_percentage: 0,
@@ -134,13 +149,28 @@ export default function WeeklyTaskSubmission() {
       planned_completion_date: format(friday, 'yyyy-MM-dd'),
       actual_completion_date: null,
       completion_explanation: '',
-      task_category: 'general'
+      task_category: taskData?.task_category || 'general',
+      linked_kpi_id: taskData?.linked_kpi_id
     };
 
     setWeeklyTask({
       ...weeklyTask,
       tasks: [...weeklyTask.tasks, newTask]
     });
+  };
+
+  const handleUseSuggestion = (suggestion: TaskSuggestion) => {
+    addNewTask({
+      task_title: suggestion.title,
+      task_description: suggestion.description,
+      priority: suggestion.priority as any,
+      estimated_hours: suggestion.estimatedHours,
+    });
+    
+    // Remove the used suggestion and update localStorage
+    const updatedSuggestions = taskSuggestions.filter(s => s !== suggestion);
+    setTaskSuggestions(updatedSuggestions);
+    localStorage.setItem('taskSuggestions', JSON.stringify(updatedSuggestions));
   };
 
   const updateTask = (index: number, field: keyof TaskSubmission, value: any) => {
@@ -531,7 +561,7 @@ export default function WeeklyTaskSubmission() {
             {canEdit && (
               <Button
                 variant="outline"
-                onClick={addNewTask}
+                onClick={() => addNewTask()}
                 className="w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -580,6 +610,42 @@ export default function WeeklyTaskSubmission() {
           </div>
         </CardContent>
         </Card>
+
+        {/* Task Suggestions from Weekly Targets */}
+        {taskSuggestions.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Suggested Tasks from Weekly Targets
+              </CardTitle>
+              <CardDescription>
+                Create tasks based on your assigned weekly targets
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {taskSuggestions.map((suggestion, index) => (
+                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{suggestion.title}</h4>
+                    <p className="text-sm text-muted-foreground">{suggestion.description}</p>
+                    <div className="flex gap-2 mt-1">
+                      <Badge variant="outline">{suggestion.priority} priority</Badge>
+                      <Badge variant="outline">{suggestion.estimatedHours}h estimated</Badge>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUseSuggestion(suggestion)}
+                  >
+                    Use Suggestion
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* KPI Gap Suggestions */}
         <KPIGapSuggestions onSuggestionSelect={(suggestion) => {
