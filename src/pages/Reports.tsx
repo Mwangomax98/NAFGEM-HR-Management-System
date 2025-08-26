@@ -184,8 +184,6 @@ const Reports = () => {
         <TabsList>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="reports">Report Library</TabsTrigger>
-          <TabsTrigger value="custom">Custom Reports</TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
@@ -258,29 +256,6 @@ const Reports = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="custom" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Custom Report Builder</CardTitle>
-              <CardDescription>Create custom reports with specific metrics and filters</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Custom report builder coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="scheduled" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Scheduled Reports</CardTitle>
-              <CardDescription>Manage automated report generation and delivery</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Scheduled reports management coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

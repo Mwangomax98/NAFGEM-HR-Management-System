@@ -13,7 +13,7 @@ import Trips from "./pages/Trips";
 import Exit from "./pages/Exit";
 import Auth from "./pages/Auth";
 import EmployeeManagement from "./pages/hr/EmployeeManagement";
-import ProjectManagement from "./pages/hr/ProjectManagement";
+import HRManagement from "./pages/hr/HRManagement";
 import TimesheetApprovals from "./pages/hr/TimesheetApprovals";
 import LeaveApprovals from "./pages/hr/LeaveApprovals";
 import UserManagement from "./pages/admin/UserManagement";
@@ -43,8 +43,8 @@ const App = () => (
           <Route path="/leave" element={<Leave />} />
           <Route path="/trips" element={<Trips />} />
           <Route path="/exit" element={<Exit />} />
+          <Route path="/hr/management" element={<HRManagement />} />
           <Route path="/hr/employee-management" element={<EmployeeManagement />} />
-          <Route path="/hr/projects" element={<ProjectManagement />} />
           <Route path="/hr/timesheet-approvals" element={<TimesheetApprovals />} />
           <Route path="/hr/leave-approvals" element={<LeaveApprovals />} />
           <Route path="/hr/trip-management" element={<TripManagement />} />

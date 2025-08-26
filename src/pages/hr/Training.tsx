@@ -91,8 +91,6 @@ const Training = () => {
         <TabsList>
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="employees">Employee Progress</TabsTrigger>
-          <TabsTrigger value="certifications">Certifications</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="courses" className="space-y-4">
@@ -216,29 +214,6 @@ const Training = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="certifications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Certification Programs</CardTitle>
-              <CardDescription>Manage certification requirements and track completion</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Certification management features coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Training Analytics</CardTitle>
-              <CardDescription>Training effectiveness and completion metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Analytics dashboard coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {selectedCourse && (
