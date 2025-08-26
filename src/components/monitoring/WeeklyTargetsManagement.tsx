@@ -247,7 +247,7 @@ export function WeeklyTargetsManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-foreground">Weekly Targets Management</h2>
           <p className="text-muted-foreground">Create and manage weekly targets for employees</p>
@@ -259,7 +259,7 @@ export function WeeklyTargetsManagement() {
               Create Weekly Target
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingTarget ? 'Edit Weekly Target' : 'Create Weekly Target'}
@@ -269,7 +269,7 @@ export function WeeklyTargetsManagement() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Target Title</Label>
                   <Input
@@ -305,7 +305,7 @@ export function WeeklyTargetsManagement() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="priority">Priority</Label>
                   <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
@@ -335,7 +335,7 @@ export function WeeklyTargetsManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                   <Label htmlFor="assigned_to">Assign To</Label>
                   <Select value={formData.assigned_to} onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}>
                     <SelectTrigger>
@@ -363,11 +363,11 @@ export function WeeklyTargetsManagement() {
                 />
               </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="w-full sm:w-auto">
                   {editingTarget ? 'Update Target' : 'Create Target'}
                 </Button>
               </DialogFooter>
