@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { HRLayout } from "@/components/hr/HRLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, LogIn, Building2 } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import type { User, Session } from "@supabase/supabase-js";
+
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -49,9 +50,7 @@ const Index = () => {
           {/* Welcome Section */}
           <div className="text-center lg:text-left space-y-6">
             <div className="flex items-center justify-center lg:justify-start space-x-3">
-              <div className="p-3 rounded-full bg-primary/10">
-                <Building2 className="h-8 w-8 text-primary" />
-              </div>
+              <img src="/lovable-uploads/87726f12-d6bc-40f6-aba4-76ea23774e15.png" alt="NAFGEM Logo" className="h-12 w-12" />
               <div>
                 <h1 className="text-2xl font-bold text-foreground">NAFGEM</h1>
                 <p className="text-sm text-muted-foreground">HR Management System</p>

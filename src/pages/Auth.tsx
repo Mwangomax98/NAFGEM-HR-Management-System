@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Building2, User, Eye, EyeOff, Lock, Mail, Shield, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +156,7 @@ export default function Auth() {
         <CardHeader className="space-y-6 relative">
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-3 p-3 rounded-full bg-primary/10">
-              <Building2 className="h-8 w-8 text-primary" />
+              <img src="/lovable-uploads/87726f12-d6bc-40f6-aba4-76ea23774e15.png" alt="NAFGEM Logo" className="h-8 w-8" />
               <div className="text-left">
                 <span className="text-xl font-bold text-foreground">NAFGEM</span>
                 <p className="text-xs text-muted-foreground">HR Management System</p>
