@@ -12,7 +12,8 @@ import {
   User,
   Building2,
   Shield,
-  MessageCircle
+  MessageCircle,
+  Target
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -56,6 +57,7 @@ const menuItems: SidebarItem[] = [
   { title: "Trip Management", url: "/hr/trip-management", icon: Car, roles: ["hr", "admin"] },
   { title: "Training & Development", url: "/hr/training", icon: BookOpen, roles: ["hr", "admin"] },
   { title: "Performance Reviews", url: "/hr/performance", icon: BarChart3, roles: ["hr", "admin"] },
+  { title: "Monitoring & Evaluation", url: "/monitoring-evaluation", icon: Target, roles: ["employee", "hr", "admin"] },
   
   // Admin Items
   { title: "User Management", url: "/admin/users", icon: Shield, roles: ["admin"] },

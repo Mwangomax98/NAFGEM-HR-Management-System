@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Plus, Trash2, Send, Save, Calendar, Target, Clock, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { KPIGapSuggestions } from "@/components/monitoring/KPIGapSuggestions";
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 
@@ -27,6 +28,7 @@ interface TaskSubmission {
   actual_completion_date: string | null;
   completion_explanation: string;
   task_category: string;
+  linked_kpi_id?: string;
 }
 
 interface WeeklyTask {
@@ -224,7 +226,8 @@ export default function WeeklyTaskSubmission() {
           planned_completion_date: task.planned_completion_date,
           actual_completion_date: task.actual_completion_date,
           completion_explanation: task.completion_explanation,
-          task_category: task.task_category
+          task_category: task.task_category,
+          linked_kpi_id: task.linked_kpi_id
         }));
 
         const { error: insertError } = await supabase
@@ -576,7 +579,19 @@ export default function WeeklyTaskSubmission() {
             )}
           </div>
         </CardContent>
-      </Card>
-    </div>
-  );
-}
+        </Card>
+
+        {/* KPI Gap Suggestions */}
+        <KPIGapSuggestions onSuggestionSelect={(suggestion) => {
+          addNewTask();
+          const tasks = [...weeklyTask.tasks];
+          const newIndex = tasks.length - 1;
+          updateTask(newIndex, 'task_title', suggestion.title);
+          updateTask(newIndex, 'task_description', suggestion.description);
+          updateTask(newIndex, 'task_category', suggestion.category);
+          updateTask(newIndex, 'priority', suggestion.priority);
+          updateTask(newIndex, 'linked_kpi_id', suggestion.linked_kpi_id);
+        }} />
+      </div>
+    );
+  }

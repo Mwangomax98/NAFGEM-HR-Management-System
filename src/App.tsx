@@ -24,6 +24,7 @@ import Performance from "./pages/hr/Performance";
 import TaskManagement from "./pages/hr/TaskManagement";
 import Communications from "./pages/Communications";
 import Reports from "./pages/Reports";
+import MonitoringEvaluation from "./pages/MonitoringEvaluation";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
           <Route path="/hr/task-management" element={<TaskManagement />} />
           <Route path="/communications" element={<Communications />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/monitoring-evaluation" element={<MonitoringEvaluation />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/settings" element={<SystemSettings />} />
           <Route path="*" element={<NotFound />} />
