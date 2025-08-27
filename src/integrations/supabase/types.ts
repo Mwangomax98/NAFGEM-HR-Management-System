@@ -1096,6 +1096,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      detect_security_anomalies: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_role: {
         Args: { user_id_param: string }
         Returns: Database["public"]["Enums"]["app_role"]
