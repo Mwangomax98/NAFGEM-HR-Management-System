@@ -1087,6 +1087,15 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_max_attempts: number
+          p_operation: string
+          p_time_window: unknown
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       get_user_role: {
         Args: { user_id_param: string }
         Returns: Database["public"]["Enums"]["app_role"]
