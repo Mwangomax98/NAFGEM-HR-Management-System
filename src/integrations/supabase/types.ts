@@ -1115,6 +1115,13 @@ export type Database = {
         Args: { p_details?: Json; p_event_type: string; p_user_id: string }
         Returns: undefined
       }
+      validate_role_assignment: {
+        Args: {
+          assigner_id: string
+          target_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "hr" | "employee"
