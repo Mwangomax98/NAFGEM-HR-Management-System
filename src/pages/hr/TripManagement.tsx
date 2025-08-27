@@ -21,15 +21,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast, toast } from "@/hooks/use-toast";
 
 type TripStatus = 
-  | "DRAFT" 
-  | "SUBMITTED" 
-  | "HR_REVIEW" 
-  | "DRIVER_PENDING" 
-  | "SCHEDULED" 
-  | "IN_PROGRESS" 
-  | "COMPLETED" 
-  | "CANCELLED" 
-  | "REJECTED";
+  | "pending" 
+  | "approved" 
+  | "rejected" 
+  | "scheduled" 
+  | "in_progress" 
+  | "completed" 
+  | "cancelled";
 
 interface Conflict {
   type: "driver" | "vehicle" | "maintenance";
@@ -62,8 +60,7 @@ interface Trip {
   conflicts: Conflict[];
 }
 
-// Mock data for trips (keeping for now)
-const mockTrips: Trip[] = [];
+// Real trip data - no mock data
 
 export default function TripManagement() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -72,6 +69,7 @@ export default function TripManagement() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [driverModalOpen, setDriverModalOpen] = useState(false);
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState(null);
@@ -79,11 +77,73 @@ export default function TripManagement() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fetch drivers and vehicles from database
+  // Fetch all data from database
   useEffect(() => {
     fetchDrivers();
     fetchVehicles();
+    fetchTrips();
   }, []);
+
+  const fetchTrips = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('trip_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Fetch user details separately for each trip
+      const tripsWithUsers = await Promise.all(
+        (data || []).map(async (trip) => {
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', trip.requester_id)
+            .single();
+          
+          return {
+            ...trip,
+            requester_name: userData?.full_name || "Unknown",
+            requester_email: userData?.email || ""
+          };
+        })
+      );
+      
+      
+      // Transform database data to component format
+      const transformedTrips = tripsWithUsers.map(trip => ({
+        id: trip.id,
+        projectId: trip.project_id,
+        projectName: trip.project_id,
+        donorName: "N/A",
+        purpose: trip.purpose,
+        destination: trip.destination,
+        pickupLocation: trip.pickup_location,
+        dropLocation: trip.drop_location || trip.destination,
+        startDateTime: trip.start_datetime,
+        endDateTime: trip.end_datetime,
+        passengersCount: trip.passengers_count,
+        proposedDriverId: trip.proposed_driver_id || "",
+        proposedVehicleId: trip.proposed_vehicle_id || "",
+        assignedDriverId: trip.assigned_driver_id,
+        assignedVehicleId: trip.assigned_vehicle_id,
+        status: trip.status as TripStatus,
+        requesterName: trip.requester_name,
+        requesterDepartment: "N/A",
+        termsOfReference: trip.terms_of_reference || "",
+        luggageNotes: trip.luggage_notes || "",
+        conflicts: []
+      }));
+      
+      setTrips(transformedTrips);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      toast({ title: "Error fetching trips", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchDrivers = async () => {
     try {
@@ -149,7 +209,7 @@ export default function TripManagement() {
     }
   };
 
-  const filteredTrips = mockTrips.filter(trip => {
+  const filteredTrips = trips.filter(trip => {
     const matchesSearch = trip.purpose.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          trip.projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          trip.requesterName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -160,10 +220,10 @@ export default function TripManagement() {
 
   const getStatusCounts = () => {
     return {
-      total: mockTrips.length,
-      pending: mockTrips.filter(t => t.status === "SUBMITTED" || t.status === "HR_REVIEW").length,
-      scheduled: mockTrips.filter(t => t.status === "SCHEDULED").length,
-      inProgress: mockTrips.filter(t => t.status === "IN_PROGRESS").length
+      total: trips.length,
+      pending: trips.filter(t => t.status === "pending").length,
+      scheduled: trips.filter(t => t.status === "approved" || t.status === "scheduled").length,
+      inProgress: trips.filter(t => t.status === "in_progress").length
     };
   };
 
@@ -320,7 +380,7 @@ export default function TripManagement() {
                                 <Eye className="h-4 w-4 mr-1" />
                                 View Details
                               </Button>
-                              {trip.status === "SUBMITTED" && (
+                              {trip.status === "pending" && (
                                 <>
                                   <Button
                                     size="sm"

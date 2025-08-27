@@ -69,13 +69,13 @@ export default function AssignRoleModal({ open, onOpenChange, user, onRoleAssign
 
     setIsLoading(true);
     
-    // Debug: Check authentication
-    const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
-    console.log("Current user:", currentUser);
-    console.log("Auth error:", authError);
+    // Debug: Check current authentication status
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("Session status:", session ? "authenticated" : "not authenticated");
+    console.log("Session user:", session?.user?.email);
     
-    if (!currentUser) {
-      setError("Authentication required. Please refresh the page and try again.");
+    if (!session?.user) {
+      setError("Authentication session expired. Please refresh the page and log in again.");
       setIsLoading(false);
       return;
     }
