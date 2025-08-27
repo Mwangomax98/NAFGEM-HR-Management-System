@@ -68,6 +68,18 @@ export default function AssignRoleModal({ open, onOpenChange, user, onRoleAssign
     }
 
     setIsLoading(true);
+    
+    // Debug: Check authentication
+    const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+    console.log("Current user:", currentUser);
+    console.log("Auth error:", authError);
+    
+    if (!currentUser) {
+      setError("Authentication required. Please refresh the page and try again.");
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       // Check if user already has this role
       const { data: existingRole } = await supabase
