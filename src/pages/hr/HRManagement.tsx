@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Plus, Search, Users, Building2, Target, BookOpen, BarChart3, Calendar, Award } from "lucide-react";
+import CreateProjectModal from "@/components/modals/CreateProjectModal";
 
 export default function HRManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [employees] = useState([]);
   const [projects] = useState([]);
   const [courses] = useState([]);
+  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
 
   const hrStats = [
     { title: "Total Employees", value: employees.length.toString(), icon: Users, change: "Active workforce" },
@@ -95,7 +97,7 @@ export default function HRManagement() {
                 className="pl-8"
               />
             </div>
-            <Button>
+            <Button onClick={() => setCreateProjectModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               New Project
             </Button>
@@ -248,6 +250,14 @@ export default function HRManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CreateProjectModal 
+        open={createProjectModalOpen}
+        onOpenChange={setCreateProjectModalOpen}
+        onProjectCreated={() => {
+          // Refresh projects data here if needed
+        }}
+      />
     </div>
   );
 }

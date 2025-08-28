@@ -3,18 +3,49 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Building2, Plus, Calendar, Users, DollarSign, BarChart3 } from "lucide-react";
-import { useState } from "react";
+import { Building2, Plus, Calendar, Users, DollarSign, BarChart3, Edit, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import CreateProjectModal from "@/components/modals/CreateProjectModal";
 
 export default function ProjectManagement() {
-  const [projects] = useState([]);
+  const { toast } = useToast();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error: any) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load projects",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
         return <Badge variant="default" className="bg-green-500">Completed</Badge>;
-      case "in-progress":
-        return <Badge variant="default">In Progress</Badge>;
+      case "active":
+        return <Badge variant="default">Active</Badge>;
       case "planning":
         return <Badge variant="secondary">Planning</Badge>;
       case "on-hold":
@@ -24,21 +55,8 @@ export default function ProjectManagement() {
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return <Badge variant="destructive">High</Badge>;
-      case "medium":
-        return <Badge variant="secondary">Medium</Badge>;
-      case "low":
-        return <Badge variant="outline">Low</Badge>;
-      default:
-        return <Badge variant="outline">Normal</Badge>;
-    }
-  };
-
-  const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0);
-  const totalSpent = projects.reduce((sum, p) => sum + p.spent, 0);
+  const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+  const activeProjects = projects.filter(p => p.status === 'active').length;
 
   return (
     <div className="p-6 space-y-6">
@@ -48,10 +66,7 @@ export default function ProjectManagement() {
           <p className="text-muted-foreground">Oversee and manage all company projects</p>
         </div>
         <Button 
-          onClick={() => {
-            console.log('New Project button clicked');
-            alert('Create new project functionality coming soon!');
-          }}
+          onClick={() => setCreateModalOpen(true)}
           className="shadow-lg hover:shadow-xl transition-shadow"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -75,12 +90,12 @@ export default function ProjectManagement() {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {projects.filter(p => p.status === "in-progress").length}
+              {activeProjects}
             </div>
             <p className="text-xs text-muted-foreground">
               Currently active
@@ -96,22 +111,22 @@ export default function ProjectManagement() {
           <CardContent>
             <div className="text-2xl font-bold">TSh {totalBudget.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              TSh {totalSpent.toLocaleString()} spent
+              Allocated budget
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
+            <CardTitle className="text-sm font-medium">Donors</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {projects.reduce((sum, p) => sum + p.teamSize, 0)}
+              {new Set(projects.filter(p => p.donor).map(p => p.donor)).size}
             </div>
             <p className="text-xs text-muted-foreground">
-              Across all projects
+              Funding organizations
             </p>
           </CardContent>
         </Card>
@@ -128,10 +143,7 @@ export default function ProjectManagement() {
                   Get started by creating your first project to track progress and manage resources.
                 </p>
                 <Button 
-                  onClick={() => {
-                    console.log('Create First Project button clicked');
-                    alert('Create new project functionality coming soon!');
-                  }}
+                  onClick={() => setCreateModalOpen(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Project
@@ -146,83 +158,75 @@ export default function ProjectManagement() {
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-lg">{project.name}</CardTitle>
-                  <CardDescription className="mt-1">{project.description}</CardDescription>
+                  <CardDescription className="mt-1">{project.description || "No description provided"}</CardDescription>
                 </div>
                 <div className="flex space-x-2">
-                  {getPriorityBadge(project.priority)}
                   {getStatusBadge(project.status)}
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Progress */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Progress</span>
-                  <span className="text-sm text-muted-foreground">{project.progress}%</span>
-                </div>
-                <Progress value={project.progress} className="h-2" />
-              </div>
-
-              {/* Budget */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Budget</span>
-                    <span className="text-sm text-muted-foreground">
-                      TSh {project.spent.toLocaleString()} / TSh {project.budget.toLocaleString()}
-                    </span>
-                </div>
-                <Progress 
-                  value={(project.spent / project.budget) * 100} 
-                  className="h-2" 
-                />
-              </div>
-
               {/* Project Details */}
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Start Date</p>
-                    <p className="text-muted-foreground">{new Date(project.startDate).toLocaleDateString()}</p>
+                {project.start_date && (
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Start Date</p>
+                      <p className="text-muted-foreground">{new Date(project.start_date).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">End Date</p>
-                    <p className="text-muted-foreground">{new Date(project.endDate).toLocaleDateString()}</p>
+                )}
+                {project.end_date && (
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">End Date</p>
+                      <p className="text-muted-foreground">{new Date(project.end_date).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Avatar className="w-6 h-6">
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                      {project.manager.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">Manager</p>
-                    <p className="text-muted-foreground">{project.manager}</p>
+                )}
+                {project.donor && (
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Donor</p>
+                      <p className="text-muted-foreground">{project.donor}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Team Size</p>
-                    <p className="text-muted-foreground">{project.teamSize} members</p>
+                )}
+                {project.budget && (
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Budget</p>
+                      <p className="text-muted-foreground">TSh {project.budget.toLocaleString()}</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-2 pt-2">
-                <Button variant="outline" size="sm">View Details</Button>
-                <Button size="sm">Manage</Button>
+                <Button variant="outline" size="sm">
+                  <Edit className="w-4 h-4 mr-1" />
+                  Edit
+                </Button>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete
+                </Button>
               </div>
             </CardContent>
           </Card>
           ))
         )}
       </div>
+
+      <CreateProjectModal 
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onProjectCreated={fetchProjects}
+      />
     </div>
   );
 }
