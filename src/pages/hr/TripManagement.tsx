@@ -227,12 +227,36 @@ export default function TripManagement() {
     };
   };
 
-  const handleApprove = (tripId: string) => {
-    console.log('Approving trip:', tripId);
+  const handleApprove = async (tripId: string) => {
+    try {
+      const { error } = await supabase
+        .from('trip_requests')
+        .update({ status: 'approved' })
+        .eq('id', tripId);
+      
+      if (error) throw error;
+      toast({ title: "Trip approved successfully" });
+      fetchTrips();
+    } catch (error) {
+      console.error('Error approving trip:', error);
+      toast({ title: "Error approving trip", variant: "destructive" });
+    }
   };
 
-  const handleReject = (tripId: string) => {
-    console.log('Rejecting trip:', tripId);
+  const handleReject = async (tripId: string) => {
+    try {
+      const { error } = await supabase
+        .from('trip_requests')
+        .update({ status: 'rejected' })
+        .eq('id', tripId);
+      
+      if (error) throw error;
+      toast({ title: "Trip rejected successfully" });
+      fetchTrips();
+    } catch (error) {
+      console.error('Error rejecting trip:', error);
+      toast({ title: "Error rejecting trip", variant: "destructive" });
+    }
   };
 
   const statusCounts = getStatusCounts();

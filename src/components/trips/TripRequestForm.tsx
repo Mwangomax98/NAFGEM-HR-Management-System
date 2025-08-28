@@ -21,14 +21,10 @@ interface TripRequestFormProps {
   existingTrip?: any;
 }
 
-const projects = [
-  { id: "proj-1", name: "Clean Water Initiative", donor: "World Bank", budget: 150000 },
-  { id: "proj-2", name: "Education Support Program", donor: "USAID", budget: 250000 },
-  { id: "proj-3", name: "Healthcare Access Project", donor: "EU Commission", budget: 180000 },
-];
 
 export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }: TripRequestFormProps) {
   const { toast } = useToast();
+  const [projects, setProjects] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +55,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
   // Fetch current user and load data
   useEffect(() => {
     fetchCurrentUser();
+    fetchProjects();
     fetchDriversAndVehicles();
   }, []);
 
@@ -78,6 +75,26 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
       toast({
         title: "Authentication Error",
         description: "Please sign in to create trip requests",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
+      
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error loading projects",
+        description: "Unable to load project data",
         variant: "destructive"
       });
     }
