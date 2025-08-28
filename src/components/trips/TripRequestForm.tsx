@@ -325,21 +325,21 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="purpose">Purpose <span className="text-destructive">*</span></Label>
-              <Input
-                id="purpose"
-                placeholder="e.g., Site visit, Training, Meeting"
-                value={formData.purpose}
-                onChange={(e) => setFormData({...formData, purpose: e.target.value})}
-              />
+                <Input
+                  id="purpose"
+                  placeholder="Purpose of trip"
+                  value={formData.purpose}
+                  onChange={(e) => setFormData({...formData, purpose: e.target.value})}
+                />
             </div>
             <div className="space-y-2">
               <Label htmlFor="destination">Destination <span className="text-destructive">*</span></Label>
-              <Input
-                id="destination"
-                placeholder="e.g., Mombasa, Kenya"
-                value={formData.destination}
-                onChange={(e) => setFormData({...formData, destination: e.target.value})}
-              />
+                <Input
+                  id="destination"
+                  placeholder="Destination"
+                  value={formData.destination}
+                  onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                />
             </div>
           </div>
 
@@ -349,26 +349,26 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
               <Label htmlFor="pickup">Pickup Location</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="pickup"
-                  placeholder="Office/Hotel address"
-                  className="pl-10"
-                  value={formData.pickupLocation}
-                  onChange={(e) => setFormData({...formData, pickupLocation: e.target.value})}
-                />
+                  <Input
+                    id="pickup"
+                    placeholder="Pickup location"
+                    className="pl-10"
+                    value={formData.pickupLocation}
+                    onChange={(e) => setFormData({...formData, pickupLocation: e.target.value})}
+                  />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="drop">Drop Location</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="drop"
-                  placeholder="Return location"
-                  className="pl-10"
-                  value={formData.dropLocation}
-                  onChange={(e) => setFormData({...formData, dropLocation: e.target.value})}
-                />
+                  <Input
+                    id="drop"
+                    placeholder="Drop location"
+                    className="pl-10"
+                    value={formData.dropLocation}
+                    onChange={(e) => setFormData({...formData, dropLocation: e.target.value})}
+                  />
               </div>
             </div>
           </div>
