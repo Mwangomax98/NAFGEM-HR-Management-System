@@ -1087,6 +1087,14 @@ export type Database = {
       }
     }
     Functions: {
+      admin_assign_role: {
+        Args: {
+          assigned_by_user_id?: string
+          new_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           p_max_attempts: number
@@ -1099,6 +1107,10 @@ export type Database = {
       detect_security_anomalies: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_role: {
         Args: { user_id_param: string }

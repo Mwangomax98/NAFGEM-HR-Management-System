@@ -69,60 +69,22 @@ export default function AssignRoleModal({ open, onOpenChange, user, onRoleAssign
 
     setIsLoading(true);
     
-    // Debug: Check current authentication status
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log("Session status:", session ? "authenticated" : "not authenticated");
-    console.log("Session user:", session?.user?.email);
-    
-    if (!session?.user) {
-      setError("Authentication session expired. Please refresh the page and log in again.");
-      setIsLoading(false);
-      return;
-    }
-    
     try {
-      // Check if user already has this role
-      const { data: existingRole } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Use the new admin_assign_role function
+      const { data, error } = await supabase.rpc('admin_assign_role', {
+        target_user_id: user.id,
+        new_role: selectedRole as AppRole
+      });
 
-      if (existingRole?.role === selectedRole) {
-        toast({
-          title: "Info",
-          description: `User already has the ${selectedRole} role`,
-        });
-        onOpenChange(false);
+      if (error) {
+        console.error('Role assignment error:', error);
+        setError(error.message || 'Failed to assign role');
         return;
       }
 
-      // Update existing role or insert new one
-      const { error } = await supabase
-        .from("user_roles")
-        .upsert({
-          user_id: user.id,
-          role: selectedRole as AppRole,
-          assigned_by: (await supabase.auth.getUser()).data.user?.id
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        // Provide more specific error messages
-        let errorMessage = "Failed to assign role";
-        
-        if (error.message.includes("Insufficient permissions")) {
-          errorMessage = "You don't have permission to assign this role";
-        } else if (error.message.includes("Rate limit exceeded")) {
-          errorMessage = "Too many role assignments. Please wait before trying again";
-        } else if (error.message.includes("violates row-level security")) {
-          errorMessage = "Access denied. You don't have permission to assign roles";
-        } else if (error.message.includes("admin")) {
-          errorMessage = "Only administrators can assign admin roles";
-        }
-        
-        setError(errorMessage);
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        setError(result?.error || 'Failed to assign role');
         return;
       }
 
