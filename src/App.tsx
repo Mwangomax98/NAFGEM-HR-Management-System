@@ -55,7 +55,7 @@ const App = () => (
           <Route path="/hr/task-management" element={<TaskManagement />} />
           <Route path="/communications" element={<Communications />} />
           <Route path="/reports" element={<Reports />} />
-          <Route path="/monitoring-evaluation" element={<MonitoringEvaluation />} />
+          <Route path="/hr/monitoring-evaluation" element={<MonitoringEvaluation />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/settings" element={<SystemSettings />} />
           <Route path="*" element={<NotFound />} />

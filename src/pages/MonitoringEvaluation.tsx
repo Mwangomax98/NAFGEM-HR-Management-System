@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Target, TrendingUp, AlertTriangle, CheckCircle, Plus, Filter, Download } from "lucide-react";
 import { HRLayout } from "@/components/hr/HRLayout";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { HRSidebar } from "@/components/hr/HRSidebar";
 import { KPIDashboard } from "@/components/monitoring/KPIDashboard";
 import { KPIManagement } from "@/components/monitoring/KPIManagement";
 import { GapAnalysis } from "@/components/monitoring/GapAnalysis";
@@ -20,11 +18,8 @@ export default function MonitoringEvaluation() {
   const isHROrAdmin = userRole === 'hr' || userRole === 'admin';
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <HRSidebar userRole={userRole || "employee"} userName="User" />
-        <main className="flex-1 p-6">
-          <div className="space-y-6">
+    <HRLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
@@ -82,10 +77,8 @@ export default function MonitoringEvaluation() {
               <KPIManagement />
             </TabsContent>
           )}
-          </Tabs>
-          </div>
-        </main>
+        </Tabs>
       </div>
-    </SidebarProvider>
+    </HRLayout>
   );
 }
