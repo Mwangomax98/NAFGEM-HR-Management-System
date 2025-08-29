@@ -153,9 +153,6 @@ export function HRSidebar({ userRole, userName }: HRSidebarProps) {
                       <NavLink 
                         to={item.url} 
                         className={getNavClasses(item.url)}
-                        onClick={(e) => {
-                          console.log('Navigating to:', item.url, 'Title:', item.title);
-                        }}
                       >
                         <item.icon className="w-4 h-4" />
                         {!collapsed && (
