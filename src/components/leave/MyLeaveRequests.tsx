@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Eye, Search, Filter, Edit2, Trash2, MessageSquare, Calendar, Clock, User, FileText } from "lucide-react";
 import { format } from "date-fns";
-
-const mockRequests = [];
+import { useToast } from "@/hooks/use-toast";
 
 const statusColors = {
   draft: { bg: "bg-gray-100", text: "text-gray-800", label: "Draft" },
@@ -21,21 +21,98 @@ const statusColors = {
 };
 
 export default function MyLeaveRequests() {
-  const [requests, setRequests] = useState(mockRequests);
+  const [requests, setRequests] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchMyLeaveRequests();
+  }, []);
+
+  const fetchMyLeaveRequests = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .eq('requester_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get user profile data
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('project')
+        .eq('id', user.id)
+        .single();
+
+      // Transform data to match component interface
+      const transformedData = data?.map(request => ({
+        id: request.id,
+        refNumber: request.ref_number,
+        leaveType: request.leave_type,
+        fromDate: request.from_date,
+        toDate: request.to_date,
+        days: request.number_of_days,
+        project: profileData?.project || 'Unknown Project',
+        status: request.status,
+        submittedDate: request.created_at,
+        reason: request.reason || '',
+        handoverDetails: request.handover_details || '',
+        replacementPerson: request.replacement_person || '',
+        hrComments: request.hr_comments || [],
+        adminComments: request.admin_comments || []
+      })) || [];
+
+      setRequests(transformedData);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch your leave requests.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredRequests = requests.filter(request => {
-    const matchesSearch = request.refNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.leaveType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.project.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = request.refNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         request.leaveType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         request.project?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || request.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleDeleteRequest = (id: number) => {
-    setRequests(requests.filter(req => req.id !== id));
+  const handleDeleteRequest = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('leave_requests')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setRequests(requests.filter(req => req.id !== id));
+      toast({
+        title: "Success",
+        description: "Leave request deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting leave request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete leave request.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -123,7 +200,13 @@ export default function MyLeaveRequests() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRequests.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    Loading your leave requests...
+                  </TableCell>
+                </TableRow>
+              ) : filteredRequests.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     {searchTerm || statusFilter !== "all" 

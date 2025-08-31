@@ -49,29 +49,44 @@ export default function HRLeaveReview() {
 
       if (error) throw error;
       
+      // Fetch user profiles and leave balances
+      const userIds = data?.map(req => req.requester_id) || [];
+      const [{ data: profiles }, { data: balances }] = await Promise.all([
+        supabase.from('profiles').select('id, project, title').in('id', userIds),
+        supabase.from('leave_balances').select('*').in('user_id', userIds)
+      ]);
+
       // Transform data to match existing interface
-      const transformedData = data?.map(request => ({
-        id: request.id,
-        refNumber: request.ref_number,
-        employeeName: request.employee_name,
-        employeeId: request.requester_id,
-        department: 'N/A', // TODO: Fetch from user profile
-        leaveType: request.leave_type,
-        fromDate: request.from_date,
-        toDate: request.to_date,
-        daysRequested: request.number_of_days,
-        reason: request.reason || '',
-        handoverDetails: request.handover_details,
-        replacementPerson: request.replacement_person,
-        submittedDate: request.created_at,
-        project: 'N/A', // TODO: Fetch from user profile
-        currentBalance: { used: 0, total: 25 }, // TODO: Fetch from leave_balances
-        documents: [],
-        priority: request.priority,
-        status: request.status,
-        hrComments: request.hr_comments || [],
-        daysGranted: request.days_granted
-      })) || [];
+      const transformedData = data?.map(request => {
+        const userProfile = profiles?.find(p => p.id === request.requester_id);
+        const userBalance = balances?.find(b => b.user_id === request.requester_id && b.leave_type === request.leave_type);
+        
+        return {
+          id: request.id,
+          refNumber: request.ref_number,
+          employeeName: request.employee_name,
+          employeeId: request.requester_id,
+          department: userProfile?.title || 'N/A',
+          leaveType: request.leave_type,
+          fromDate: request.from_date,
+          toDate: request.to_date,
+          daysRequested: request.number_of_days,
+          reason: request.reason || '',
+          handoverDetails: request.handover_details,
+          replacementPerson: request.replacement_person,
+          submittedDate: request.created_at,
+          project: userProfile?.project || 'N/A',
+          currentBalance: { 
+            used: userBalance?.used_days || 0, 
+            total: userBalance?.total_entitlement || 25 
+          },
+          documents: [],
+          priority: request.priority,
+          status: request.status,
+          hrComments: request.hr_comments || [],
+          daysGranted: request.days_granted
+        };
+      }) || [];
 
       setRequests(transformedData);
     } catch (error) {
