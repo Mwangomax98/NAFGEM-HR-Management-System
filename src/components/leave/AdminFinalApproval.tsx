@@ -25,9 +25,7 @@ export default function AdminFinalApproval() {
   const [adminComments, setAdminComments] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
   const [analytics, setAnalytics] = useState({
-    thisMonth: { submitted: 0, approved: 0, rejected: 0, pending: 0 },
-    byDepartment: [],
-    byLeaveType: []
+    thisMonth: { submitted: 0, approved: 0, rejected: 0, pending: 0 }
   });
   const { toast } = useToast();
 
@@ -51,7 +49,7 @@ export default function AdminFinalApproval() {
         refNumber: request.ref_number,
         employeeName: request.employee_name,
         employeeId: request.requester_id,
-        department: 'N/A', // TODO: Fetch from user profile
+        department: 'N/A',
         leaveType: request.leave_type,
         fromDate: request.from_date,
         toDate: request.to_date,
@@ -62,7 +60,7 @@ export default function AdminFinalApproval() {
         replacementPerson: request.replacement_person,
         submittedDate: request.created_at,
         hrApprovedDate: request.hr_approved_date,
-        project: 'N/A', // TODO: Fetch from user profile
+        project: 'N/A',
         hrComments: request.hr_comments || [],
         priority: request.priority,
         impact: request.impact,
@@ -95,9 +93,7 @@ export default function AdminFinalApproval() {
       const pending = data?.filter(r => r.status === 'hr_approved').length || 0;
 
       setAnalytics({
-        thisMonth: { submitted, approved, rejected, pending },
-        byDepartment: [],
-        byLeaveType: []
+        thisMonth: { submitted, approved, rejected, pending }
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -340,7 +336,6 @@ export default function AdminFinalApproval() {
                             </DialogHeader>
                             {selectedRequest && (
                               <div className="space-y-6">
-                                {/* Request Summary */}
                                 <Alert className="border-accent">
                                   <Crown className="h-4 w-4" />
                                   <AlertDescription>
@@ -349,7 +344,6 @@ export default function AdminFinalApproval() {
                                   </AlertDescription>
                                 </Alert>
 
-                                {/* Employee & Leave Information Grid */}
                                 <div className="grid grid-cols-3 gap-6">
                                   <Card>
                                     <CardHeader className="pb-2">
@@ -386,97 +380,65 @@ export default function AdminFinalApproval() {
                                       <CardTitle className="text-lg">Impact Assessment</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-2">
-                                      <div>{getImpactBadge(selectedRequest.impact)}</div>
+                                      <div><strong>Impact Level:</strong> {getImpactBadge(selectedRequest.impact)}</div>
+                                      <div><strong>Priority:</strong> {selectedRequest.priority}</div>
                                       <div><strong>Replacement:</strong> {selectedRequest.replacementPerson}</div>
-                                      <div><strong>Submitted:</strong> {format(new Date(selectedRequest.submittedDate), "MMM dd")}</div>
-                                      <div><strong>HR Approved:</strong> {format(new Date(selectedRequest.hrApprovedDate), "MMM dd")}</div>
                                     </CardContent>
                                   </Card>
                                 </div>
 
-                                {/* Detailed Information */}
-                                <div className="grid grid-cols-1 gap-6">
-                                  <Card>
-                                    <CardHeader className="pb-2">
-                                      <CardTitle className="text-lg flex items-center">
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        Request Details
-                                      </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                      <div>
-                                        <label className="font-medium">Reason for Leave:</label>
-                                        <p className="text-muted-foreground mt-1">{selectedRequest.reason}</p>
-                                      </div>
-                                      <div>
-                                        <label className="font-medium">Handover Arrangements:</label>
-                                        <p className="text-muted-foreground mt-1">{selectedRequest.handoverDetails}</p>
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-
-                                  {/* HR Comments */}
-                                  <Card>
-                                    <CardHeader className="pb-2">
-                                      <CardTitle className="text-lg flex items-center">
-                                        <MessageSquare className="w-4 h-4 mr-2" />
-                                        HR Review & Recommendation
-                                      </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                      {selectedRequest.hrComments.map((comment, index) => (
-                                        <div key={index} className="bg-green-50 p-4 rounded-lg">
-                                          <div className="flex justify-between items-start mb-2">
-                                            <strong className="text-green-800">{comment.user}</strong>
-                                            <span className="text-sm text-green-600">{format(new Date(comment.date), "PPP")}</span>
-                                          </div>
-                                          <p className="text-green-700">{comment.message}</p>
-                                          {comment.daysGranted && (
-                                            <p className="text-sm text-green-600 mt-2">
-                                              <strong>Days Granted by HR:</strong> {comment.daysGranted}
-                                            </p>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </CardContent>
-                                  </Card>
-                                </div>
-
-                                {/* Executive Decision Section */}
-                                <Card className="border-accent border-2">
-                                  <CardHeader className="bg-gradient-primary text-primary-foreground">
-                                    <CardTitle className="text-xl flex items-center">
-                                      <Crown className="w-5 h-5 mr-2" />
-                                      Executive Final Decision
-                                    </CardTitle>
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle>HR Comments & Recommendation</CardTitle>
                                   </CardHeader>
-                                  <CardContent className="p-6 space-y-4">
+                                  <CardContent>
+                                    {selectedRequest.hrComments.map((comment: any, index: number) => (
+                                      <div key={index} className="mb-4 p-4 bg-muted rounded-lg">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <strong>{comment.user}</strong>
+                                          <span className="text-sm text-muted-foreground">
+                                            {format(new Date(comment.date), "PPP")}
+                                          </span>
+                                        </div>
+                                        <p>{comment.message}</p>
+                                        {comment.daysGranted && (
+                                          <div className="mt-2 text-sm">
+                                            <strong>Days Granted:</strong> {comment.daysGranted}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </CardContent>
+                                </Card>
+
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle>Executive Decision</CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="space-y-4">
                                     <div>
-                                      <label className="block text-sm font-medium mb-2">Executive Comments/Recommendation</label>
+                                      <label className="text-sm font-medium">Admin Comments</label>
                                       <Textarea
                                         value={adminComments}
                                         onChange={(e) => setAdminComments(e.target.value)}
-                                        placeholder="Add your executive decision rationale, any conditions, or reasons if not approving..."
+                                        placeholder="Provide your executive decision rationale..."
                                         rows={4}
                                       />
                                     </div>
-
-                                    <div className="flex justify-end space-x-4">
-                                      <Button 
-                                        variant="outline" 
-                                        onClick={() => handleFinalDecision(selectedRequest.id, 'reject')}
-                                        className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                      >
-                                        <X className="w-4 h-4 mr-2" />
-                                        Do Not Approve
-                                      </Button>
-                                      <Button 
+                                    <div className="flex space-x-4">
+                                      <Button
                                         onClick={() => handleFinalDecision(selectedRequest.id, 'approve')}
-                                        className="bg-green-600 hover:bg-green-700 text-white"
-                                        size="lg"
+                                        className="bg-green-600 hover:bg-green-700"
                                       >
                                         <Check className="w-4 h-4 mr-2" />
-                                        Grant Final Approval
+                                        Final Approval
+                                      </Button>
+                                      <Button
+                                        variant="destructive"
+                                        onClick={() => handleFinalDecision(selectedRequest.id, 'reject')}
+                                      >
+                                        <X className="w-4 h-4 mr-2" />
+                                        Final Rejection
                                       </Button>
                                     </div>
                                   </CardContent>
@@ -490,6 +452,12 @@ export default function AdminFinalApproval() {
                   ))}
                 </TableBody>
               </Table>
+              {pendingFinalRequests.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Crown className="w-12 h-12 mx-auto mb-4" />
+                  <p>No requests awaiting final approval</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -497,29 +465,21 @@ export default function AdminFinalApproval() {
         <TabsContent value="finalized">
           <Card>
             <CardHeader>
-              <CardTitle>Finalized Decisions</CardTitle>
-              <CardDescription>Completed executive decisions on leave requests</CardDescription>
+              <CardTitle>Finalized Leave Requests</CardTitle>
+              <CardDescription>Requests that have received final executive decision</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Employee</TableHead>
-                    <TableHead>Leave Type</TableHead>
-                    <TableHead>Duration</TableHead>
+                    <TableHead>Leave Details</TableHead>
                     <TableHead>Final Decision</TableHead>
                     <TableHead>Decision Date</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead className="text-right">View</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {finalizedRequests.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No finalized decisions yet
-                      </TableCell>
-                    </TableRow>
-                  )}
                   {finalizedRequests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>
@@ -535,38 +495,43 @@ export default function AdminFinalApproval() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{request.leaveType}</TableCell>
                       <TableCell>
-                        <div className="text-sm">
-                          <div className="font-medium">{request.daysGranted} days</div>
-                          <div className="text-muted-foreground">
-                            {format(new Date(request.fromDate), "MMM dd")} - {format(new Date(request.toDate), "MMM dd")}
-                          </div>
+                        <div>
+                          <p className="font-medium">{request.leaveType}</p>
+                          <p className="text-sm text-muted-foreground">{request.daysGranted} days</p>
+                          <p className="text-xs text-muted-foreground">{request.refNumber}</p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={request.status === 'final_approved' ? 'default' : 'destructive'} className="bg-green-600">
-                          {request.status === 'final_approved' ? 'Finally Approved' : 'Not Approved'}
+                        <Badge
+                          variant="outline"
+                          className={
+                            request.status === 'final_approved'
+                              ? 'bg-green-100 text-green-800 border-0'
+                              : 'bg-red-100 text-red-800 border-0'
+                          }
+                        >
+                          {request.status === 'final_approved' ? 'Finally Approved' : 'Finally Rejected'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {request.finalDecisionDate && format(new Date(request.finalDecisionDate), "MMM dd, yyyy")}
+                        {request.finalDecisionDate && format(new Date(request.finalDecisionDate), "PPP")}
                       </TableCell>
                       <TableCell className="text-right">
-                        {request.status === 'final_approved' ? (
-                          <Badge variant="outline" className="bg-green-100 text-green-800 border-0">
-                            Active/Scheduled
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-red-100 text-red-800 border-0">
-                            Rejected
-                          </Badge>
-                        )}
+                        <Button variant="ghost" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              {finalizedRequests.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="w-12 h-12 mx-auto mb-4" />
+                  <p>No finalized requests yet</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -607,45 +572,13 @@ export default function AdminFinalApproval() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Department Breakdown</CardTitle>
-                <CardDescription>Leave requests by department</CardDescription>
+                <CardTitle>Analytics Coming Soon</CardTitle>
+                <CardDescription>Detailed analytics will be available once more data is collected</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {analytics.byDepartment.map((dept, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm">{dept.department}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">{dept.approved}/{dept.requests}</span>
-                        <div className="w-20 bg-muted rounded-full h-2">
-                          <div 
-                            className="bg-accent h-2 rounded-full" 
-                            style={{ width: `${(dept.approved / dept.requests) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>Leave Type Analysis</CardTitle>
-                <CardDescription>Breakdown by leave type and average duration</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  {analytics.byLeaveType.map((type, index) => (
-                    <div key={index} className="bg-muted p-4 rounded-lg">
-                      <h4 className="font-medium">{type.type}</h4>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm text-muted-foreground">Requests: {type.count}</span>
-                        <span className="text-sm text-muted-foreground">Avg: {type.avgDays} days</span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-center py-8 text-muted-foreground">
+                  <BarChart3 className="w-12 h-12 mx-auto mb-4" />
+                  <p>Department and leave type breakdowns will appear here as data is accumulated.</p>
                 </div>
               </CardContent>
             </Card>
