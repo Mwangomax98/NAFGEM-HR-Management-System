@@ -190,6 +190,135 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_balances: {
+        Row: {
+          created_at: string
+          id: string
+          leave_type: string
+          total_entitlement: number
+          updated_at: string
+          used_days: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leave_type: string
+          total_entitlement?: number
+          updated_at?: string
+          used_days?: number
+          user_id: string
+          year?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leave_type?: string
+          total_entitlement?: number
+          updated_at?: string
+          used_days?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      leave_requests: {
+        Row: {
+          admin_comments: Json | null
+          contact_address: string | null
+          created_at: string
+          date_of_appointment: string | null
+          days_granted: number | null
+          designation: string | null
+          digital_signature: Json | null
+          employee_name: string
+          final_decision_date: string | null
+          final_signature: Json | null
+          from_date: string
+          handover_details: string | null
+          hr_approved_date: string | null
+          hr_comments: Json | null
+          id: string
+          impact: string | null
+          leave_type: string
+          mobile_phone: string | null
+          number_of_days: number
+          place_of_work: string | null
+          priority: string
+          projects: string[]
+          reason: string | null
+          ref_number: string
+          replacement_person: string | null
+          requester_id: string
+          status: string
+          to_date: string
+          updated_at: string
+        }
+        Insert: {
+          admin_comments?: Json | null
+          contact_address?: string | null
+          created_at?: string
+          date_of_appointment?: string | null
+          days_granted?: number | null
+          designation?: string | null
+          digital_signature?: Json | null
+          employee_name: string
+          final_decision_date?: string | null
+          final_signature?: Json | null
+          from_date: string
+          handover_details?: string | null
+          hr_approved_date?: string | null
+          hr_comments?: Json | null
+          id?: string
+          impact?: string | null
+          leave_type: string
+          mobile_phone?: string | null
+          number_of_days: number
+          place_of_work?: string | null
+          priority?: string
+          projects: string[]
+          reason?: string | null
+          ref_number: string
+          replacement_person?: string | null
+          requester_id: string
+          status?: string
+          to_date: string
+          updated_at?: string
+        }
+        Update: {
+          admin_comments?: Json | null
+          contact_address?: string | null
+          created_at?: string
+          date_of_appointment?: string | null
+          days_granted?: number | null
+          designation?: string | null
+          digital_signature?: Json | null
+          employee_name?: string
+          final_decision_date?: string | null
+          final_signature?: Json | null
+          from_date?: string
+          handover_details?: string | null
+          hr_approved_date?: string | null
+          hr_comments?: Json | null
+          id?: string
+          impact?: string | null
+          leave_type?: string
+          mobile_phone?: string | null
+          number_of_days?: number
+          place_of_work?: string | null
+          priority?: string
+          projects?: string[]
+          reason?: string | null
+          ref_number?: string
+          replacement_person?: string | null
+          requester_id?: string
+          status?: string
+          to_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

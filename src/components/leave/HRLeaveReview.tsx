@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,71 +14,6 @@ import { Check, X, Eye, MessageSquare, Calendar, Clock, User, FileText, AlertCir
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
-const mockPendingRequests = [
-  {
-    id: 1,
-    refNumber: "LV-2024-A8F2G1",
-    employeeName: "Sarah Johnson",
-    employeeId: "EMP001",
-    department: "Program Management",
-    leaveType: "Annual Leave",
-    fromDate: "2024-12-20",
-    toDate: "2024-12-27",
-    daysRequested: 6,
-    reason: "Christmas holiday with family",
-    handoverDetails: "All tasks delegated to Mary Johnson. Client meetings rescheduled to January. Project reports completed and filed.",
-    replacementPerson: "Mary Johnson",
-    submittedDate: "2024-11-15",
-    project: "USAID Health Systems",
-    currentBalance: { used: 8, total: 25 },
-    documents: ["medical_cert.pdf"],
-    priority: "normal",
-    status: undefined,
-    hrComments: []
-  },
-  {
-    id: 2,
-    refNumber: "LV-2024-B3H7K9",
-    employeeName: "Michael Chen",
-    employeeId: "EMP002",
-    department: "Finance",
-    leaveType: "Sick Leave",
-    fromDate: "2024-11-25",
-    toDate: "2024-11-27",
-    daysRequested: 3,
-    reason: "Medical procedure - surgical follow-up",
-    handoverDetails: "Emergency financial approvals delegated to Deputy CFO. Monthly reports postponed to December 2nd.",
-    replacementPerson: "Deputy CFO",
-    submittedDate: "2024-11-20",
-    project: "General Administration",
-    currentBalance: { used: 2, total: 15 },
-    documents: ["medical_cert.pdf", "surgery_schedule.pdf"],
-    priority: "urgent",
-    status: undefined,
-    hrComments: []
-  },
-  {
-    id: 3,
-    refNumber: "LV-2024-C9M4N2",
-    employeeName: "Amanda Williams",
-    employeeId: "EMP003",
-    department: "Human Resources",
-    leaveType: "Maternity Leave",
-    fromDate: "2025-01-15",
-    toDate: "2025-04-15",
-    daysRequested: 90,
-    reason: "Maternity leave for childbirth",
-    handoverDetails: "Full transition plan prepared. Temporary HR coordinator hired. All recruitment processes handed over.",
-    replacementPerson: "Temporary HR Coordinator",
-    submittedDate: "2024-11-10",
-    project: "HR Operations",
-    currentBalance: { used: 0, total: 90 },
-    documents: ["medical_cert.pdf", "expected_delivery_date.pdf"],
-    priority: "high",
-    status: undefined,
-    hrComments: []
-  }
-];
 
 const statusColors = {
   pending: { bg: "bg-yellow-100", text: "text-yellow-800", label: "Pending Review" },
@@ -92,14 +28,65 @@ const priorityColors = {
 };
 
 export default function HRLeaveReview() {
-  const [requests, setRequests] = useState(mockPendingRequests);
+  const [requests, setRequests] = useState<any[]>([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [reviewComments, setReviewComments] = useState("");
   const [daysGranted, setDaysGranted] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleApproval = (requestId: number, action: 'approve' | 'reject') => {
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, []);
+
+  const fetchLeaveRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform data to match existing interface
+      const transformedData = data?.map(request => ({
+        id: request.id,
+        refNumber: request.ref_number,
+        employeeName: request.employee_name,
+        employeeId: request.requester_id,
+        department: 'N/A', // TODO: Fetch from user profile
+        leaveType: request.leave_type,
+        fromDate: request.from_date,
+        toDate: request.to_date,
+        daysRequested: request.number_of_days,
+        reason: request.reason || '',
+        handoverDetails: request.handover_details,
+        replacementPerson: request.replacement_person,
+        submittedDate: request.created_at,
+        project: 'N/A', // TODO: Fetch from user profile
+        currentBalance: { used: 0, total: 25 }, // TODO: Fetch from leave_balances
+        documents: [],
+        priority: request.priority,
+        status: request.status,
+        hrComments: request.hr_comments || [],
+        daysGranted: request.days_granted
+      })) || [];
+
+      setRequests(transformedData);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch leave requests.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproval = async (requestId: string, action: 'approve' | 'reject') => {
     const request = requests.find(r => r.id === requestId);
     if (!request) return;
 
@@ -121,41 +108,54 @@ export default function HRLeaveReview() {
       return;
     }
 
-    // Add digital signature simulation
-    const signature = {
-      user: "HR Manager",
-      userId: "HR001",
-      timestamp: new Date().toISOString(),
-      action: action
-    };
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const signature = {
+        user: "HR Manager",
+        userId: user?.id || "HR001",
+        timestamp: new Date().toISOString(),
+        action: action
+      };
 
-    // Update request status
-    setRequests(prev => prev.map(r => 
-      r.id === requestId 
-        ? { 
-            ...r, 
-            status: action === 'approve' ? 'hr_approved' : 'rejected',
-            hrComments: [
-              { 
-                user: signature.user, 
-                date: signature.timestamp, 
-                message: reviewComments || `Request ${action}ed by HR.`,
-                daysGranted: action === 'approve' ? parseInt(daysGranted) : undefined
-              }
-            ],
-            digitalSignature: signature
-          }
-        : r
-    ));
+      const newComment = {
+        user: signature.user,
+        date: signature.timestamp,
+        message: reviewComments || `Request ${action}ed by HR.`,
+        daysGranted: action === 'approve' ? parseInt(daysGranted) : undefined
+      };
 
-    toast({
-      title: `Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
-      description: `Leave request ${request.refNumber} has been ${action}ed and forwarded ${action === 'approve' ? 'to Admin for final approval' : 'back to employee'}.`,
-    });
+      const { error } = await supabase
+        .from('leave_requests')
+        .update({
+          status: action === 'approve' ? 'hr_approved' : 'rejected',
+          hr_comments: [...(request.hrComments || []), newComment],
+          days_granted: action === 'approve' ? parseInt(daysGranted) : null,
+          hr_approved_date: action === 'approve' ? new Date().toISOString() : null,
+          digital_signature: signature
+        })
+        .eq('id', requestId);
 
-    setReviewComments("");
-    setDaysGranted("");
-    setSelectedRequest(null);
+      if (error) throw error;
+
+      toast({
+        title: `Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+        description: `Leave request ${request.refNumber} has been ${action}ed and forwarded ${action === 'approve' ? 'to Admin for final approval' : 'back to employee'}.`,
+      });
+
+      setReviewComments("");
+      setDaysGranted("");
+      setSelectedRequest(null);
+      
+      // Refresh the requests
+      fetchLeaveRequests();
+    } catch (error) {
+      console.error('Error updating leave request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update leave request.",
+        variant: "destructive"
+      });
+    }
   };
 
   const calculateRemainingDays = (request: any, granted?: number) => {
@@ -238,7 +238,7 @@ export default function HRLeaveReview() {
             <Filter className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{processedRequests.length}</div>
             <p className="text-xs text-muted-foreground">Requests processed</p>
           </CardContent>
         </Card>

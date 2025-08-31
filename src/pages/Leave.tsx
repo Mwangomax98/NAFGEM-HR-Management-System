@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +11,11 @@ import AdminFinalApproval from "@/components/leave/AdminFinalApproval";
 
 export default function Leave() {
   const [activeTab, setActiveTab] = useState("request");
-  
-  // Mock user role - in real app this would come from auth context
-  const [userRole, setUserRole] = useState<"employee" | "hr" | "admin">("admin");
+  const { userRole, loading } = useUserRole();
+
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,7 +28,7 @@ export default function Leave() {
                 <p className="text-muted-foreground">Comprehensive leave request and approval system</p>
               </div>
               <Badge variant="outline" className="text-lg px-4 py-2">
-                Role: {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                Role: {userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'Loading...'}
               </Badge>
             </div>
             

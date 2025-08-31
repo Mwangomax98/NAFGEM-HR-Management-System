@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,122 +13,98 @@ import { Check, X, Eye, MessageSquare, Calendar, Crown, FileText, User, Trending
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
-const mockHRApprovedRequests = [
-  {
-    id: 1,
-    refNumber: "LV-2024-A8F2G1",
-    employeeName: "Sarah Johnson",
-    employeeId: "EMP001",
-    department: "Program Management",
-    leaveType: "Annual Leave",
-    fromDate: "2024-12-20",
-    toDate: "2024-12-27",
-    daysRequested: 6,
-    daysGranted: 6,
-    reason: "Christmas holiday with family",
-    handoverDetails: "All tasks delegated to Mary Johnson. Client meetings rescheduled to January.",
-    replacementPerson: "Mary Johnson",
-    submittedDate: "2024-11-15",
-    hrApprovedDate: "2024-11-16",
-    project: "USAID Health Systems",
-    hrComments: [
-      { user: "HR Manager", date: "2024-11-16", message: "Approved. Good handover plan provided.", daysGranted: 6 }
-    ],
-    priority: "normal",
-    impact: "low",
-    status: undefined,
-    adminComments: [],
-    finalDecisionDate: undefined
-  },
-  {
-    id: 2,
-    refNumber: "LV-2024-C9M4N2",
-    employeeName: "Amanda Williams",
-    employeeId: "EMP003",
-    department: "Human Resources",
-    leaveType: "Maternity Leave",
-    fromDate: "2025-01-15",
-    toDate: "2025-04-15",
-    daysRequested: 90,
-    daysGranted: 90,
-    reason: "Maternity leave for childbirth",
-    handoverDetails: "Full transition plan prepared. Temporary HR coordinator hired. All recruitment processes handed over.",
-    replacementPerson: "Temporary HR Coordinator",
-    submittedDate: "2024-11-10",
-    hrApprovedDate: "2024-11-12",
-    project: "HR Operations",
-    hrComments: [
-      { user: "HR Manager", date: "2024-11-12", message: "Approved. Temporary replacement confirmed.", daysGranted: 90 }
-    ],
-    priority: "high",
-    impact: "high",
-    status: undefined,
-    adminComments: [],
-    finalDecisionDate: undefined
-  },
-  {
-    id: 3,
-    refNumber: "LV-2024-D5K8L3",
-    employeeName: "Michael Chen",
-    employeeId: "EMP002",
-    department: "Finance",
-    leaveType: "Sick Leave",
-    fromDate: "2024-11-25",
-    toDate: "2024-11-27",
-    daysRequested: 3,
-    daysGranted: 3,
-    reason: "Medical procedure - surgical follow-up",
-    handoverDetails: "Emergency financial approvals delegated to Deputy CFO.",
-    replacementPerson: "Deputy CFO",
-    submittedDate: "2024-11-20",
-    hrApprovedDate: "2024-11-21",
-    project: "General Administration",
-    hrComments: [
-      { user: "HR Manager", date: "2024-11-21", message: "Medical documentation provided. Approved.", daysGranted: 3 }
-    ],
-    priority: "urgent",
-    impact: "medium",
-    status: undefined,
-    adminComments: [],
-    finalDecisionDate: undefined
-  }
-];
-
 const impactColors = {
   low: { bg: "bg-green-100", text: "text-green-800", label: "Low Impact" },
   medium: { bg: "bg-yellow-100", text: "text-yellow-800", label: "Medium Impact" },
   high: { bg: "bg-red-100", text: "text-red-800", label: "High Impact" }
 };
 
-const mockAnalytics = {
-  thisMonth: {
-    submitted: 24,
-    approved: 18,
-    rejected: 3,
-    pending: 3
-  },
-  byDepartment: [
-    { department: "Program Management", requests: 8, approved: 6 },
-    { department: "Finance", requests: 6, approved: 5 },
-    { department: "HR", requests: 4, approved: 3 },
-    { department: "Operations", requests: 6, approved: 4 }
-  ],
-  byLeaveType: [
-    { type: "Annual Leave", count: 12, avgDays: 5.2 },
-    { type: "Sick Leave", count: 6, avgDays: 2.1 },
-    { type: "Maternity/Paternity", count: 3, avgDays: 45 },
-    { type: "Personal", count: 3, avgDays: 1 }
-  ]
-};
-
 export default function AdminFinalApproval() {
-  const [requests, setRequests] = useState(mockHRApprovedRequests);
+  const [requests, setRequests] = useState<any[]>([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [adminComments, setAdminComments] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
+  const [analytics, setAnalytics] = useState({
+    thisMonth: { submitted: 0, approved: 0, rejected: 0, pending: 0 },
+    byDepartment: [],
+    byLeaveType: []
+  });
   const { toast } = useToast();
 
-  const handleFinalDecision = (requestId: number, decision: 'approve' | 'reject') => {
+  useEffect(() => {
+    fetchLeaveRequests();
+    fetchAnalytics();
+  }, []);
+
+  const fetchLeaveRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .in('status', ['hr_approved', 'final_approved', 'rejected_final'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const transformedData = data?.map(request => ({
+        id: request.id,
+        refNumber: request.ref_number,
+        employeeName: request.employee_name,
+        employeeId: request.requester_id,
+        department: 'N/A', // TODO: Fetch from user profile
+        leaveType: request.leave_type,
+        fromDate: request.from_date,
+        toDate: request.to_date,
+        daysRequested: request.number_of_days,
+        daysGranted: request.days_granted,
+        reason: request.reason || '',
+        handoverDetails: request.handover_details,
+        replacementPerson: request.replacement_person,
+        submittedDate: request.created_at,
+        hrApprovedDate: request.hr_approved_date,
+        project: 'N/A', // TODO: Fetch from user profile
+        hrComments: request.hr_comments || [],
+        priority: request.priority,
+        impact: request.impact,
+        status: request.status,
+        adminComments: request.admin_comments || [],
+        finalDecisionDate: request.final_decision_date
+      })) || [];
+
+      setRequests(transformedData);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .gte('created_at', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`);
+
+      if (error) throw error;
+
+      const submitted = data?.length || 0;
+      const approved = data?.filter(r => r.status === 'final_approved').length || 0;
+      const rejected = data?.filter(r => r.status === 'rejected_final').length || 0;
+      const pending = data?.filter(r => r.status === 'hr_approved').length || 0;
+
+      setAnalytics({
+        thisMonth: { submitted, approved, rejected, pending },
+        byDepartment: [],
+        byLeaveType: []
+      });
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+  const handleFinalDecision = async (requestId: string, decision: 'approve' | 'reject') => {
     const request = requests.find(r => r.id === requestId);
     if (!request) return;
 
@@ -140,41 +117,52 @@ export default function AdminFinalApproval() {
       return;
     }
 
-    // Add digital signature simulation
-    const signature = {
-      user: "Executive Director",
-      userId: "ADMIN001",
-      timestamp: new Date().toISOString(),
-      action: decision
-    };
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const signature = {
+        user: "Executive Director",
+        userId: user?.id || "ADMIN001",
+        timestamp: new Date().toISOString(),
+        action: decision
+      };
 
-    // Update request status
-    setRequests(prev => prev.map(r => 
-      r.id === requestId 
-        ? { 
-            ...r, 
-            status: decision === 'approve' ? 'final_approved' : 'rejected_final',
-            adminComments: [
-              ...(r.adminComments || []),
-              { 
-                user: signature.user, 
-                date: signature.timestamp, 
-                message: adminComments || `Request ${decision}ed by Executive Director.`
-              }
-            ],
-            finalSignature: signature,
-            finalDecisionDate: new Date().toISOString()
-          }
-        : r
-    ));
+      const newComment = {
+        user: signature.user,
+        date: signature.timestamp,
+        message: adminComments || `Request ${decision}ed by Executive Director.`
+      };
 
-    toast({
-      title: `Final ${decision === 'approve' ? 'Approval' : 'Rejection'}`,
-      description: `Leave request ${request.refNumber} has been ${decision === 'approve' ? 'finally approved' : 'rejected'}. ${decision === 'approve' ? 'Employee and calendar will be notified.' : 'Request returned to employee.'}`,
-    });
+      const { error } = await supabase
+        .from('leave_requests')
+        .update({
+          status: decision === 'approve' ? 'final_approved' : 'rejected_final',
+          admin_comments: [...(request.adminComments || []), newComment],
+          final_signature: signature,
+          final_decision_date: new Date().toISOString()
+        })
+        .eq('id', requestId);
 
-    setAdminComments("");
-    setSelectedRequest(null);
+      if (error) throw error;
+
+      toast({
+        title: `Final ${decision === 'approve' ? 'Approval' : 'Rejection'}`,
+        description: `Leave request ${request.refNumber} has been ${decision === 'approve' ? 'finally approved' : 'rejected'}. ${decision === 'approve' ? 'Employee and calendar will be notified.' : 'Request returned to employee.'}`,
+      });
+
+      setAdminComments("");
+      setSelectedRequest(null);
+      
+      // Refresh requests
+      fetchLeaveRequests();
+      fetchAnalytics();
+    } catch (error) {
+      console.error('Error updating leave request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update leave request.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getImpactBadge = (impact: string) => {
@@ -190,11 +178,11 @@ export default function AdminFinalApproval() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const pendingFinalRequests = requests.filter(r => !r.status || r.status === 'hr_approved');
-  const finalizedRequests = requests.filter(r => r.status && (r.status === 'final_approved' || r.status === 'rejected_final'));
+  const pendingFinalRequests = requests.filter(r => r.status === 'hr_approved');
+  const finalizedRequests = requests.filter(r => r.status === 'final_approved' || r.status === 'rejected_final');
 
-  const approvalRate = mockAnalytics.thisMonth.submitted > 0 
-    ? Math.round((mockAnalytics.thisMonth.approved / mockAnalytics.thisMonth.submitted) * 100)
+  const approvalRate = analytics.thisMonth.submitted > 0 
+    ? Math.round((analytics.thisMonth.approved / analytics.thisMonth.submitted) * 100)
     : 0;
 
   return (
@@ -233,7 +221,7 @@ export default function AdminFinalApproval() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockAnalytics.thisMonth.submitted}</div>
+            <div className="text-2xl font-bold">{analytics.thisMonth.submitted}</div>
             <p className="text-xs text-muted-foreground">Total requests submitted</p>
           </CardContent>
         </Card>
@@ -594,19 +582,19 @@ export default function AdminFinalApproval() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span>Total Submitted:</span>
-                    <span className="font-bold text-2xl">{mockAnalytics.thisMonth.submitted}</span>
+                    <span className="font-bold text-2xl">{analytics.thisMonth.submitted}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Finally Approved:</span>
-                    <span className="font-bold text-2xl text-green-600">{mockAnalytics.thisMonth.approved}</span>
+                    <span className="font-bold text-2xl text-green-600">{analytics.thisMonth.approved}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Rejected:</span>
-                    <span className="font-bold text-2xl text-red-600">{mockAnalytics.thisMonth.rejected}</span>
+                    <span className="font-bold text-2xl text-red-600">{analytics.thisMonth.rejected}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Pending:</span>
-                    <span className="font-bold text-2xl text-orange-600">{mockAnalytics.thisMonth.pending}</span>
+                    <span className="font-bold text-2xl text-orange-600">{analytics.thisMonth.pending}</span>
                   </div>
                   <hr />
                   <div className="flex justify-between items-center">
@@ -624,7 +612,7 @@ export default function AdminFinalApproval() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mockAnalytics.byDepartment.map((dept, index) => (
+                  {analytics.byDepartment.map((dept, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <span className="text-sm">{dept.department}</span>
                       <div className="flex items-center space-x-2">
@@ -649,7 +637,7 @@ export default function AdminFinalApproval() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  {mockAnalytics.byLeaveType.map((type, index) => (
+                  {analytics.byLeaveType.map((type, index) => (
                     <div key={index} className="bg-muted p-4 rounded-lg">
                       <h4 className="font-medium">{type.type}</h4>
                       <div className="flex justify-between items-center mt-2">

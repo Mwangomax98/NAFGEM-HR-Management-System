@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Upload, Save, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,38 +51,24 @@ const leaveTypes = [
   { value: "personal", label: "Personal Day", entitlement: 5 },
 ];
 
-const projects = [
-  "USAID Health Systems Strengthening",
-  "EU Education Reform Project",
-  "DFID Governance Initiative",
-  "World Bank Infrastructure Development",
-  "UN Women Empowerment Program",
-  "Gates Foundation Nutrition Project",
-];
-
-const mockLeaveBalance = {
-  annual: { used: 8, total: 25 },
-  maternity: { used: 0, total: 90 },
-  paternity: { used: 0, total: 10 },
-  sick: { used: 3, total: 15 },
-  adoption: { used: 0, total: 30 },
-  compassionate: { used: 1, total: 5 },
-  personal: { used: 2, total: 5 },
-};
 
 export default function LeaveRequestForm() {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [projects, setProjects] = useState<string[]>([]);
+  const [leaveBalances, setLeaveBalances] = useState<Record<string, { used: number; total: number }>>({});
+  const [userProfile, setUserProfile] = useState<any>(null);
   const { toast } = useToast();
+  const { userRole } = useUserRole();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      employeeName: "Sarah Johnson",
-      contactAddress: "123 Main Street, Cityville",
-      mobilePhone: "+1 234 567 8900",
-      designation: "Senior Program Manager",
-      placeOfWork: "Head Office",
+      employeeName: "",
+      contactAddress: "",
+      mobilePhone: "",
+      designation: "",
+      placeOfWork: "",
       projects: [],
       numberOfDays: 1,
       handoverDetails: "",
@@ -88,10 +76,66 @@ export default function LeaveRequestForm() {
     },
   });
 
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    try {
+      // Fetch user profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserProfile(profile);
+          form.setValue('employeeName', profile.full_name || '');
+          form.setValue('designation', profile.title || '');
+        }
+      }
+
+      // Fetch projects
+      const { data: projectsData } = await supabase
+        .from('projects')
+        .select('name')
+        .eq('status', 'active');
+      
+      if (projectsData) {
+        setProjects(projectsData.map(p => p.name));
+      }
+
+      // Fetch leave balances
+      if (user) {
+        const { data: balancesData } = await supabase
+          .from('leave_balances')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('year', new Date().getFullYear());
+        
+        if (balancesData) {
+          const balances = balancesData.reduce((acc, balance) => {
+            acc[balance.leave_type] = {
+              used: balance.used_days,
+              total: balance.total_entitlement
+            };
+            return acc;
+          }, {} as Record<string, { used: number; total: number }>);
+          setLeaveBalances(balances);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+    }
+  };
+
   const selectedLeaveType = form.watch("leaveType");
   const numberOfDays = form.watch("numberOfDays");
   
-  const currentBalance = selectedLeaveType ? mockLeaveBalance[selectedLeaveType as keyof typeof mockLeaveBalance] : null;
+  const currentBalance = selectedLeaveType ? leaveBalances[selectedLeaveType] : null;
   const remainingDays = currentBalance ? currentBalance.total - currentBalance.used - numberOfDays : 0;
 
   const generateRefNumber = () => {
@@ -118,13 +162,61 @@ export default function LeaveRequestForm() {
     });
   };
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    const refNumber = generateRefNumber();
-    console.log("Leave request submitted:", { refNumber, ...values });
-    toast({
-      title: "Leave Request Submitted",
-      description: `Your request ${refNumber} has been submitted for approval.`,
-    });
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to submit a leave request.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const refNumber = generateRefNumber();
+      
+      const { error } = await supabase
+        .from('leave_requests')
+        .insert({
+          requester_id: user.id,
+          ref_number: refNumber,
+          employee_name: values.employeeName,
+          contact_address: values.contactAddress,
+          mobile_phone: values.mobilePhone,
+          designation: values.designation,
+          place_of_work: values.placeOfWork,
+          projects: values.projects,
+          date_of_appointment: values.dateOfAppointment.toISOString().split('T')[0],
+          leave_type: values.leaveType,
+          number_of_days: values.numberOfDays,
+          from_date: values.fromDate.toISOString().split('T')[0],
+          to_date: values.toDate.toISOString().split('T')[0],
+          handover_details: values.handoverDetails,
+          replacement_person: values.replacementPerson,
+          status: 'pending',
+          priority: 'normal'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Leave Request Submitted",
+        description: `Your request ${refNumber} has been submitted for approval.`,
+      });
+
+      // Reset form
+      form.reset();
+      setSelectedProjects([]);
+      setAttachedFiles([]);
+    } catch (error) {
+      console.error('Error submitting leave request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit leave request. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
