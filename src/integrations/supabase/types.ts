@@ -100,6 +100,204 @@ export type Database = {
         }
         Relationships: []
       }
+      exit_assets: {
+        Row: {
+          asset_description: string
+          asset_id: string | null
+          asset_type: string
+          condition_notes: string | null
+          created_at: string
+          exit_request_id: string
+          id: string
+          returned: boolean
+          returned_date: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          asset_description: string
+          asset_id?: string | null
+          asset_type: string
+          condition_notes?: string | null
+          created_at?: string
+          exit_request_id: string
+          id?: string
+          returned?: boolean
+          returned_date?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          asset_description?: string
+          asset_id?: string | null
+          asset_type?: string
+          condition_notes?: string | null
+          created_at?: string
+          exit_request_id?: string
+          id?: string
+          returned?: boolean
+          returned_date?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exit_assets_exit_request_id_fkey"
+            columns: ["exit_request_id"]
+            isOneToOne: false
+            referencedRelation: "exit_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exit_checklist_items: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          exit_request_id: string
+          id: string
+          notes: string | null
+          order_index: number
+          task_description: string | null
+          task_title: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          exit_request_id: string
+          id?: string
+          notes?: string | null
+          order_index?: number
+          task_description?: string | null
+          task_title: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          exit_request_id?: string
+          id?: string
+          notes?: string | null
+          order_index?: number
+          task_description?: string | null
+          task_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exit_checklist_items_exit_request_id_fkey"
+            columns: ["exit_request_id"]
+            isOneToOne: false
+            referencedRelation: "exit_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exit_conversations: {
+        Row: {
+          created_at: string
+          exit_request_id: string
+          id: string
+          message: string
+          message_type: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          exit_request_id: string
+          id?: string
+          message: string
+          message_type?: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          exit_request_id?: string
+          id?: string
+          message?: string
+          message_type?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exit_conversations_exit_request_id_fkey"
+            columns: ["exit_request_id"]
+            isOneToOne: false
+            referencedRelation: "exit_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exit_requests: {
+        Row: {
+          admin_comments: string | null
+          contact_info_post_departure: string | null
+          created_at: string
+          detailed_reason: string | null
+          employee_id: string
+          final_approved_at: string | null
+          final_approved_by: string | null
+          final_last_working_day: string | null
+          handover_notes: string | null
+          hr_comments: string | null
+          hr_reviewed_at: string | null
+          hr_reviewed_by: string | null
+          id: string
+          outstanding_tasks: string | null
+          proposed_last_working_day: string
+          replacement_suggestions: string | null
+          resignation_date: string
+          resignation_reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_comments?: string | null
+          contact_info_post_departure?: string | null
+          created_at?: string
+          detailed_reason?: string | null
+          employee_id: string
+          final_approved_at?: string | null
+          final_approved_by?: string | null
+          final_last_working_day?: string | null
+          handover_notes?: string | null
+          hr_comments?: string | null
+          hr_reviewed_at?: string | null
+          hr_reviewed_by?: string | null
+          id?: string
+          outstanding_tasks?: string | null
+          proposed_last_working_day: string
+          replacement_suggestions?: string | null
+          resignation_date?: string
+          resignation_reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_comments?: string | null
+          contact_info_post_departure?: string | null
+          created_at?: string
+          detailed_reason?: string | null
+          employee_id?: string
+          final_approved_at?: string | null
+          final_approved_by?: string | null
+          final_last_working_day?: string | null
+          handover_notes?: string | null
+          hr_comments?: string | null
+          hr_reviewed_at?: string | null
+          hr_reviewed_by?: string | null
+          id?: string
+          outstanding_tasks?: string | null
+          proposed_last_working_day?: string
+          replacement_suggestions?: string | null
+          resignation_date?: string
+          resignation_reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kpi_values: {
         Row: {
           actual_value: number
@@ -1271,6 +1469,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      create_default_exit_checklist: {
+        Args: { exit_request_id: string }
+        Returns: undefined
       }
       detect_security_anomalies: {
         Args: Record<PropertyKey, never>
