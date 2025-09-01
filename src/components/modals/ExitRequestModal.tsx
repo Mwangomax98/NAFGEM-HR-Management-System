@@ -34,7 +34,6 @@ export function ExitRequestModal({ open, onOpenChange, onSubmitted }: ExitReques
     lastWorkingDay: addWeeks(new Date(), 2), // Default to 2 weeks notice
     detailedReason: "",
     handoverNotes: "",
-    replacementSuggestions: "",
     outstandingTasks: "",
     contactInfo: ""
   });
@@ -100,7 +99,6 @@ export function ExitRequestModal({ open, onOpenChange, onSubmitted }: ExitReques
           proposed_last_working_day: format(formData.lastWorkingDay, "yyyy-MM-dd"),
           detailed_reason: formData.detailedReason,
           handover_notes: formData.handoverNotes,
-          replacement_suggestions: formData.replacementSuggestions,
           outstanding_tasks: formData.outstandingTasks,
           contact_info_post_departure: formData.contactInfo
         })
@@ -317,16 +315,6 @@ export function ExitRequestModal({ open, onOpenChange, onSubmitted }: ExitReques
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="replacement">Replacement Suggestions</Label>
-              <Textarea
-                id="replacement"
-                placeholder="Suggest potential internal candidates or recommendations for your replacement..."
-                value={formData.replacementSuggestions}
-                onChange={(e) => setFormData(prev => ({ ...prev, replacementSuggestions: e.target.value }))}
-                rows={2}
-              />
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="tasks">Outstanding Tasks & Commitments</Label>
