@@ -147,6 +147,39 @@ export type Database = {
           },
         ]
       }
+      exit_attachments: {
+        Row: {
+          created_at: string
+          exit_request_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          exit_request_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          exit_request_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       exit_checklist_items: {
         Row: {
           completed: boolean
