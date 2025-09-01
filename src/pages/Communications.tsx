@@ -114,12 +114,64 @@ const Communications = () => {
 
   const loadConversations = async () => {
     try {
-      const { data } = await supabase
-        .from('conversation_summaries')
-        .select('*')
-        .order('last_message_at', { ascending: false });
+      // Get distinct conversations from task_conversations where user is involved
+      const { data: conversationData } = await supabase
+        .from('task_conversations')
+        .select(`
+          task_evaluation_id,
+          conversation_type,
+          conversation_title,
+          sender_id,
+          created_at,
+          message
+        `)
+        .or(`sender_id.eq.${currentUser?.id},conversation_type.eq.general`)
+        .order('created_at', { ascending: false });
 
-      setConversations(data || []);
+      if (!conversationData) {
+        setConversations([]);
+        return;
+      }
+
+      // Group messages by conversation and create summaries
+      const conversationMap = new Map();
+      
+      conversationData.forEach(msg => {
+        const key = msg.task_evaluation_id;
+        if (!conversationMap.has(key)) {
+          conversationMap.set(key, {
+            task_evaluation_id: key,
+            conversation_type: msg.conversation_type,
+            conversation_title: msg.conversation_title || `Conversation ${key.slice(0, 8)}`,
+            participants: [],
+            messages: [],
+            last_message_at: msg.created_at,
+            last_message: msg.message
+          });
+        }
+        
+        const conv = conversationMap.get(key);
+        conv.messages.push(msg);
+        if (new Date(msg.created_at) > new Date(conv.last_message_at)) {
+          conv.last_message_at = msg.created_at;
+          conv.last_message = msg.message;
+        }
+        
+        if (!conv.participants.includes(msg.sender_id)) {
+          conv.participants.push(msg.sender_id);
+        }
+      });
+
+      // Convert to array and add counts
+      const conversations = Array.from(conversationMap.values()).map(conv => ({
+        ...conv,
+        message_count: conv.messages.length,
+        unread_count: conv.messages.filter(msg => 
+          msg.sender_id !== currentUser?.id && !msg.is_read
+        ).length
+      }));
+
+      setConversations(conversations);
     } catch (error) {
       console.error('Error loading conversations:', error);
     }
@@ -136,6 +188,21 @@ const Communications = () => {
       if (error) {
         console.error('Error loading messages:', error);
         throw error;
+      }
+
+      // Check if current user has access to this conversation
+      const userParticipates = data?.some(msg => msg.sender_id === currentUser?.id) || 
+                              data?.some(msg => msg.conversation_type === 'general');
+
+      if (!userParticipates && data?.length > 0) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to view this conversation.",
+          variant: "destructive",
+        });
+        setSelectedConversation(null);
+        setMessages([]);
+        return;
       }
 
       // Get sender information separately
@@ -252,16 +319,11 @@ const Communications = () => {
     if (!newConversationTitle.trim()) return;
 
     try {
-      console.log('Creating conversation with:', {
-        title: newConversationTitle,
-        type: newConversationType,
-        userId: currentUser?.id,
-        userRole: userRole,
-        participants: selectedParticipants
-      });
-
       // Create a unique conversation ID that doesn't require task_evaluation
       const conversationId = crypto.randomUUID();
+      
+      // For personal conversations, ensure participants include current user and selected users
+      const allParticipants = [currentUser?.id, ...selectedParticipants].filter(Boolean);
 
       // Create initial system message with participant information
       let systemMessage = `Started conversation: ${newConversationTitle}`;
@@ -272,23 +334,45 @@ const Communications = () => {
         systemMessage += ` with ${participantNames}`;
       }
 
+      const messageData = {
+        task_evaluation_id: conversationId,
+        sender_id: currentUser?.id,
+        message: systemMessage,
+        conversation_type: selectedParticipants.length > 0 ? 'personal' : newConversationType,
+        conversation_title: newConversationTitle,
+        message_type: 'system'
+      };
+
       const { error } = await supabase
         .from('task_conversations')
-        .insert({
-          task_evaluation_id: conversationId, // Use as conversation identifier
-          sender_id: currentUser?.id,
-          message: systemMessage,
-          conversation_type: newConversationType,
-          conversation_title: newConversationTitle,
-          message_type: 'system'
-        });
+        .insert(messageData);
 
       if (error) {
         console.error('Supabase error details:', error);
         throw error;
       }
 
-      console.log('Conversation created successfully');
+      // If this is a personal conversation with selected participants, 
+      // create additional messages to ensure all participants are linked
+      if (selectedParticipants.length > 0) {
+        const participantMessages = selectedParticipants.map(participantId => ({
+          task_evaluation_id: conversationId,
+          sender_id: participantId,
+          message: `Added to conversation: ${newConversationTitle}`,
+          conversation_type: 'personal',
+          conversation_title: newConversationTitle,
+          message_type: 'system'
+        }));
+
+        const { error: participantError } = await supabase
+          .from('task_conversations')
+          .insert(participantMessages);
+
+        if (participantError) {
+          console.error('Error adding participants:', participantError);
+        }
+      }
+
       setIsNewConversationOpen(false);
       setNewConversationTitle('');
       setNewConversationType('general');
