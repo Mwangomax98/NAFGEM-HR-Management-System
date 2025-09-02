@@ -1,68 +1,107 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Check, X, Clock, User, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
-  id: number;
+  id: string;
   type: "info" | "warning" | "success" | "error";
   title: string;
   message: string;
-  timestamp: string;
+  created_at: string;
   read: boolean;
-  actionRequired?: boolean;
+  user_id: string;
+  trip_id?: string;
 }
 
 export function NotificationDropdown() {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "warning",
-      title: "Timesheet Approval Pending",
-      message: "3 timesheets are waiting for your approval",
-      timestamp: "2024-11-20T10:30:00Z",
-      read: false,
-      actionRequired: true
-    },
-    {
-      id: 2,
-      type: "info",
-      title: "Leave Request Submitted",
-      message: "Sarah Johnson submitted a vacation request for Dec 20-27",
-      timestamp: "2024-11-20T09:15:00Z",
-      read: false
-    },
-    {
-      id: 3,
-      type: "success",
-      title: "Performance Review Completed",
-      message: "Q4 performance reviews have been finalized",
-      timestamp: "2024-11-19T16:45:00Z",
-      read: true
-    },
-    {
-      id: 4,
-      type: "info",
-      title: "System Maintenance",
-      message: "Scheduled maintenance on Sunday 3:00 AM - 6:00 AM",
-      timestamp: "2024-11-19T14:20:00Z",
-      read: true
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      // Type assertion to ensure compatibility with our interface
+      const typedData = (data || []).map(notification => ({
+        ...notification,
+        type: notification.type as "info" | "warning" | "success" | "error"
+      }));
+      setNotifications(typedData);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load notifications",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark notification as read",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+      
+      if (unreadIds.length === 0) return;
+
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .in('id', unreadIds);
+
+      if (error) throw error;
+
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to mark all notifications as read",
+        variant: "destructive",
+      });
+    }
   };
 
   const getIcon = (type: string) => {
@@ -155,16 +194,11 @@ export function NotificationDropdown() {
                         <p className="text-sm text-muted-foreground mt-1">
                           {notification.message}
                         </p>
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="text-xs text-muted-foreground">
-                            {formatTimestamp(notification.timestamp)}
-                          </p>
-                          {notification.actionRequired && (
-                            <Badge variant="outline" className="text-xs">
-                              Action Required
-                            </Badge>
-                          )}
-                        </div>
+                         <div className="flex items-center justify-between mt-2">
+                           <p className="text-xs text-muted-foreground">
+                             {formatTimestamp(notification.created_at)}
+                           </p>
+                         </div>
                       </div>
                     </div>
                   </div>
