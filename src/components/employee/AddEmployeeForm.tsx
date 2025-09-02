@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { CalendarIcon, Upload, Plus, Trash2, Save, UserPlus, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const employeeSchema = z.object({
   // Section A - Personal Particulars
@@ -163,33 +164,101 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
     }
   };
 
-  const onSubmit = (data: EmployeeFormData) => {
-    // Validate at least one next of kin is primary
-    const hasPrimaryNextOfKin = data.nextOfKin.some(nok => nok.primary);
-    if (!hasPrimaryNextOfKin) {
+  const onSubmit = async (data: EmployeeFormData) => {
+    try {
+      // Validate at least one next of kin is primary
+      const hasPrimaryNextOfKin = data.nextOfKin.some(nok => nok.primary);
+      if (!hasPrimaryNextOfKin) {
+        toast({
+          title: "Validation Error",
+          description: "Please mark at least one next of kin as primary.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate spouse fields if married
+      if (data.personal.maritalStatus === "Married" && !data.personal.spouseName) {
+        toast({
+          title: "Validation Error",
+          description: "Spouse name is required for married status.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Transform form data to database format
+      const employeeProfileData = {
+        name_full: data.personal.nameFull,
+        national_id: data.personal.nationalId,
+        tin_no: data.personal.tinNo || null,
+        contact_address: data.personal.contactAddress,
+        mobile_phones: data.personal.mobilePhones,
+        designation: data.personal.designation,
+        place_of_work: data.personal.placeOfWork,
+        date_of_appointment: data.personal.dateOfAppointment.toISOString().split('T')[0],
+        terms_of_service: data.personal.termsOfService,
+        nationality: data.personal.nationality,
+        date_of_birth: data.personal.dateOfBirth.toISOString().split('T')[0],
+        place_of_birth: data.personal.placeOfBirth,
+        religion: data.personal.religion || null,
+        marital_status: data.personal.maritalStatus,
+        spouse_name: data.personal.spouseName || null,
+        spouse_contacts: data.personal.spouseContacts || null,
+        passport_photo_url: data.personal.passportPhotoUrl || null,
+        father_name: data.family.fatherName,
+        father_place_of_birth: data.family.fatherPlaceOfBirth,
+        father_nationality: data.family.fatherNationality,
+        mother_name: data.family.motherName,
+        mother_place_of_birth: data.family.motherPlaceOfBirth,
+        mother_nationality: data.family.motherNationality,
+        children: JSON.stringify(data.family.children || []),
+        education: JSON.stringify(data.education.map(edu => ({
+          ...edu,
+          fromDate: edu.fromDate.toISOString(),
+          toDate: edu.toDate.toISOString()
+        }))),
+        next_of_kin: JSON.stringify(data.nextOfKin),
+        declaration_text: data.declaration.text,
+        declaration_signed_by: data.declaration.signedBy,
+        declaration_signed_at: data.declaration.signedAt.toISOString().split('T')[0],
+        employee_id: data.employment.employeeId,
+        user_role: data.employment.userRole.toLowerCase(),
+        status: data.employment.status.toLowerCase().replace(' ', '_'),
+        projects: JSON.stringify(data.employment.projects),
+        created_by: (await supabase.auth.getUser()).data.user?.id
+      };
+
+      // Insert the employee profile
+      const { data: insertedProfile, error } = await supabase
+        .from('employee_profiles')
+        .insert(employeeProfileData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating employee profile:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create employee profile.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      onSave?.(data);
       toast({
-        title: "Validation Error",
-        description: "Please mark at least one next of kin as primary.",
+        title: "Employee Added",
+        description: "Employee profile has been successfully created.",
+      });
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      return;
     }
-
-    // Validate spouse fields if married
-    if (data.personal.maritalStatus === "Married" && !data.personal.spouseName) {
-      toast({
-        title: "Validation Error",
-        description: "Spouse name is required for married status.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    onSave?.(data);
-    toast({
-      title: "Employee Added",
-      description: "Employee record has been successfully created.",
-    });
   };
 
   return (
@@ -881,6 +950,479 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeChild(index)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Section C - Education Qualification */}
+              <TabsContent value="education" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-primary">Section C - Education Qualification</CardTitle>
+                    <CardDescription>Educational background and qualifications</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-primary">Education Records</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => appendEducation({ institution: "", place: "", fromDate: new Date(), toDate: new Date() })}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Education
+                      </Button>
+                    </div>
+
+                    {educationFields.map((field, index) => (
+                      <Card key={field.id} className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`education.${index}.institution`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Institution</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="e.g., University of Dar es Salaam" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`education.${index}.place`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Place</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="e.g., Dar es Salaam, Tanzania" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`education.${index}.fromDate`}
+                            render={({ field }) => (
+                              <FormItem className="flex flex-col">
+                                <FormLabel>From Date</FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full pl-3 text-left font-normal",
+                                          !field.value && "text-muted-foreground"
+                                        )}
+                                      >
+                                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) => date > new Date()}
+                                      initialFocus
+                                      className="pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`education.${index}.toDate`}
+                            render={({ field }) => (
+                              <FormItem className="flex flex-col">
+                                <FormLabel>To Date</FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full pl-3 text-left font-normal",
+                                          !field.value && "text-muted-foreground"
+                                        )}
+                                      >
+                                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) => date > new Date()}
+                                      initialFocus
+                                      className="pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="md:col-span-2 flex items-center justify-between">
+                            <div className="space-y-2 flex-1">
+                              <Label className="text-sm">Certificates</Label>
+                              <Input
+                                type="file"
+                                accept=".pdf,.jpg,.png"
+                                multiple
+                                onChange={(e) => handleFileUpload(`educationCerts_${index}`, e.target.files)}
+                                className="text-xs"
+                              />
+                            </div>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeEducation(index)}
+                              className="text-destructive ml-4"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Section D - Next of Kin */}
+              <TabsContent value="nextofkin" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-primary">Section D - Next of Kin</CardTitle>
+                    <CardDescription>Emergency contacts and next of kin information</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-primary">Next of Kin</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => appendNextOfKin({ name: "", age: 0, relation: "", contact: "", primary: false })}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Next of Kin
+                      </Button>
+                    </div>
+
+                    {nextOfKinFields.map((field, index) => (
+                      <Card key={field.id} className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`nextOfKin.${index}.name`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Full Name</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`nextOfKin.${index}.age`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Age</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    {...field} 
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`nextOfKin.${index}.relation`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Relation</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="e.g., Parent, Sibling, Spouse" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`nextOfKin.${index}.contact`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Contact Information</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Phone number or address" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="flex items-center space-x-2">
+                            <FormField
+                              control={form.control}
+                              name={`nextOfKin.${index}.primary`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                    <input
+                                      type="checkbox"
+                                      checked={field.value}
+                                      onChange={field.onChange}
+                                      className="mt-1"
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel>Primary Contact</FormLabel>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeNextOfKin(index)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Section E - Declaration */}
+              <TabsContent value="declaration" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-primary">Section E - Declaration</CardTitle>
+                    <CardDescription>Employee declaration and signature</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="declaration.text"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Declaration Text</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              {...field} 
+                              rows={6}
+                              placeholder="I hereby declare that the information provided above is true and correct to the best of my knowledge and belief..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="declaration.signedBy"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Signed By (Employee Name)</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="declaration.signedAt"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Date Signed</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) => date > new Date()}
+                                  initialFocus
+                                  className="pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Project Assignments */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-medium text-primary">Project Assignments</h3>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => appendProject({ projectId: "", projectName: "", donor: "", code: "", isPrimary: false })}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Project
+                        </Button>
+                      </div>
+
+                      {projectFields.map((field, index) => (
+                        <Card key={field.id} className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`employment.projects.${index}.projectId`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Project ID</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`employment.projects.${index}.projectName`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Project Name</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`employment.projects.${index}.donor`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Donor</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`employment.projects.${index}.code`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Code</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <div className="flex items-center space-x-2">
+                              <FormField
+                                control={form.control}
+                                name={`employment.projects.${index}.isPrimary`}
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                    <FormControl>
+                                      <input
+                                        type="checkbox"
+                                        checked={field.value}
+                                        onChange={field.onChange}
+                                        className="mt-1"
+                                      />
+                                    </FormControl>
+                                    <div className="space-y-1 leading-none">
+                                      <FormLabel>Primary Project</FormLabel>
+                                    </div>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-end lg:col-span-3">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeProject(index)}
                                 className="text-destructive"
                               >
                                 <Trash2 className="w-4 h-4" />

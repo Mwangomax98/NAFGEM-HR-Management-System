@@ -100,6 +100,129 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_profiles: {
+        Row: {
+          children: Json | null
+          contact_address: string
+          created_at: string
+          created_by: string | null
+          date_of_appointment: string
+          date_of_birth: string
+          declaration_signed_at: string
+          declaration_signed_by: string
+          declaration_text: string
+          designation: string
+          education: Json | null
+          employee_id: string
+          father_name: string
+          father_nationality: string
+          father_place_of_birth: string
+          id: string
+          marital_status: string
+          mobile_phones: string[]
+          mother_name: string
+          mother_nationality: string
+          mother_place_of_birth: string
+          name_full: string
+          national_id: string
+          nationality: string
+          next_of_kin: Json
+          passport_photo_url: string | null
+          place_of_birth: string
+          place_of_work: string
+          projects: Json | null
+          religion: string | null
+          spouse_contacts: string | null
+          spouse_name: string | null
+          status: string
+          terms_of_service: string
+          tin_no: string | null
+          updated_at: string
+          user_id: string | null
+          user_role: string
+        }
+        Insert: {
+          children?: Json | null
+          contact_address: string
+          created_at?: string
+          created_by?: string | null
+          date_of_appointment: string
+          date_of_birth: string
+          declaration_signed_at: string
+          declaration_signed_by: string
+          declaration_text: string
+          designation: string
+          education?: Json | null
+          employee_id: string
+          father_name: string
+          father_nationality: string
+          father_place_of_birth: string
+          id?: string
+          marital_status: string
+          mobile_phones?: string[]
+          mother_name: string
+          mother_nationality: string
+          mother_place_of_birth: string
+          name_full: string
+          national_id: string
+          nationality: string
+          next_of_kin?: Json
+          passport_photo_url?: string | null
+          place_of_birth: string
+          place_of_work: string
+          projects?: Json | null
+          religion?: string | null
+          spouse_contacts?: string | null
+          spouse_name?: string | null
+          status?: string
+          terms_of_service: string
+          tin_no?: string | null
+          updated_at?: string
+          user_id?: string | null
+          user_role?: string
+        }
+        Update: {
+          children?: Json | null
+          contact_address?: string
+          created_at?: string
+          created_by?: string | null
+          date_of_appointment?: string
+          date_of_birth?: string
+          declaration_signed_at?: string
+          declaration_signed_by?: string
+          declaration_text?: string
+          designation?: string
+          education?: Json | null
+          employee_id?: string
+          father_name?: string
+          father_nationality?: string
+          father_place_of_birth?: string
+          id?: string
+          marital_status?: string
+          mobile_phones?: string[]
+          mother_name?: string
+          mother_nationality?: string
+          mother_place_of_birth?: string
+          name_full?: string
+          national_id?: string
+          nationality?: string
+          next_of_kin?: Json
+          passport_photo_url?: string | null
+          place_of_birth?: string
+          place_of_work?: string
+          projects?: Json | null
+          religion?: string | null
+          spouse_contacts?: string | null
+          spouse_name?: string | null
+          status?: string
+          terms_of_service?: string
+          tin_no?: string | null
+          updated_at?: string
+          user_id?: string | null
+          user_role?: string
+        }
+        Relationships: []
+      }
       exit_assets: {
         Row: {
           asset_description: string
