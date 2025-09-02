@@ -20,7 +20,6 @@ import LeaveApprovals from "./pages/hr/LeaveApprovals";
 import UserManagement from "./pages/admin/UserManagement";
 import SystemSettings from "./pages/admin/SystemSettings";
 import TripManagement from "./pages/hr/TripManagement";
-import Training from "./pages/hr/Training";
 import Performance from "./pages/hr/Performance";
 
 import Communications from "./pages/Communications";
@@ -50,7 +49,6 @@ const App = () => (
           <Route path="/hr/timesheet-approvals" element={<TimesheetApprovals />} />
           <Route path="/hr/leave-approvals" element={<LeaveApprovals />} />
           <Route path="/hr/trip-management" element={<TripManagement />} />
-          <Route path="/hr/training" element={<Training />} />
           <Route path="/hr/performance" element={<Performance />} />
           
           <Route path="/communications" element={<Communications />} />
