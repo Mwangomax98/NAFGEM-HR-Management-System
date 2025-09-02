@@ -203,33 +203,28 @@ export default function WeeklyTaskSubmission() {
 
       let weeklyTaskId = weeklyTask.id;
 
-      // Create or update weekly task
-      if (!weeklyTaskId) {
-        const { data: newWeeklyTask, error: weekError } = await supabase
-          .from('weekly_tasks')
-          .insert({
-            employee_id: user.id,
-            week_start_date: weeklyTask.week_start_date,
-            week_end_date: weeklyTask.week_end_date,
-            status: submit ? 'submitted' : 'draft',
-            submitted_at: submit ? new Date().toISOString() : null
-          })
-          .select()
-          .single();
+      // Use UPSERT to handle duplicate key constraint
+      const { data: weeklyTaskData, error: weekError } = await supabase
+        .from('weekly_tasks')
+        .upsert({
+          employee_id: user.id,
+          week_start_date: weeklyTask.week_start_date,
+          week_end_date: weeklyTask.week_end_date,
+          status: submit ? 'submitted' : 'draft',
+          submitted_at: submit ? new Date().toISOString() : null
+        }, {
+          onConflict: 'employee_id,week_start_date',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
 
-        if (weekError) throw weekError;
-        weeklyTaskId = newWeeklyTask.id;
-      } else {
-        const { error: updateError } = await supabase
-          .from('weekly_tasks')
-          .update({
-            status: submit ? 'submitted' : 'draft',
-            submitted_at: submit ? new Date().toISOString() : null
-          })
-          .eq('id', weeklyTaskId);
-
-        if (updateError) throw updateError;
+      if (weekError) {
+        console.error('Error saving weekly task:', weekError);
+        throw weekError;
       }
+
+      weeklyTaskId = weeklyTaskData.id;
 
       // Delete existing task submissions
       if (weeklyTask.id) {

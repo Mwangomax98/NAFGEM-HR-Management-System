@@ -114,61 +114,27 @@ const Communications = () => {
 
   const loadConversations = async () => {
     try {
-      // Get distinct conversations from task_conversations where user is involved
-      const { data: conversationData } = await supabase
-        .from('task_conversations')
-        .select(`
-          task_evaluation_id,
-          conversation_type,
-          conversation_title,
-          sender_id,
-          created_at,
-          message
-        `)
-        .or(`sender_id.eq.${currentUser?.id},conversation_type.eq.general`)
-        .order('created_at', { ascending: false });
+      // First get all conversations that include this user as a participant
+      const { data: conversationSummaries } = await supabase
+        .from('conversation_summaries')
+        .select('*')
+        .contains('participants', [currentUser?.id]);
 
-      if (!conversationData) {
+      if (!conversationSummaries || conversationSummaries.length === 0) {
         setConversations([]);
         return;
       }
 
-      // Group messages by conversation and create summaries
-      const conversationMap = new Map();
-      
-      conversationData.forEach(msg => {
-        const key = msg.task_evaluation_id;
-        if (!conversationMap.has(key)) {
-          conversationMap.set(key, {
-            task_evaluation_id: key,
-            conversation_type: msg.conversation_type,
-            conversation_title: msg.conversation_title || `Conversation ${key.slice(0, 8)}`,
-            participants: [],
-            messages: [],
-            last_message_at: msg.created_at,
-            last_message: msg.message
-          });
-        }
-        
-        const conv = conversationMap.get(key);
-        conv.messages.push(msg);
-        if (new Date(msg.created_at) > new Date(conv.last_message_at)) {
-          conv.last_message_at = msg.created_at;
-          conv.last_message = msg.message;
-        }
-        
-        if (!conv.participants.includes(msg.sender_id)) {
-          conv.participants.push(msg.sender_id);
-        }
-      });
-
-      // Convert to array and add counts
-      const conversations = Array.from(conversationMap.values()).map(conv => ({
-        ...conv,
-        message_count: conv.messages.length,
-        unread_count: conv.messages.filter(msg => 
-          msg.sender_id !== currentUser?.id && !msg.is_read
-        ).length
+      // Convert summaries to the format expected by the component
+      const conversations = conversationSummaries.map(summary => ({
+        task_evaluation_id: summary.task_evaluation_id,
+        conversation_type: summary.conversation_type,
+        conversation_title: summary.conversation_title || `Conversation ${summary.task_evaluation_id?.slice(0, 8) || 'Unknown'}`,
+        participants: summary.participants || [],
+        message_count: summary.message_count || 0,
+        unread_count: summary.unread_count || 0,
+        last_message: summary.last_message || '',
+        last_message_at: summary.last_message_at
       }));
 
       setConversations(conversations);
