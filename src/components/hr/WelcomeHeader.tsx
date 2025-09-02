@@ -123,7 +123,7 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
 
   const handleQuickActions = () => {
     if (userRole === 'hr' || userRole === 'admin') {
-      navigate('/hr/task-management');
+      navigate('/hr/projects');
     } else {
       navigate('/tasks');
     }

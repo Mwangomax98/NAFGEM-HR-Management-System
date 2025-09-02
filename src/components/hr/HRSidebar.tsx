@@ -52,7 +52,7 @@ const menuItems: SidebarItem[] = [
   { title: "Employee Management", url: "/hr/employee-management", icon: Users, roles: ["hr", "admin"] },
   { title: "Project Management", url: "/hr/projects", icon: Building2, roles: ["hr", "admin"] },
   { title: "Timesheet Approvals", url: "/hr/timesheet-approvals", icon: Clock, roles: ["hr", "admin"] },
-  { title: "Task Management", url: "/hr/task-management", icon: CheckSquare, roles: ["hr", "admin"] },
+  
   { title: "Leave Approvals", url: "/hr/leave-approvals", icon: Calendar, roles: ["hr", "admin"] },
   { title: "Trip Management", url: "/hr/trip-management", icon: Car, roles: ["hr", "admin"] },
   { title: "Training & Development", url: "/hr/training", icon: BookOpen, roles: ["hr", "admin"] },
