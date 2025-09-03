@@ -187,6 +187,23 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         return;
       }
 
+      // Check user permissions first
+      const { data: currentUser } = await supabase.auth.getUser();
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', currentUser.user?.id)
+        .single();
+
+      if (!userRole || !['hr', 'admin'].includes(userRole.role)) {
+        toast({
+          title: "Access Denied",
+          description: "Only HR and Admin users can create employee profiles.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Transform form data to database format
       const employeeProfileData = {
         name_full: data.personal.nameFull,
@@ -226,8 +243,16 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         user_role: data.employment.userRole.toLowerCase(),
         status: data.employment.status.toLowerCase().replace(' ', '_'),
         projects: JSON.stringify(data.employment.projects),
-        created_by: (await supabase.auth.getUser()).data.user?.id
+        // Set user_id to null initially - can be linked to user accounts later
+        user_id: null,
+        created_by: currentUser.user?.id
       };
+
+      console.log('Attempting to save employee profile:', {
+        employee_id: employeeProfileData.employee_id,
+        name: employeeProfileData.name_full,
+        user_role: userRole.role
+      });
 
       // Insert the employee profile
       const { data: insertedProfile, error } = await supabase
