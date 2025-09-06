@@ -14,7 +14,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Upload, Plus, Trash2, Save, UserPlus, Send } from "lucide-react";
+import { CalendarIcon, Upload, Plus, Trash2, Save, UserPlus, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,6 +107,7 @@ interface AddEmployeeFormProps {
 export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormProps) {
   const [activeTab, setActiveTab] = useState("personal");
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
@@ -165,6 +166,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
   };
 
   const onSubmit = async (data: EmployeeFormData) => {
+    setIsSubmitting(true);
     try {
       // Validate at least one next of kin is primary
       const hasPrimaryNextOfKin = data.nextOfKin.some(nok => nok.primary);
@@ -188,12 +190,31 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       }
 
       // Check user permissions first
-      const { data: currentUser } = await supabase.auth.getUser();
-      const { data: userRole } = await supabase
+      const { data: currentUser, error: userError } = await supabase.auth.getUser();
+      if (userError || !currentUser.user) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data: userRole, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', currentUser.user?.id)
-        .single();
+        .eq('user_id', currentUser.user.id)
+        .maybeSingle();
+
+      if (roleError) {
+        console.error('Error fetching user role:', roleError);
+        toast({
+          title: "Permission Error",
+          description: "Unable to verify permissions. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (!userRole || !['hr', 'admin'].includes(userRole.role)) {
         toast({
@@ -263,9 +284,20 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
 
       if (error) {
         console.error('Error creating employee profile:', error);
+        
+        // Provide more specific error messages
+        let errorMessage = "Failed to create employee profile.";
+        if (error.message.includes("new row violates row-level security")) {
+          errorMessage = "You don't have permission to create employee profiles. Please ensure you are logged in with HR or Admin privileges.";
+        } else if (error.message.includes("duplicate key")) {
+          errorMessage = "An employee with this ID already exists.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
         toast({
           title: "Error",
-          description: error.message || "Failed to create employee profile.",
+          description: errorMessage,
           variant: "destructive",
         });
         return;
@@ -283,6 +315,8 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -298,9 +332,21 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
             <Button variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button onClick={() => form.handleSubmit(onSubmit)()}>
-              <Save className="w-4 h-4 mr-2" />
-              Save Employee
+            <Button 
+              onClick={() => form.handleSubmit(onSubmit)()} 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Employee
+                </>
+              )}
             </Button>
           </div>
         </div>

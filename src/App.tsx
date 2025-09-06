@@ -25,6 +25,8 @@ import Performance from "./pages/hr/Performance";
 import Communications from "./pages/Communications";
 import Reports from "./pages/Reports";
 import MonitoringEvaluation from "./pages/MonitoringEvaluation";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ROLES } from "@/lib/roles";
 
 const queryClient = new QueryClient();
 
@@ -37,25 +39,25 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/timesheets" element={<Timesheets />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/leave" element={<Leave />} />
-          <Route path="/trips" element={<Trips />} />
-          <Route path="/exit" element={<Exit />} />
-          <Route path="/hr/management" element={<HRManagement />} />
-          <Route path="/hr/employee-management" element={<EmployeeManagement />} />
-          <Route path="/hr/projects" element={<ProjectManagement />} />
-          <Route path="/hr/timesheet-approvals" element={<TimesheetApprovals />} />
-          <Route path="/hr/leave-approvals" element={<LeaveApprovals />} />
-          <Route path="/hr/trip-management" element={<TripManagement />} />
-          <Route path="/hr/performance" element={<Performance />} />
+          <Route path="/profile" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Profile /></ProtectedRoute>} />
+          <Route path="/timesheets" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Timesheets /></ProtectedRoute>} />
+          <Route path="/tasks" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Tasks /></ProtectedRoute>} />
+          <Route path="/leave" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Leave /></ProtectedRoute>} />
+          <Route path="/trips" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Trips /></ProtectedRoute>} />
+          <Route path="/exit" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Exit /></ProtectedRoute>} />
+          <Route path="/hr/management" element={<ProtectedRoute requiredRole={ROLES.HR}><HRManagement /></ProtectedRoute>} />
+          <Route path="/hr/employee-management" element={<ProtectedRoute requiredRole={ROLES.HR}><EmployeeManagement /></ProtectedRoute>} />
+          <Route path="/hr/projects" element={<ProtectedRoute requiredRole={ROLES.HR}><ProjectManagement /></ProtectedRoute>} />
+          <Route path="/hr/timesheet-approvals" element={<ProtectedRoute requiredRole={ROLES.HR}><TimesheetApprovals /></ProtectedRoute>} />
+          <Route path="/hr/leave-approvals" element={<ProtectedRoute requiredRole={ROLES.HR}><LeaveApprovals /></ProtectedRoute>} />
+          <Route path="/hr/trip-management" element={<ProtectedRoute requiredRole={ROLES.HR}><TripManagement /></ProtectedRoute>} />
+          <Route path="/hr/performance" element={<ProtectedRoute requiredRole={ROLES.HR}><Performance /></ProtectedRoute>} />
           
-          <Route path="/communications" element={<Communications />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/hr/monitoring-evaluation" element={<MonitoringEvaluation />} />
-          <Route path="/admin/users" element={<UserManagement />} />
-          <Route path="/admin/settings" element={<SystemSettings />} />
+          <Route path="/communications" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Communications /></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Reports /></ProtectedRoute>} />
+          <Route path="/hr/monitoring-evaluation" element={<ProtectedRoute requiredRole={ROLES.HR}><MonitoringEvaluation /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute requiredRole={ROLES.ADMIN}><UserManagement /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute requiredRole={ROLES.ADMIN}><SystemSettings /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
