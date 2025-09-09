@@ -166,11 +166,14 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
   };
 
   const onSubmit = async (data: EmployeeFormData) => {
+    console.log("🚀 Form submission started", data);
     setIsSubmitting(true);
     try {
       // Validate at least one next of kin is primary
       const hasPrimaryNextOfKin = data.nextOfKin.some(nok => nok.primary);
+      console.log("Next of kin validation:", { nextOfKin: data.nextOfKin, hasPrimary: hasPrimaryNextOfKin });
       if (!hasPrimaryNextOfKin) {
+        console.log("❌ Validation failed: No primary next of kin");
         toast({
           title: "Validation Error",
           description: "Please mark at least one next of kin as primary.",
@@ -329,11 +332,12 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
             <p className="text-muted-foreground">Personal Particulars Form</p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={onCancel}>
+            <Button variant="outline" onClick={onCancel} type="button">
               Cancel
             </Button>
             <Button 
-              onClick={() => form.handleSubmit(onSubmit)()} 
+              type="submit"
+              form="employee-form"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -352,7 +356,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form id="employee-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="personal">Section A</TabsTrigger>
