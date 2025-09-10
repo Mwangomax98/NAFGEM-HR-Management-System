@@ -195,6 +195,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       // Check user permissions first
       const { data: currentUser, error: userError } = await supabase.auth.getUser();
       if (userError || !currentUser.user) {
+        console.error('Authentication error:', userError);
         toast({
           title: "Authentication Error",
           description: "Please log in to continue.",
@@ -202,6 +203,11 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         });
         return;
       }
+
+      console.log('Current user authenticated:', {
+        id: currentUser.user.id,
+        email: currentUser.user.email
+      });
 
       const { data: userRole, error: roleError } = await supabase
         .from('user_roles')
@@ -219,7 +225,13 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         return;
       }
 
+      console.log('User role:', userRole);
+
       if (!userRole || !['hr', 'admin'].includes(userRole.role)) {
+        console.error('Insufficient permissions:', {
+          userRole: userRole?.role,
+          required: ['hr', 'admin']
+        });
         toast({
           title: "Access Denied",
           description: "Only HR and Admin users can create employee profiles.",
@@ -228,13 +240,15 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         return;
       }
 
+      console.log('User has permission to create employees:', userRole.role);
+
       // Transform form data to database format
       const employeeProfileData = {
         name_full: data.personal.nameFull,
         national_id: data.personal.nationalId,
         tin_no: data.personal.tinNo || null,
         contact_address: data.personal.contactAddress,
-        mobile_phones: data.personal.mobilePhones,
+        mobile_phones: Array.isArray(data.personal.mobilePhones) ? data.personal.mobilePhones : [data.personal.mobilePhones].filter(Boolean),
         designation: data.personal.designation,
         place_of_work: data.personal.placeOfWork,
         date_of_appointment: data.personal.dateOfAppointment.toISOString().split('T')[0],
@@ -253,20 +267,23 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         mother_name: data.family.motherName,
         mother_place_of_birth: data.family.motherPlaceOfBirth,
         mother_nationality: data.family.motherNationality,
-        children: JSON.stringify(data.family.children || []),
-        education: JSON.stringify(data.education.map(edu => ({
+        children: data.family.children?.map(child => ({
+          ...child,
+          dateOfBirth: child.dateOfBirth?.toISOString().split('T')[0]
+        })) || [],
+        education: data.education.map(edu => ({
           ...edu,
-          fromDate: edu.fromDate.toISOString(),
-          toDate: edu.toDate.toISOString()
-        }))),
-        next_of_kin: JSON.stringify(data.nextOfKin),
+          fromDate: edu.fromDate.toISOString().split('T')[0],
+          toDate: edu.toDate.toISOString().split('T')[0]
+        })),
+        next_of_kin: data.nextOfKin,
         declaration_text: data.declaration.text,
         declaration_signed_by: data.declaration.signedBy,
         declaration_signed_at: data.declaration.signedAt.toISOString().split('T')[0],
         employee_id: data.employment.employeeId,
         user_role: data.employment.userRole.toLowerCase(),
-        status: data.employment.status.toLowerCase().replace(' ', '_'),
-        projects: JSON.stringify(data.employment.projects),
+        status: 'active',
+        projects: data.employment.projects || [],
         // Set user_id to null initially - can be linked to user accounts later
         user_id: null,
         created_by: currentUser.user?.id
@@ -275,7 +292,10 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       console.log('Attempting to save employee profile:', {
         employee_id: employeeProfileData.employee_id,
         name: employeeProfileData.name_full,
-        user_role: userRole.role
+        user_role: userRole.role,
+        mobile_phones: employeeProfileData.mobile_phones,
+        children: employeeProfileData.children,
+        projects: employeeProfileData.projects
       });
 
       // Insert the employee profile

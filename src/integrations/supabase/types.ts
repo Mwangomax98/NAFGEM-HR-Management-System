@@ -1630,6 +1630,10 @@ export type Database = {
         Args: { exit_request_id: string }
         Returns: undefined
       }
+      debug_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       detect_security_anomalies: {
         Args: Record<PropertyKey, never>
         Returns: undefined
