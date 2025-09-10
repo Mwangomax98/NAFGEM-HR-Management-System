@@ -267,15 +267,15 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         mother_name: data.family.motherName,
         mother_place_of_birth: data.family.motherPlaceOfBirth,
         mother_nationality: data.family.motherNationality,
-        children: data.family.children?.map(child => ({
+        children: JSON.parse(JSON.stringify(data.family.children?.map(child => ({
           ...child,
-          dateOfBirth: child.dateOfBirth?.toISOString().split('T')[0]
-        })) || [],
-        education: data.education.map(edu => ({
+          dateOfBirth: child.dateOfBirth instanceof Date ? child.dateOfBirth.toISOString().split('T')[0] : child.dateOfBirth
+        })) || [])),
+        education: JSON.parse(JSON.stringify(data.education.map(edu => ({
           ...edu,
-          fromDate: edu.fromDate.toISOString().split('T')[0],
-          toDate: edu.toDate.toISOString().split('T')[0]
-        })),
+          fromDate: edu.fromDate instanceof Date ? edu.fromDate.toISOString().split('T')[0] : edu.fromDate,
+          toDate: edu.toDate instanceof Date ? edu.toDate.toISOString().split('T')[0] : edu.toDate
+        })))),
         next_of_kin: data.nextOfKin,
         declaration_text: data.declaration.text,
         declaration_signed_by: data.declaration.signedBy,
