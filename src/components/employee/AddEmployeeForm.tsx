@@ -181,6 +181,8 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
 
   const onSubmit = async (data: EmployeeFormData) => {
     console.log("🚀 Form submission started", data);
+    console.log("🔍 Selected User ID:", data.selectedUserId);
+    console.log("🔍 Selected User Object:", selectedUser);
     setIsSubmitting(true);
     try {
       // Validate at least one next of kin is primary
@@ -257,7 +259,10 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       console.log('User has permission to create employees:', userRole.role);
 
       // Validate selected user
+      console.log("🔍 Validating selectedUserId:", data.selectedUserId);
+      console.log("🔍 Validating selectedUser:", selectedUser);
       if (!data.selectedUserId || !selectedUser) {
+        console.log("❌ User selection validation failed");
         toast({
           title: "Validation Error",
           description: "Please select a user to create an employee profile for.",
