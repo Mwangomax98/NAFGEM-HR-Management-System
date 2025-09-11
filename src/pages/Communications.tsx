@@ -77,24 +77,37 @@ const Communications = () => {
   const loadCurrentUser = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      if (!user) {
+        console.log('No user found, redirecting to auth...');
+        // Redirect to authentication page
+        window.location.href = '/auth';
+        return;
+      }
+
+      console.log('User found:', user.id);
 
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      console.log('User profile:', profile);
+      console.log('User role:', roleData);
 
       setCurrentUser({ ...user, profile });
       setUserRole(roleData?.role || 'employee');
     } catch (error) {
       console.error('Error loading user:', error);
+      // If there's an authentication error, redirect to auth
+      window.location.href = '/auth';
     } finally {
       setLoading(false);
     }
@@ -282,16 +295,39 @@ const Communications = () => {
   };
 
   const createNewConversation = async () => {
-    if (!newConversationTitle.trim()) return;
+    if (!newConversationTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a conversation title.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentUser?.id) {
+      toast({
+        title: "Error", 
+        description: "You must be logged in to create conversations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Creating conversation:', {
+      title: newConversationTitle,
+      type: selectedParticipants.length > 0 ? 'personal' : newConversationType,
+      participants: selectedParticipants,
+      currentUser: currentUser?.id
+    });
 
     try {
-      // Create a unique conversation ID that doesn't require task_evaluation
+      // Create a unique conversation ID
       const conversationId = crypto.randomUUID();
       
-      // For personal conversations, ensure participants include current user and selected users
-      const allParticipants = [currentUser?.id, ...selectedParticipants].filter(Boolean);
+      // Determine conversation type - personal if participants selected, otherwise use selected type
+      const conversationType = selectedParticipants.length > 0 ? 'personal' : newConversationType;
 
-      // Create initial system message with participant information
+      // Create initial message
       let systemMessage = `Started conversation: ${newConversationTitle}`;
       if (selectedParticipants.length > 0) {
         const participantNames = selectedParticipants.map(id => 
@@ -302,32 +338,39 @@ const Communications = () => {
 
       const messageData = {
         task_evaluation_id: conversationId,
-        sender_id: currentUser?.id,
+        sender_id: currentUser.id,
         message: systemMessage,
-        conversation_type: selectedParticipants.length > 0 ? 'personal' : newConversationType,
+        conversation_type: conversationType,
         conversation_title: newConversationTitle,
-        message_type: 'system'
+        message_type: 'system',
+        is_read: false
       };
 
-      const { error } = await supabase
+      console.log('Inserting message data:', messageData);
+
+      const { data, error } = await supabase
         .from('task_conversations')
-        .insert(messageData);
+        .insert(messageData)
+        .select();
 
       if (error) {
-        console.error('Supabase error details:', error);
-        throw error;
+        console.error('Database error creating conversation:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
 
-      // If this is a personal conversation with selected participants, 
-      // create additional messages to ensure all participants are linked
+      console.log('Successfully created initial message:', data);
+
+      // For personal conversations, create placeholder messages for each participant
+      // This ensures they appear in the conversation list for all participants
       if (selectedParticipants.length > 0) {
         const participantMessages = selectedParticipants.map(participantId => ({
           task_evaluation_id: conversationId,
-          sender_id: participantId,
-          message: `Added to conversation: ${newConversationTitle}`,
+          sender_id: currentUser.id, // Use current user as sender for all
+          message: `${profiles.find(p => p.id === participantId)?.full_name || 'User'} added to conversation`,
           conversation_type: 'personal',
           conversation_title: newConversationTitle,
-          message_type: 'system'
+          message_type: 'system',
+          is_read: false
         }));
 
         const { error: participantError } = await supabase
@@ -335,16 +378,19 @@ const Communications = () => {
           .insert(participantMessages);
 
         if (participantError) {
-          console.error('Error adding participants:', participantError);
+          console.error('Error adding participant messages:', participantError);
         }
       }
 
+      // Reset form
       setIsNewConversationOpen(false);
       setNewConversationTitle('');
       setNewConversationType('general');
       setSelectedParticipants([]);
       setParticipantSearch('');
-      loadConversations();
+      
+      // Reload conversations to show the new one
+      await loadConversations();
 
       toast({
         title: "Conversation created",
