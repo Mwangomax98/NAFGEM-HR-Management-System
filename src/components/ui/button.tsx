@@ -9,18 +9,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-button text-primary-foreground hover:shadow-glow shadow-button font-medium button-glow",
+        default: "bg-gradient-button text-accent-foreground hover:shadow-accent-glow shadow-button font-medium button-glow",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-lg shadow-button font-medium",
         outline:
-          "border-2 border-primary/20 bg-background text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-soft",
+          "border-2 border-secondary/30 bg-background text-secondary hover:bg-secondary hover:text-secondary-foreground hover:border-secondary shadow-soft",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary-hover shadow-soft interactive-scale",
-        ghost: "hover:bg-accent hover:text-accent-foreground smooth-transition",
+        ghost: "hover:bg-muted hover:text-foreground smooth-transition",
         link: "text-primary underline-offset-4 hover:underline smooth-transition",
-        // Professional HR System variants
-        premium: "bg-gradient-accent text-white hover:shadow-accent-glow shadow-button font-medium accent-glow",
-        success: "bg-gradient-success text-success-foreground hover:shadow-lg shadow-button font-medium",
+        // Blue, Teal, Gray + Orange System variants
+        premium: "bg-gradient-primary text-primary-foreground hover:shadow-glow shadow-button font-medium",
+        success: "bg-gradient-success text-success-foreground hover:shadow-accent-glow shadow-button font-medium accent-glow",
         warning: "bg-warning text-warning-foreground hover:bg-warning/90 shadow-button font-medium",
         navy: "bg-navy-pro text-white hover:bg-primary-hover shadow-button font-medium",
         teal: "bg-teal-pro text-white hover:bg-accent-hover shadow-button font-medium",
