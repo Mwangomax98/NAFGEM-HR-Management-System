@@ -18,8 +18,12 @@ import { CalendarIcon, Upload, Plus, Trash2, Save, UserPlus, Send, Loader2 } fro
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { UserSelectionStep } from "./UserSelectionStep";
 
 const employeeSchema = z.object({
+  // User Selection
+  selectedUserId: z.string().min(1, "User selection is required"),
+  
   // Section A - Personal Particulars
   personal: z.object({
     nameFull: z.string().min(1, "Full name is required"),
@@ -104,14 +108,24 @@ interface AddEmployeeFormProps {
   onCancel?: () => void;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  project: string | null;
+  title: string | null;
+}
+
 export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormProps) {
-  const [activeTab, setActiveTab] = useState("personal");
+  const [activeTab, setActiveTab] = useState("user-selection");
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
+      selectedUserId: "",
       personal: {
         mobilePhones: [""],
         maritalStatus: "Single",
@@ -343,6 +357,25 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
     }
   };
 
+  const handleUserSelect = (user: UserProfile | null) => {
+    setSelectedUser(user);
+    if (user) {
+      form.setValue("selectedUserId", user.id);
+      // Pre-populate name if available
+      if (user.full_name) {
+        form.setValue("personal.nameFull", user.full_name);
+      }
+    } else {
+      form.setValue("selectedUserId", "");
+    }
+  };
+
+  const handleUserSelectionNext = () => {
+    if (selectedUser) {
+      setActiveTab("personal");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -378,13 +411,23 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         <Form {...form}>
           <form id="employee-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="personal">Section A</TabsTrigger>
-                <TabsTrigger value="family">Section B</TabsTrigger>
-                <TabsTrigger value="education">Section C</TabsTrigger>
-                <TabsTrigger value="nextofkin">Section D</TabsTrigger>
-                <TabsTrigger value="declaration">Section E</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="user-selection">Select User</TabsTrigger>
+                <TabsTrigger value="personal" disabled={!selectedUser}>Section A</TabsTrigger>
+                <TabsTrigger value="family" disabled={!selectedUser}>Section B</TabsTrigger>
+                <TabsTrigger value="education" disabled={!selectedUser}>Section C</TabsTrigger>
+                <TabsTrigger value="nextofkin" disabled={!selectedUser}>Section D</TabsTrigger>
+                <TabsTrigger value="declaration" disabled={!selectedUser}>Section E</TabsTrigger>
               </TabsList>
+
+              {/* User Selection Step */}
+              <TabsContent value="user-selection">
+                <UserSelectionStep
+                  selectedUserId={selectedUser?.id || null}
+                  onUserSelect={handleUserSelect}
+                  onNext={handleUserSelectionNext}
+                />
+              </TabsContent>
 
               {/* Section A - Personal Particulars */}
               <TabsContent value="personal" className="space-y-6">
@@ -1533,34 +1576,37 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
 
               {/* Navigation buttons */}
               <div className="flex justify-between pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const tabs = ["personal", "family", "education", "nextofkin", "declaration"];
-                    const currentIndex = tabs.indexOf(activeTab);
-                    if (currentIndex > 0) {
-                      setActiveTab(tabs[currentIndex - 1]);
-                    }
-                  }}
-                  disabled={activeTab === "personal"}
-                >
-                  Previous
-                </Button>
+                {activeTab !== "user-selection" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const tabs = ["user-selection", "personal", "family", "education", "nextofkin", "declaration"];
+                      const currentIndex = tabs.indexOf(activeTab);
+                      if (currentIndex > 0) {
+                        setActiveTab(tabs[currentIndex - 1]);
+                      }
+                    }}
+                    disabled={activeTab === "user-selection"}
+                  >
+                    Previous
+                  </Button>
+                )}
 
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const tabs = ["personal", "family", "education", "nextofkin", "declaration"];
-                    const currentIndex = tabs.indexOf(activeTab);
-                    if (currentIndex < tabs.length - 1) {
-                      setActiveTab(tabs[currentIndex + 1]);
-                    }
-                  }}
-                  disabled={activeTab === "declaration"}
-                >
-                  Next
-                </Button>
+                {activeTab !== "declaration" && selectedUser && activeTab !== "user-selection" && (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const tabs = ["user-selection", "personal", "family", "education", "nextofkin", "declaration"];
+                      const currentIndex = tabs.indexOf(activeTab);
+                      if (currentIndex < tabs.length - 1) {
+                        setActiveTab(tabs[currentIndex + 1]);
+                      }
+                    }}
+                  >
+                    Next
+                  </Button>
+                )}
               </div>
             </Tabs>
           </form>
