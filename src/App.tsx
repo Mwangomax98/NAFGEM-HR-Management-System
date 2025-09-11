@@ -55,7 +55,7 @@ const App = () => (
           
           <Route path="/communications" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Communications /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Reports /></ProtectedRoute>} />
-          <Route path="/hr/monitoring-evaluation" element={<ProtectedRoute requiredRole={ROLES.HR}><MonitoringEvaluation /></ProtectedRoute>} />
+          <Route path="/hr/monitoring-evaluation" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><MonitoringEvaluation /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requiredRole={ROLES.ADMIN}><UserManagement /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute requiredRole={ROLES.ADMIN}><SystemSettings /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />

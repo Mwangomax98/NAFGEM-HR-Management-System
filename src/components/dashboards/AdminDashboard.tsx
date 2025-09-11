@@ -100,7 +100,7 @@ export function AdminDashboard({ userName }: AdminDashboardProps) {
         </Button>
         <Button 
           variant="outline"
-          onClick={() => navigate('/monitoring-evaluation')}
+          onClick={() => navigate('/hr/monitoring-evaluation')}
           className="hover:bg-accent/5 hover:border-accent transition-all"
         >
           <TrendingUp className="h-4 w-4 mr-2" />
