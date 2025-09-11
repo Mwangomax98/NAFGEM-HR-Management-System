@@ -8,67 +8,92 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* HR System Design System Colors */
-    --background: 211 20% 97%; /* Off White #F8F9FA */
-    --foreground: 215 25% 27%; /* Deep Navy Blue text */
+    /* Professional HR System Design System */
+    --background: 210 20% 98%; /* Crisp White Background */
+    --foreground: 215 30% 25%; /* Deep Professional Navy */
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 27%;
+    --card-foreground: 215 30% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 27%;
+    --popover-foreground: 215 30% 25%;
 
-    /* Primary: Deep Navy Blue #1E2A38 */
-    --primary: 215 25% 17%;
+    /* Primary: Modern Professional Blue */
+    --primary: 218 35% 25%;
     --primary-foreground: 0 0% 98%;
+    --primary-hover: 218 35% 30%;
+    --primary-glow: 218 60% 65%;
 
-    /* Secondary: Slate Gray #5A6C78 */
-    --secondary: 210 15% 41%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary: Sophisticated Slate */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 215 30% 25%;
+    --secondary-hover: 210 20% 92%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 210 15% 41%;
+    --muted: 210 25% 95%;
+    --muted-foreground: 210 15% 45%;
 
-    /* Accent: Teal #3BA99C */
-    --accent: 174 45% 44%;
+    /* Accent: Premium Emerald Teal */
+    --accent: 168 50% 45%;
     --accent-foreground: 0 0% 98%;
+    --accent-hover: 168 50% 40%;
+    --accent-glow: 168 60% 70%;
 
-    /* Error: Crimson Red #C62828 */
-    --destructive: 0 70% 47%;
+    /* Success: Professional Green */
+    --success: 142 50% 45%;
+    --success-foreground: 0 0% 98%;
+    --success-glow: 142 60% 70%;
+
+    /* Warning: Golden Amber */
+    --warning: 35 85% 55%;
+    --warning-foreground: 215 30% 25%;
+    --warning-glow: 35 85% 75%;
+
+    /* Error: Refined Crimson */
+    --destructive: 355 75% 50%;
     --destructive-foreground: 0 0% 98%;
+    --destructive-glow: 355 75% 75%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 174 45% 44%;
+    --border: 214 25% 88%;
+    --input: 214 25% 88%;
+    --ring: 168 50% 45%;
 
     --radius: 0.75rem;
 
-    /* Sidebar: Deep Navy Blue */
-    --sidebar-background: 215 25% 17%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 174 45% 44%; /* Teal for active items */
+    /* Sidebar: Rich Professional Navy */
+    --sidebar-background: 218 35% 25%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 168 50% 45%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 215 25% 22%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 215 25% 22%;
-    --sidebar-ring: 174 45% 44%;
+    --sidebar-accent: 218 35% 30%;
+    --sidebar-accent-foreground: 0 0% 88%;
+    --sidebar-border: 218 35% 30%;
+    --sidebar-ring: 168 50% 45%;
 
-    /* Custom HR System tokens */
-    --navy-blue: 215 25% 17%;
-    --slate-gray: 210 15% 41%;
-    --teal-accent: 174 45% 44%;
-    --off-white: 211 20% 97%;
-    --crimson-red: 0 70% 47%;
+    /* Professional Color Tokens */
+    --navy-pro: 218 35% 25%;
+    --slate-pro: 210 15% 45%;
+    --teal-pro: 168 50% 45%;
+    --emerald-pro: 160 55% 45%;
+    --amber-pro: 35 85% 55%;
+    --crimson-pro: 355 75% 50%;
+    --off-white-pro: 210 20% 98%;
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--navy-blue)), hsl(var(--slate-gray)));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--teal-accent)), hsl(174 45% 54%));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--navy-blue)), hsl(var(--teal-accent)));
+    /* Enhanced Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--navy-pro)), hsl(var(--primary-hover)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--teal-pro)), hsl(var(--emerald-pro)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--navy-pro)) 0%, hsl(var(--teal-pro)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(210 25% 99%) 100%);
+    --gradient-button: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-hover)) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(142 50% 50%) 100%);
     
-    /* Shadows */
-    --shadow-soft: 0 4px 12px -2px hsl(var(--navy-blue) / 0.08);
-    --shadow-card: 0 8px 24px -4px hsl(var(--navy-blue) / 0.12);
-    --shadow-nav: 0 2px 8px -2px hsl(var(--navy-blue) / 0.15);
+    /* Professional Shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(var(--navy-pro) / 0.06);
+    --shadow-card: 0 4px 16px -4px hsl(var(--navy-pro) / 0.1);
+    --shadow-nav: 0 2px 12px -2px hsl(var(--navy-pro) / 0.12);
+    --shadow-button: 0 2px 8px -1px hsl(var(--navy-pro) / 0.15);
+    --shadow-elevated: 0 8px 32px -8px hsl(var(--navy-pro) / 0.2);
+    --shadow-glow: 0 0 24px hsl(var(--primary-glow) / 0.3);
+    --shadow-accent-glow: 0 0 20px hsl(var(--accent-glow) / 0.4);
   }
 
   .dark {
@@ -145,5 +170,35 @@ All colors MUST be HSL.
       linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
     background-size: 20px 20px;
+  }
+
+  /* Professional UI Enhancements */
+  .card-elevated {
+    @apply bg-gradient-card shadow-elevated border-0;
+  }
+
+  .button-glow {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .button-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .accent-glow:hover {
+    box-shadow: var(--shadow-accent-glow);
+  }
+
+  .smooth-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .interactive-scale:hover {
+    transform: scale(1.02);
+  }
+
+  .interactive-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
   }
 }
