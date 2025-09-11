@@ -256,6 +256,16 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
 
       console.log('User has permission to create employees:', userRole.role);
 
+      // Validate selected user
+      if (!data.selectedUserId || !selectedUser) {
+        toast({
+          title: "Validation Error",
+          description: "Please select a user to create an employee profile for.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Transform form data to database format
       const employeeProfileData = {
         name_full: data.personal.nameFull,
@@ -298,8 +308,8 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         user_role: data.employment.userRole.toLowerCase(),
         status: 'active',
         projects: data.employment.projects || [],
-        // Set user_id to null initially - can be linked to user accounts later
-        user_id: null,
+        // Link to the selected user account
+        user_id: data.selectedUserId,
         created_by: currentUser.user?.id
       };
 
