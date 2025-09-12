@@ -13,11 +13,7 @@ import {
   Building2,
   Shield,
   MessageCircle,
-  Target,
-  TrendingUp,
-  Trophy,
-  AlertTriangle,
-  BarChart
+  Target
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -60,14 +56,7 @@ const menuItems: SidebarItem[] = [
   { title: "Leave Approvals", url: "/hr/leave-approvals", icon: Calendar, roles: ["hr", "admin"] },
   { title: "Trip Management", url: "/hr/trip-management", icon: Car, roles: ["hr", "admin"] },
   { title: "Performance Reviews", url: "/hr/performance", icon: BarChart3, roles: ["hr", "admin"] },
-  
-  // M&E Items
-  { title: "KPI Dashboard", url: "/hr/me-dashboard", icon: BarChart, roles: ["employee", "hr", "admin"] },
-  { title: "Performance Trends", url: "/hr/me-trends", icon: TrendingUp, roles: ["employee", "hr", "admin"] },
-  { title: "Performance Scorecard", url: "/hr/me-scorecard", icon: Trophy, roles: ["employee", "hr", "admin"] },
-  { title: "Gap Analysis", url: "/hr/me-gaps", icon: AlertTriangle, roles: ["employee", "hr", "admin"] },
-  { title: "Weekly Targets", url: "/hr/me-targets", icon: Target, roles: ["employee", "hr", "admin"] },
-  { title: "KPI Management", url: "/hr/me-management", icon: Settings, roles: ["hr", "admin"] },
+  { title: "Monitoring & Evaluation", url: "/hr/monitoring-evaluation", icon: Target, roles: ["employee", "hr", "admin"] },
   
   // Admin Items
   { title: "User Management", url: "/admin/users", icon: Shield, roles: ["admin"] },
@@ -99,10 +88,7 @@ export function HRSidebar({ userRole, userName }: HRSidebarProps) {
     ["employee", "hr", "admin"].every(role => item.roles.includes(role))
   );
   const hrItems = filteredItems.filter(item => 
-    item.roles.includes("hr") && !["employee", "hr", "admin"].every(role => item.roles.includes(role)) && !item.url.includes("/me-")
-  );
-  const meItems = filteredItems.filter(item => 
-    item.url.includes("/me-")
+    item.roles.includes("hr") && !["employee", "hr", "admin"].every(role => item.roles.includes(role))
   );
   const adminItems = filteredItems.filter(item => 
     item.roles.includes("admin") && !item.roles.includes("hr")
@@ -173,39 +159,6 @@ export function HRSidebar({ userRole, userName }: HRSidebarProps) {
                             <span>{item.title}</span>
                             {item.badge && (
                               <Badge variant="destructive" className="ml-auto">
-                                {item.badge}
-                              </Badge>
-                            )}
-                          </>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Monitoring & Evaluation Items */}
-        {meItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Monitoring & Evaluation</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {meItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
-                        className={getNavClasses(item.url)}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {!collapsed && (
-                          <>
-                            <span>{item.title}</span>
-                            {item.badge && (
-                              <Badge variant="secondary" className="ml-auto">
                                 {item.badge}
                               </Badge>
                             )}

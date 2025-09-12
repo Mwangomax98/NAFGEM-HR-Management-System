@@ -8,7 +8,6 @@ import { AlertTriangle, TrendingDown, Plus, Search, Download } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { hasMinimumRole, ROLES } from "@/lib/roles";
 
 interface KPIGap {
   kpi_id: string;
@@ -30,7 +29,7 @@ export function GapAnalysis() {
   const [searchTerm, setSearchTerm] = useState('');
   const { userRole } = useUserRole();
   const { toast } = useToast();
-  const isHROrAdmin = hasMinimumRole(userRole, ROLES.HR);
+  const isHROrAdmin = userRole === 'hr' || userRole === 'admin';
 
   useEffect(() => {
     loadGaps();
