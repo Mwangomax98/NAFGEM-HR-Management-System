@@ -1,0 +1,83 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "profile": "Profile", 
+    "timesheets": "Timesheets",
+    "tasks": "Tasks",
+    "leave": "Leave",
+    "trips": "Trips",
+    "communications": "Communications",
+    "reports": "Reports",
+    "monitoring": "Monitoring & Evaluation",
+    "hrManagement": "HR Management",
+    "employeeManagement": "Employee Management",
+    "projectManagement": "Project Management",
+    "leaveApprovals": "Leave Approvals",
+    "timesheetApprovals": "Timesheet Approvals",
+    "tripManagement": "Trip Management",
+    "performance": "Performance",
+    "userManagement": "User Management",
+    "systemSettings": "System Settings"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "quickActions": "Quick Actions",
+    "recentActivity": "Recent Activity",
+    "notifications": "Notifications",
+    "viewAll": "View All",
+    "noData": "No data available"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View",
+    "add": "Add",
+    "create": "Create",
+    "update": "Update",
+    "approve": "Approve",
+    "reject": "Reject",
+    "close": "Close",
+    "open": "Open"
+  },
+  "status": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "appearance": "Appearance",
+    "language": "Language",
+    "theme": "Theme",
+    "saveChanges": "Save Changes",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "systemMode": "System"
+  },
+  "forms": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "confirmPassword": "Passwords must match"
+  },
+  "messages": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "sessionExpired": "Session expired. Please login again."
+  }
+}

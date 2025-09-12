@@ -1,0 +1,83 @@
+{
+  "navigation": {
+    "dashboard": "Dashibodi",
+    "profile": "Wasifu", 
+    "timesheets": "Jedwali za Wakati",
+    "tasks": "Kazi",
+    "leave": "Likizo",
+    "trips": "Safari",
+    "communications": "Mawasiliano",
+    "reports": "Ripoti",
+    "monitoring": "Ufuatiliaji na Tathmini",
+    "hrManagement": "Usimamizi wa Wafanyakazi",
+    "employeeManagement": "Usimamizi wa Wafanyikazi",
+    "projectManagement": "Usimamizi wa Miradi",
+    "leaveApprovals": "Idhini za Likizo",
+    "timesheetApprovals": "Idhini za Jedwali za Wakati",
+    "tripManagement": "Usimamizi wa Safari",
+    "performance": "Utendaji",
+    "userManagement": "Usimamizi wa Watumiaji",
+    "systemSettings": "Mipangilio ya Mfumo"
+  },
+  "dashboard": {
+    "welcome": "Karibu",
+    "overview": "Muhtasari",
+    "quickActions": "Vitendo vya Haraka",
+    "recentActivity": "Shughuli za Hivi Karibuni",
+    "notifications": "Arifa",
+    "viewAll": "Angalia Zote",
+    "noData": "Hakuna data inayopatikana"
+  },
+  "actions": {
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "submit": "Wasilisha",
+    "edit": "Hariri",
+    "delete": "Futa",
+    "view": "Angalia",
+    "add": "Ongeza",
+    "create": "Unda",
+    "update": "Sasisha",
+    "approve": "Idhinisha",
+    "reject": "Kataa",
+    "close": "Funga",
+    "open": "Fungua"
+  },
+  "status": {
+    "pending": "Inasubiri",
+    "approved": "Imeidhinishwa",
+    "rejected": "Imekataliwa",
+    "completed": "Imekamilika",
+    "inProgress": "Inaendelea",
+    "active": "Hai",
+    "inactive": "Haihitaji"
+  },
+  "settings": {
+    "title": "Mipangilio",
+    "general": "Jumla",
+    "notifications": "Arifa",
+    "privacy": "Faragha",
+    "appearance": "Mwonekano",
+    "language": "Lugha",
+    "theme": "Mandhari",
+    "saveChanges": "Hifadhi Mabadiliko",
+    "darkMode": "Mandhari ya Giza",
+    "lightMode": "Mandhari ya Mwanga",
+    "systemMode": "Mfumo"
+  },
+  "forms": {
+    "required": "Sehemu hii inahitajika",
+    "invalidEmail": "Anwani ya barua pepe si sahihi",
+    "passwordTooShort": "Nywila lazima iwe na angalau herufi 8",
+    "confirmPassword": "Manenosiri hayalingani"
+  },
+  "messages": {
+    "success": "Imefanikiwa",
+    "error": "Kosa",
+    "warning": "Onyo",
+    "info": "Habari",
+    "loading": "Inapakia...",
+    "noResults": "Hakuna matokeo yaliyopatikana",
+    "sessionExpired": "Kipindi kimemalizika. Tafadhali ingia tena."
+  }
+}

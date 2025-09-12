@@ -8,10 +8,15 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useTheme } from "@/providers/ThemeProvider";
+import { useTranslation } from "react-i18next";
+import { toast } from "@/hooks/use-toast";
 
 export function SettingsModal() {
+  const { theme, setTheme } = useTheme();
+  const { t, i18n } = useTranslation('common');
+  
   const [settings, setSettings] = useState({
-    theme: "light",
     notifications: {
       email: true,
       push: true,
@@ -26,9 +31,8 @@ export function SettingsModal() {
       activityTracking: false
     },
     preferences: {
-      language: "en",
-      timezone: "UTC-5",
-      dateFormat: "MM/DD/YYYY",
+      timezone: "UTC+3", // Kenya timezone
+      dateFormat: "DD/MM/YYYY",
       startWeek: "monday"
     }
   });
@@ -43,6 +47,23 @@ export function SettingsModal() {
     }));
   };
 
+  const handleLanguageChange = (language: string) => {
+    i18n.changeLanguage(language);
+    localStorage.setItem('language', language);
+    toast({
+      title: t('messages.success'),
+      description: language === 'en' ? 'Language changed to English' : 'Lugha imebadilishwa kuwa Kiswahili',
+    });
+  };
+
+  const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
+    setTheme(newTheme);
+    toast({
+      title: t('messages.success'),
+      description: t('settings.saveChanges'),
+    });
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -52,7 +73,7 @@ export function SettingsModal() {
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>{t('settings.title')}</DialogTitle>
           <DialogDescription>
             Manage your account preferences and system settings
           </DialogDescription>
@@ -62,19 +83,19 @@ export function SettingsModal() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general" className="flex items-center space-x-2">
               <User className="w-4 h-4" />
-              <span>General</span>
+              <span>{t('settings.general')}</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center space-x-2">
               <Bell className="w-4 h-4" />
-              <span>Notifications</span>
+              <span>{t('settings.notifications')}</span>
             </TabsTrigger>
             <TabsTrigger value="privacy" className="flex items-center space-x-2">
               <Shield className="w-4 h-4" />
-              <span>Privacy</span>
+              <span>{t('settings.privacy')}</span>
             </TabsTrigger>
             <TabsTrigger value="appearance" className="flex items-center space-x-2">
               <Palette className="w-4 h-4" />
-              <span>Appearance</span>
+              <span>{t('settings.appearance')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -82,24 +103,23 @@ export function SettingsModal() {
             <TabsContent value="general" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Language & Region</CardTitle>
+                  <CardTitle>{t('settings.language')} & Region</CardTitle>
                   <CardDescription>Set your language and regional preferences</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Language</Label>
+                      <Label>{t('settings.language')}</Label>
                       <Select 
-                        value={settings.preferences.language} 
-                        onValueChange={(value) => updateSetting('preferences', 'language', value)}
+                        value={i18n.language} 
+                        onValueChange={handleLanguageChange}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="es">Spanish</SelectItem>
-                          <SelectItem value="fr">French</SelectItem>
+                          <SelectItem value="sw">Kiswahili</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -113,9 +133,9 @@ export function SettingsModal() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
-                          <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
+                          <SelectItem value="UTC+3">East Africa Time (UTC+3)</SelectItem>
                           <SelectItem value="UTC+0">GMT (UTC+0)</SelectItem>
+                          <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -281,31 +301,31 @@ export function SettingsModal() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    <Label>Theme</Label>
+                    <Label>{t('settings.theme')}</Label>
                     <div className="grid grid-cols-3 gap-3">
                       <Button
-                        variant={settings.theme === "light" ? "default" : "outline"}
+                        variant={theme === "light" ? "default" : "outline"}
                         className="flex items-center space-x-2 h-auto p-3"
-                        onClick={() => updateSetting('theme', 'theme', 'light')}
+                        onClick={() => handleThemeChange('light')}
                       >
                         <Sun className="w-4 h-4" />
-                        <span>Light</span>
+                        <span>{t('settings.lightMode')}</span>
                       </Button>
                       <Button
-                        variant={settings.theme === "dark" ? "default" : "outline"}
+                        variant={theme === "dark" ? "default" : "outline"}
                         className="flex items-center space-x-2 h-auto p-3"
-                        onClick={() => updateSetting('theme', 'theme', 'dark')}
+                        onClick={() => handleThemeChange('dark')}
                       >
                         <Moon className="w-4 h-4" />
-                        <span>Dark</span>
+                        <span>{t('settings.darkMode')}</span>
                       </Button>
                       <Button
-                        variant={settings.theme === "system" ? "default" : "outline"}
+                        variant={theme === "system" ? "default" : "outline"}
                         className="flex items-center space-x-2 h-auto p-3"
-                        onClick={() => updateSetting('theme', 'theme', 'system')}
+                        onClick={() => handleThemeChange('system')}
                       >
                         <Settings className="w-4 h-4" />
-                        <span>System</span>
+                        <span>{t('settings.systemMode')}</span>
                       </Button>
                     </div>
                   </div>
@@ -317,9 +337,9 @@ export function SettingsModal() {
         
         <div className="flex justify-end space-x-2 pt-4 border-t">
           <DialogTrigger asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t('actions.cancel')}</Button>
           </DialogTrigger>
-          <Button>Save Changes</Button>
+          <Button>{t('settings.saveChanges')}</Button>
         </div>
       </DialogContent>
     </Dialog>
