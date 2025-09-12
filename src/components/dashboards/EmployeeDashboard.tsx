@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { WelcomeHeader } from "@/components/hr/WelcomeHeader";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -66,10 +67,7 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
   return (
     <div className="p-6 space-y-6">
       {/* Welcome Header */}
-      <div className="bg-gradient-hero rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold">{getGreeting()}, {userName}!</h1>
-        <p className="text-white/90 mt-1">Ready to tackle today's goals? Here's your personalized dashboard.</p>
-      </div>
+      <WelcomeHeader userName={userName} userRole="employee" />
 
       {/* Quick Actions Bar */}
       <div className="flex flex-wrap gap-3">
