@@ -11,6 +11,8 @@ import { KPIManagement } from "@/components/monitoring/KPIManagement";
 import { GapAnalysis } from "@/components/monitoring/GapAnalysis";
 import { WeeklyTargetsManagement } from "@/components/monitoring/WeeklyTargetsManagement";
 import { MyWeeklyTargets } from "@/components/monitoring/MyWeeklyTargets";
+import { TrendAnalysis } from "@/components/monitoring/TrendAnalysis";
+import { PerformanceScorecard } from "@/components/monitoring/PerformanceScorecard";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export default function MonitoringEvaluation() {
@@ -46,8 +48,10 @@ export default function MonitoringEvaluation() {
 
         {/* Main Content */}
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className={`grid w-full ${isHROrAdmin ? 'grid-cols-5' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${isHROrAdmin ? 'grid-cols-7' : 'grid-cols-5'}`}>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="trends">Trends</TabsTrigger>
+            <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
             <TabsTrigger value="gaps">Gap Analysis</TabsTrigger>
             <TabsTrigger value="my-targets">My Targets</TabsTrigger>
             {isHROrAdmin && <TabsTrigger value="weekly-targets">Weekly Targets</TabsTrigger>}
@@ -56,6 +60,14 @@ export default function MonitoringEvaluation() {
 
           <TabsContent value="dashboard" className="space-y-6">
             <KPIDashboard />
+          </TabsContent>
+
+          <TabsContent value="trends" className="space-y-6">
+            <TrendAnalysis />
+          </TabsContent>
+
+          <TabsContent value="scorecard" className="space-y-6">
+            <PerformanceScorecard />
           </TabsContent>
 
           <TabsContent value="gaps" className="space-y-6">
