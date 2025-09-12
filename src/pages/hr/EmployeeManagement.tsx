@@ -11,6 +11,7 @@ import AddEmployeeForm from "@/components/employee/AddEmployeeForm";
 import EmployeeProfile from "@/components/employee/EmployeeProfile";
 import { useAllEmployeeProfiles } from "@/hooks/useEmployeeProfile";
 import { useToast } from "@/hooks/use-toast";
+import { useEmployeeNotifications } from "@/hooks/useEmployeeNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -21,6 +22,9 @@ export default function EmployeeManagement() {
   const [showProfile, setShowProfile] = useState(false);
   const { profiles, loading, error, refetch } = useAllEmployeeProfiles();
   const { toast } = useToast();
+  
+  // Set up employee notifications
+  useEmployeeNotifications();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -85,14 +89,22 @@ export default function EmployeeManagement() {
     setShowProfile(true);
   };
 
-  const handleSaveEmployee = () => {
-    // Refresh the profiles list
-    refetch();
+  const handleSaveEmployee = (employeeData?: any) => {
+    // Close the form immediately since real-time updates will handle the refresh
     setShowAddForm(false);
-    toast({
-      title: "Success",
-      description: "Employee has been added successfully.",
-    });
+    
+    // Show success message with employee details
+    if (employeeData) {
+      toast({
+        title: "Employee Added Successfully",
+        description: `${employeeData.personal.nameFull} has been added to the system.`,
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Employee has been added successfully.",
+      });
+    }
   };
 
   if (loading) {

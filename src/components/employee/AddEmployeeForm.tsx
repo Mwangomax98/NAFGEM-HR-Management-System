@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserSelectionStep } from "./UserSelectionStep";
+import { useEmployeeValidation } from "@/hooks/useEmployeeValidation";
 
 const employeeSchema = z.object({
   // User Selection
@@ -121,6 +122,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { validateEmployeeData, showValidationResults, validating } = useEmployeeValidation();
 
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
@@ -184,28 +186,19 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
     console.log("🔍 Selected User ID:", data.selectedUserId);
     console.log("🔍 Selected User Object:", selectedUser);
     setIsSubmitting(true);
+    
     try {
-      // Validate at least one next of kin is primary
-      const hasPrimaryNextOfKin = data.nextOfKin.some(nok => nok.primary);
-      console.log("Next of kin validation:", { nextOfKin: data.nextOfKin, hasPrimary: hasPrimaryNextOfKin });
-      if (!hasPrimaryNextOfKin) {
-        console.log("❌ Validation failed: No primary next of kin");
-        toast({
-          title: "Validation Error",
-          description: "Please mark at least one next of kin as primary.",
-          variant: "destructive",
-        });
+      // Comprehensive validation
+      const validationResult = await validateEmployeeData(data, data.selectedUserId);
+      
+      if (!validationResult.isValid) {
+        showValidationResults(validationResult);
         return;
       }
-
-      // Validate spouse fields if married
-      if (data.personal.maritalStatus === "Married" && !data.personal.spouseName) {
-        toast({
-          title: "Validation Error",
-          description: "Spouse name is required for married status.",
-          variant: "destructive",
-        });
-        return;
+      
+      // Show warnings if any
+      if (validationResult.warnings.length > 0) {
+        showValidationResults(validationResult);
       }
 
       // Check user permissions first
@@ -343,6 +336,8 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
           errorMessage = "You don't have permission to create employee profiles. Please ensure you are logged in with HR or Admin privileges.";
         } else if (error.message.includes("duplicate key")) {
           errorMessage = "An employee with this ID already exists.";
+        } else if (error.message.includes("user_id")) {
+          errorMessage = "The selected user already has an employee profile.";
         } else if (error.message) {
           errorMessage = error.message;
         }
@@ -355,10 +350,62 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         return;
       }
 
+      console.log('Employee profile created successfully:', insertedProfile);
+
+      // Update user role if specified and different from current
+      if (data.employment.userRole.toLowerCase() !== 'employee') {
+        try {
+          const roleValue = data.employment.userRole.toLowerCase() as 'admin' | 'hr' | 'employee';
+          
+          // Validate role value
+          if (['admin', 'hr', 'employee'].includes(roleValue)) {
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .upsert({
+                user_id: data.selectedUserId,
+                role: roleValue,
+                assigned_by: currentUser.user.id
+              });
+
+            if (roleError) {
+              console.warn('Could not update user role:', roleError);
+              toast({
+                title: "Profile Created",
+                description: "Employee profile created successfully, but user role update failed. Please update manually.",
+                variant: "default",
+              });
+            } else {
+              console.log('User role updated successfully');
+            }
+          } else {
+            console.warn('Invalid role value:', data.employment.userRole);
+          }
+        } catch (roleUpdateError) {
+          console.warn('Error updating user role:', roleUpdateError);
+        }
+      }
+
+      // Update profiles table with employment info
+      try {
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: data.personal.nameFull,
+            title: data.personal.designation
+          })
+          .eq('id', data.selectedUserId);
+
+        if (profileUpdateError) {
+          console.warn('Could not update user profile:', profileUpdateError);
+        }
+      } catch (profileUpdateError) {
+        console.warn('Error updating user profile:', profileUpdateError);
+      }
+
       onSave?.(data);
       toast({
-        title: "Employee Added",
-        description: "Employee profile has been successfully created.",
+        title: "Employee Added Successfully",
+        description: `${data.personal.nameFull} has been added to the system with employee ID ${data.employment.employeeId}.`,
       });
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -406,12 +453,17 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
             <Button 
               type="submit"
               form="employee-form"
-              disabled={isSubmitting}
+              disabled={isSubmitting || validating}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Saving...
+                </>
+              ) : validating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Validating...
                 </>
               ) : (
                 <>
