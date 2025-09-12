@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Award, Trophy, Star, Medal, TrendingUp, Target, Users, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import { hasMinimumRole, ROLES } from "@/lib/roles";
 
 interface PerformanceScore {
   category: string;
@@ -33,6 +35,8 @@ export function PerformanceScorecard() {
   const [myScore, setMyScore] = useState<TeamMember | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { userRole } = useUserRole();
+  const isHROrAdmin = hasMinimumRole(userRole, ROLES.HR);
 
   useEffect(() => {
     loadPerformanceData();
@@ -42,93 +46,13 @@ export function PerformanceScorecard() {
     try {
       setLoading(true);
       
-      // Mock performance data - in real app, this would be calculated from actual KPI and task data
-      const mockTeamData: TeamMember[] = [
-        {
-          id: '1',
-          name: 'Sarah Johnson',
-          role: 'Project Lead',
-          overall_score: 92,
-          rank: 1,
-          achievements: ['Top Performer Q1', 'KPI Champion', 'Team Player'],
-          category_scores: [
-            {
-              category: 'KPI Achievement',
-              score: 95,
-              maxScore: 100,
-              grade: 'A+',
-              color: 'text-accent',
-              icon: <Target className="w-4 h-4" />,
-              description: 'Exceeding most targets',
-              recommendations: ['Maintain current momentum', 'Share best practices']
-            },
-            {
-              category: 'Task Completion',
-              score: 88,
-              maxScore: 100,
-              grade: 'A',
-              color: 'text-accent',
-              icon: <Award className="w-4 h-4" />,
-              description: 'Consistently delivering on time',
-              recommendations: ['Focus on complex tasks', 'Improve time estimation']
-            },
-            {
-              category: 'Team Collaboration',
-              score: 94,
-              maxScore: 100,
-              grade: 'A+',
-              color: 'text-accent',
-              icon: <Users className="w-4 h-4" />,
-              description: 'Excellent team interaction',
-              recommendations: ['Continue mentoring others']
-            }
-          ]
-        },
-        {
-          id: '2', 
-          name: 'Michael Chen',
-          role: 'Data Analyst',
-          overall_score: 87,
-          rank: 2,
-          achievements: ['Data Insights Award', 'Process Optimizer'],
-          category_scores: [
-            {
-              category: 'KPI Achievement',
-              score: 82,
-              maxScore: 100,
-              grade: 'B+',
-              color: 'text-secondary',
-              icon: <Target className="w-4 h-4" />,
-              description: 'Meeting most targets',
-              recommendations: ['Focus on priority KPIs', 'Improve data quality']
-            },
-            {
-              category: 'Task Completion',
-              score: 90,
-              maxScore: 100,
-              grade: 'A',
-              color: 'text-accent',
-              icon: <Award className="w-4 h-4" />,
-              description: 'Reliable task delivery',
-              recommendations: ['Take on larger projects']
-            },
-            {
-              category: 'Team Collaboration',
-              score: 89,
-              maxScore: 100,
-              grade: 'A',
-              color: 'text-accent',
-              icon: <Users className="w-4 h-4" />,
-              description: 'Good team support',
-              recommendations: ['Increase cross-team collaboration']
-            }
-          ]
-        }
-      ];
+      // Get actual performance data from database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      setTeamMembers(mockTeamData);
-      // Set current user as first member for demo
-      setMyScore(mockTeamData[0]);
+      // For now, return empty data - real implementation would calculate from actual KPI and task data
+      setTeamMembers([]);
+      setMyScore(null);
       
     } catch (error) {
       console.error('Error loading performance data:', error);
@@ -264,17 +188,18 @@ export function PerformanceScorecard() {
         </Card>
       )}
 
-      {/* Team Leaderboard */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-secondary" />
-            Team Performance Leaderboard
-          </CardTitle>
-          <CardDescription>
-            Performance rankings across the team
-          </CardDescription>
-        </CardHeader>
+      {/* Team Leaderboard - Only visible to HR/Admin */}
+      {isHROrAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-secondary" />
+              Team Performance Leaderboard
+            </CardTitle>
+            <CardDescription>
+              Performance rankings across the team
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {teamMembers.map((member, index) => (
@@ -325,6 +250,7 @@ export function PerformanceScorecard() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Performance Recommendations */}
       {myScore && (

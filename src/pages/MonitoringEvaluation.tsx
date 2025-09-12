@@ -1,95 +1,103 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Target, TrendingUp, AlertTriangle, CheckCircle, Plus, Filter, Download } from "lucide-react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { HRLayout } from "@/components/hr/HRLayout";
-import { KPIDashboard } from "@/components/monitoring/KPIDashboard";
-import { KPIManagement } from "@/components/monitoring/KPIManagement";
-import { GapAnalysis } from "@/components/monitoring/GapAnalysis";
-import { WeeklyTargetsManagement } from "@/components/monitoring/WeeklyTargetsManagement";
-import { MyWeeklyTargets } from "@/components/monitoring/MyWeeklyTargets";
-import { TrendAnalysis } from "@/components/monitoring/TrendAnalysis";
-import { PerformanceScorecard } from "@/components/monitoring/PerformanceScorecard";
-import { useUserRole } from "@/hooks/useUserRole";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Target, BarChart, TrendingUp, Trophy, AlertTriangle, Settings } from "lucide-react";
 
 export default function MonitoringEvaluation() {
-  const { userRole } = useUserRole();
-  const isHROrAdmin = userRole === 'hr' || userRole === 'admin';
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect to KPI Dashboard by default
+    navigate('/hr/me-dashboard', { replace: true });
+  }, [navigate]);
 
   return (
     <HRLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground">
-              Monitoring & Evaluation
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Track KPIs, analyze performance gaps, and align tasks with organizational goals
-            </p>
+        <div className="text-center py-12">
+          <h1 className="text-3xl font-heading font-bold text-foreground mb-4">
+            Monitoring & Evaluation
+          </h1>
+          <p className="text-muted-foreground mb-8">
+            Redirecting to KPI Dashboard...
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/hr/me-dashboard')}>
+              <CardHeader>
+                <BarChart className="w-8 h-8 text-primary mx-auto" />
+                <CardTitle className="text-center">KPI Dashboard</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">
+                  Monitor key performance indicators
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/hr/me-trends')}>
+              <CardHeader>
+                <TrendingUp className="w-8 h-8 text-accent mx-auto" />
+                <CardTitle className="text-center">Performance Trends</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">
+                  Analyze performance over time
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/hr/me-scorecard')}>
+              <CardHeader>
+                <Trophy className="w-8 h-8 text-secondary mx-auto" />
+                <CardTitle className="text-center">Performance Scorecard</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">
+                  Individual and team scores
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/hr/me-gaps')}>
+              <CardHeader>
+                <AlertTriangle className="w-8 h-8 text-destructive mx-auto" />
+                <CardTitle className="text-center">Gap Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">
+                  Identify performance gaps
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/hr/me-targets')}>
+              <CardHeader>
+                <Target className="w-8 h-8 text-primary mx-auto" />
+                <CardTitle className="text-center">Weekly Targets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">
+                  Track weekly goals
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/hr/me-management')}>
+              <CardHeader>
+                <Settings className="w-8 h-8 text-muted-foreground mx-auto" />
+                <CardTitle className="text-center">KPI Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">
+                  Manage KPIs (HR/Admin only)
+                </CardDescription>
+              </CardContent>
+            </Card>
           </div>
-          {isHROrAdmin && (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-            </div>
-          )}
         </div>
-
-        {/* Main Content */}
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className={`grid w-full ${isHROrAdmin ? 'grid-cols-7' : 'grid-cols-5'}`}>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="trends">Trends</TabsTrigger>
-            <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
-            <TabsTrigger value="gaps">Gap Analysis</TabsTrigger>
-            <TabsTrigger value="my-targets">My Targets</TabsTrigger>
-            {isHROrAdmin && <TabsTrigger value="weekly-targets">Weekly Targets</TabsTrigger>}
-            {isHROrAdmin && <TabsTrigger value="management">KPI Management</TabsTrigger>}
-          </TabsList>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            <KPIDashboard />
-          </TabsContent>
-
-          <TabsContent value="trends" className="space-y-6">
-            <TrendAnalysis />
-          </TabsContent>
-
-          <TabsContent value="scorecard" className="space-y-6">
-            <PerformanceScorecard />
-          </TabsContent>
-
-          <TabsContent value="gaps" className="space-y-6">
-            <GapAnalysis />
-          </TabsContent>
-
-          <TabsContent value="my-targets" className="space-y-6">
-            <MyWeeklyTargets />
-          </TabsContent>
-
-          {isHROrAdmin && (
-            <TabsContent value="weekly-targets" className="space-y-6">
-              <WeeklyTargetsManagement />
-            </TabsContent>
-          )}
-
-          {isHROrAdmin && (
-            <TabsContent value="management" className="space-y-6">
-              <KPIManagement />
-            </TabsContent>
-          )}
-        </Tabs>
       </div>
     </HRLayout>
   );
