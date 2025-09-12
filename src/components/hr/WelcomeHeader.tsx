@@ -136,19 +136,19 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
-        <div className="absolute inset-0 bg-black/60"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/40 to-primary/20"></div>
+        <div className="absolute inset-0 bg-black/25"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/15 to-transparent"></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10 p-8 text-white">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-4">
-            <div>
-              <h1 className="text-4xl lg:text-5xl font-heading font-bold mb-2 drop-shadow-lg">
+            <div className="backdrop-blur-sm bg-black/20 rounded-lg p-4">
+              <h1 className="text-4xl lg:text-5xl font-heading font-bold mb-2 drop-shadow-2xl text-shadow-lg">
                 {getGreeting()}, {userName}!
               </h1>
-              <p className="text-xl text-white font-body drop-shadow-md">
+              <p className="text-xl text-white font-body drop-shadow-xl">
                 {getRoleDescription()}
               </p>
             </div>
