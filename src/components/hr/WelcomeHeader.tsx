@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Clock, TrendingUp, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-const heroImage = "/lovable-uploads/a9118e45-4cd4-46ab-8dee-7bb623aab2b9.png";
+const heroImage = "/placeholder.svg";
 
 interface WelcomeHeaderProps {
   userName: string;

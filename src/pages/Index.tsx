@@ -50,7 +50,7 @@ const Index = () => {
           {/* Welcome Section */}
           <div className="text-center lg:text-left space-y-6">
             <div className="flex items-center justify-center lg:justify-start space-x-3">
-              <img src="/lovable-uploads/87726f12-d6bc-40f6-aba4-76ea23774e15.png" alt="NAFGEM Logo" className="h-12 w-12" />
+              <div className="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-xl">N</div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">NAFGEM</h1>
                 <p className="text-sm text-muted-foreground">HR Management System</p>

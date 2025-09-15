@@ -76,12 +76,8 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
             <div className="flex items-center space-x-4">
               <SidebarTrigger />
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-                  <img 
-                    src="/lovable-uploads/beb68246-34d9-4995-a2eb-6ba5fba6956b.png" 
-                    alt="NAFGEM Logo" 
-                    className="w-full h-full object-contain"
-                  />
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                  N
                 </div>
                 <div>
                   <h1 className="text-xl font-heading font-bold text-primary">
