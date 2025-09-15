@@ -1,27 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { MessageCircle, Plus, Send, Search, Filter, Trash2, Users } from 'lucide-react';
+import { 
+  MessageCircle, 
+  Plus, 
+  Send, 
+  Search, 
+  Filter, 
+  Trash2, 
+  Users, 
+  User,
+  Star,
+  Settings,
+  Eye,
+  EyeOff,
+  Phone,
+  Video,
+  Paperclip,
+  Smile,
+  MoreVertical,
+  Volume2,
+  Mic,
+  Calendar,
+  Bell
+} from 'lucide-react';
 import { format } from 'date-fns';
 
-interface ConversationSummary {
-  task_evaluation_id: string;
-  conversation_type: string;
-  conversation_title: string;
-  message_count: number;
+interface Conversation {
+  id: string;
+  title: string;
+  type: string;
+  last_message?: string;
+  last_message_at?: string;
   unread_count: number;
-  last_message_at: string;
   participants: string[];
-  last_message: string;
+  participant_names: string[];
+  is_muted?: boolean;
+  is_starred?: boolean;
 }
 
 interface Message {
@@ -31,17 +55,21 @@ interface Message {
   created_at: string;
   sender_name?: string;
   sender_role?: string;
+  message_type: string;
+  is_read: boolean;
+  reactions?: Array<{ emoji: string; users: string[] }>;
 }
 
 interface Profile {
   id: string;
   full_name: string;
   email: string;
+  avatar_url?: string;
 }
 
 const Communications = () => {
   const { toast } = useToast();
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -56,6 +84,9 @@ const Communications = () => {
   const [userRole, setUserRole] = useState<string>('');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadCurrentUser();
@@ -65,6 +96,7 @@ const Communications = () => {
     if (currentUser) {
       loadConversations();
       loadProfiles();
+      setupRealtimeSubscription();
     }
   }, [currentUser]);
 
@@ -74,18 +106,18 @@ const Communications = () => {
     }
   }, [selectedConversation]);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const loadCurrentUser = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.log('No user found, redirecting to auth...');
-        // Redirect to authentication page
         window.location.href = '/auth';
         return;
       }
-
-      console.log('User found:', user.id);
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -99,14 +131,10 @@ const Communications = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      console.log('User profile:', profile);
-      console.log('User role:', roleData);
-
       setCurrentUser({ ...user, profile });
       setUserRole(roleData?.role || 'employee');
     } catch (error) {
       console.error('Error loading user:', error);
-      // If there's an authentication error, redirect to auth
       window.location.href = '/auth';
     } finally {
       setLoading(false);
@@ -127,30 +155,67 @@ const Communications = () => {
 
   const loadConversations = async () => {
     try {
-      // First get all conversations that include this user as a participant
-      const { data: conversationSummaries } = await supabase
-        .from('conversation_summaries')
-        .select('*')
-        .contains('participants', [currentUser?.id]);
+      // Get conversations where user is a participant
+      const { data: participantData } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', currentUser?.id);
 
-      if (!conversationSummaries || conversationSummaries.length === 0) {
+      if (!participantData || participantData.length === 0) {
         setConversations([]);
         return;
       }
 
-      // Convert summaries to the format expected by the component
-      const conversations = conversationSummaries.map(summary => ({
-        task_evaluation_id: summary.task_evaluation_id,
-        conversation_type: summary.conversation_type,
-        conversation_title: summary.conversation_title || `Conversation ${summary.task_evaluation_id?.slice(0, 8) || 'Unknown'}`,
-        participants: summary.participants || [],
-        message_count: summary.message_count || 0,
-        unread_count: summary.unread_count || 0,
-        last_message: summary.last_message || '',
-        last_message_at: summary.last_message_at
-      }));
+      const conversationIds = participantData.map(p => p.conversation_id);
 
-      setConversations(conversations);
+      // Get conversation details
+      const { data: conversationMessages } = await supabase
+        .from('task_conversations')
+        .select('conversation_id, conversation_title, conversation_type, created_at, message')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false });
+
+      // Group by conversation and get latest message
+      const conversationMap = new Map();
+      
+      conversationMessages?.forEach(msg => {
+        if (!conversationMap.has(msg.conversation_id) || 
+            new Date(msg.created_at) > new Date(conversationMap.get(msg.conversation_id).last_message_at)) {
+          conversationMap.set(msg.conversation_id, {
+            id: msg.conversation_id,
+            title: msg.conversation_title || `Conversation ${msg.conversation_id.slice(0, 8)}`,
+            type: msg.conversation_type,
+            last_message: msg.message,
+            last_message_at: msg.created_at,
+            unread_count: 0,
+            participants: [],
+            participant_names: []
+          });
+        }
+      });
+
+      // Get participant names for each conversation
+      for (const [conversationId, conversation] of conversationMap) {
+        const { data: participants } = await supabase
+          .from('conversation_participants')
+          .select('user_id')
+          .eq('conversation_id', conversationId);
+
+        if (participants) {
+          const userIds = participants.map(p => p.user_id);
+          
+          // Get profile information for participants
+          const { data: participantProfiles } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIds);
+          
+          conversation.participants = userIds;
+          conversation.participant_names = participantProfiles?.map(p => p.full_name) || [];
+        }
+      }
+
+      setConversations(Array.from(conversationMap.values()));
     } catch (error) {
       console.error('Error loading conversations:', error);
     }
@@ -161,30 +226,12 @@ const Communications = () => {
       const { data, error } = await supabase
         .from('task_conversations')
         .select('*')
-        .eq('task_evaluation_id', conversationId)
+        .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error loading messages:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Check if current user has access to this conversation
-      const userParticipates = data?.some(msg => msg.sender_id === currentUser?.id) || 
-                              data?.some(msg => msg.conversation_type === 'general');
-
-      if (!userParticipates && data?.length > 0) {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to view this conversation.",
-          variant: "destructive",
-        });
-        setSelectedConversation(null);
-        setMessages([]);
-        return;
-      }
-
-      // Get sender information separately
+      // Get sender information
       const senderIds = [...new Set(data?.map(msg => msg.sender_id) || [])];
       
       const { data: senderProfiles } = await supabase
@@ -214,13 +261,36 @@ const Communications = () => {
         await supabase
           .from('task_conversations')
           .update({ is_read: true })
-          .eq('task_evaluation_id', conversationId)
+          .eq('conversation_id', conversationId)
           .neq('sender_id', currentUser?.id);
       }
-
     } catch (error) {
       console.error('Error loading messages:', error);
     }
+  };
+
+  const setupRealtimeSubscription = () => {
+    const channel = supabase
+      .channel('communications-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'task_conversations'
+        },
+        (payload) => {
+          if (selectedConversation && payload.new.conversation_id === selectedConversation) {
+            loadMessages(selectedConversation);
+          }
+          loadConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const sendMessage = async () => {
@@ -230,19 +300,17 @@ const Communications = () => {
       const { error } = await supabase
         .from('task_conversations')
         .insert({
-          task_evaluation_id: selectedConversation,
+          conversation_id: selectedConversation,
           sender_id: currentUser?.id,
           message: newMessage.trim(),
-          conversation_type: conversations.find(c => c.task_evaluation_id === selectedConversation)?.conversation_type || 'general',
+          conversation_type: conversations.find(c => c.id === selectedConversation)?.type || 'general',
+          conversation_title: conversations.find(c => c.id === selectedConversation)?.title,
           message_type: 'text'
         });
 
       if (error) throw error;
 
       setNewMessage('');
-      loadMessages(selectedConversation);
-      loadConversations();
-
       toast({
         title: "Message sent",
         description: "Your message has been sent successfully.",
@@ -252,43 +320,6 @@ const Communications = () => {
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const deleteConversation = async (conversationId: string) => {
-    console.log('Attempting to delete conversation:', conversationId);
-    try {
-      const { error } = await supabase
-        .from('task_conversations')
-        .delete()
-        .eq('task_evaluation_id', conversationId);
-
-      if (error) {
-        console.error('Delete error:', error);
-        throw error;
-      }
-
-      console.log('Delete successful');
-
-      // If the deleted conversation was selected, clear selection
-      if (selectedConversation === conversationId) {
-        setSelectedConversation(null);
-        setMessages([]);
-      }
-
-      loadConversations();
-
-      toast({
-        title: "Conversation deleted",
-        description: "The conversation has been deleted successfully.",
-      });
-    } catch (error) {
-      console.error('Error deleting conversation:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete conversation. Please try again.",
         variant: "destructive",
       });
     }
@@ -304,83 +335,37 @@ const Communications = () => {
       return;
     }
 
-    if (!currentUser?.id) {
-      toast({
-        title: "Error", 
-        description: "You must be logged in to create conversations.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log('Creating conversation:', {
-      title: newConversationTitle,
-      type: selectedParticipants.length > 0 ? 'personal' : newConversationType,
-      participants: selectedParticipants,
-      currentUser: currentUser?.id
-    });
-
     try {
-      // Create a unique conversation ID
       const conversationId = crypto.randomUUID();
       
-      // Determine conversation type - personal if participants selected, otherwise use selected type
-      const conversationType = selectedParticipants.length > 0 ? 'personal' : newConversationType;
-
       // Create initial message
-      let systemMessage = `Started conversation: ${newConversationTitle}`;
-      if (selectedParticipants.length > 0) {
-        const participantNames = selectedParticipants.map(id => 
-          profiles.find(p => p.id === id)?.full_name || 'Unknown'
-        ).join(', ');
-        systemMessage += ` with ${participantNames}`;
-      }
-
-      const messageData = {
-        task_evaluation_id: conversationId,
-        sender_id: currentUser.id,
-        message: systemMessage,
-        conversation_type: conversationType,
-        conversation_title: newConversationTitle,
-        message_type: 'system',
-        is_read: false
-      };
-
-      console.log('Inserting message data:', messageData);
-
-      const { data, error } = await supabase
+      const { error: messageError } = await supabase
         .from('task_conversations')
-        .insert(messageData)
-        .select();
-
-      if (error) {
-        console.error('Database error creating conversation:', error);
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      console.log('Successfully created initial message:', data);
-
-      // For personal conversations, create placeholder messages for each participant
-      // This ensures they appear in the conversation list for all participants
-      if (selectedParticipants.length > 0) {
-        const participantMessages = selectedParticipants.map(participantId => ({
-          task_evaluation_id: conversationId,
-          sender_id: currentUser.id, // Use current user as sender for all
-          message: `${profiles.find(p => p.id === participantId)?.full_name || 'User'} added to conversation`,
-          conversation_type: 'personal',
+        .insert({
+          conversation_id: conversationId,
+          sender_id: currentUser.id,
+          message: `Started conversation: ${newConversationTitle}`,
+          conversation_type: newConversationType,
           conversation_title: newConversationTitle,
           message_type: 'system',
           is_read: false
-        }));
+        });
 
-        const { error: participantError } = await supabase
-          .from('task_conversations')
-          .insert(participantMessages);
+      if (messageError) throw messageError;
 
-        if (participantError) {
-          console.error('Error adding participant messages:', participantError);
-        }
-      }
+      // Add current user as participant
+      const participantsToAdd = [currentUser.id, ...selectedParticipants];
+      
+      const { error: participantError } = await supabase
+        .from('conversation_participants')
+        .insert(
+          participantsToAdd.map(userId => ({
+            conversation_id: conversationId,
+            user_id: userId
+          }))
+        );
+
+      if (participantError) throw participantError;
 
       // Reset form
       setIsNewConversationOpen(false);
@@ -389,7 +374,6 @@ const Communications = () => {
       setSelectedParticipants([]);
       setParticipantSearch('');
       
-      // Reload conversations to show the new one
       await loadConversations();
 
       toast({
@@ -400,7 +384,7 @@ const Communications = () => {
       console.error('Error creating conversation:', error);
       toast({
         title: "Error",
-        description: `Failed to create conversation: ${error.message || 'Please try again.'}`,
+        description: "Failed to create conversation. Please try again.",
         variant: "destructive",
       });
     }
@@ -414,193 +398,181 @@ const Communications = () => {
     );
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   const filteredProfiles = profiles.filter(profile => 
-    profile.id !== currentUser?.id && // Exclude current user
+    profile.id !== currentUser?.id &&
     (profile.full_name?.toLowerCase().includes(participantSearch.toLowerCase()) ||
      profile.email?.toLowerCase().includes(participantSearch.toLowerCase()))
   );
 
   const getConversationTypeColor = (type: string) => {
     switch (type) {
-      case 'task_related': return 'bg-blue-500';
-      case 'performance': return 'bg-green-500';
-      case 'leave': return 'bg-yellow-500';
-      case 'training': return 'bg-purple-500';
-      default: return 'bg-gray-500';
+      case 'task_related': return 'bg-primary/20 text-primary border-primary/30';
+      case 'performance': return 'bg-success/20 text-success border-success/30';
+      case 'leave': return 'bg-warning/20 text-warning border-warning/30';
+      case 'training': return 'bg-secondary/20 text-secondary border-secondary/30';
+      default: return 'bg-muted/20 text-muted-foreground border-muted/30';
     }
   };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800';
-      case 'hr': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'admin': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'hr': return 'bg-primary/10 text-primary border-primary/20';
+      default: return 'bg-muted/10 text-muted-foreground border-muted/20';
     }
   };
 
   const filteredConversations = conversations.filter(conv => {
-    const matchesSearch = conv.conversation_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = conv.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          conv.last_message?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || conv.conversation_type === filterType;
+    const matchesFilter = filterType === 'all' || conv.type === filterType;
     return matchesSearch && matchesFilter;
   });
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading communications...</div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="text-lg font-medium">Loading communications...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex bg-background">
+    <div className="h-screen flex bg-gradient-to-br from-background via-background to-muted/10 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+      
       {/* Conversations List */}
-      <div className="w-1/3 border-r border-border flex flex-col">
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <MessageCircle className="h-6 w-6" />
+      <div className="w-1/3 backdrop-blur-xl bg-background/80 border-r border-border/50 flex flex-col relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5"></div>
+        
+        {/* Header */}
+        <div className="p-6 border-b border-border/50 relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-heading font-bold flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
+                <MessageCircle className="h-6 w-6" />
+              </div>
               Communications
             </h1>
+            
             <Dialog open={isNewConversationOpen} onOpenChange={setIsNewConversationOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button 
+                  size="sm" 
+                  className="bg-gradient-accent text-accent-foreground hover:shadow-accent-glow smooth-transition interactive-scale"
+                >
                   <Plus className="h-4 w-4 mr-2" />
-                  New
+                  New Chat
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md backdrop-blur-xl bg-background/95 border-border/50">
                 <DialogHeader>
-                  <DialogTitle>Start New Conversation</DialogTitle>
+                  <DialogTitle className="font-heading">Start New Conversation</DialogTitle>
                 </DialogHeader>
                 
                 <Tabs defaultValue="general" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="general">General</TabsTrigger>
-                    <TabsTrigger value="person">With Person</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+                    <TabsTrigger value="general" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">General</TabsTrigger>
+                    <TabsTrigger value="person" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">With Person</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="general" className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">Title</label>
+                      <label className="text-sm font-medium text-muted-foreground">Title</label>
                       <Input
                         value={newConversationTitle}
                         onChange={(e) => setNewConversationTitle(e.target.value)}
                         placeholder="Enter conversation title"
+                        className="bg-background/50 border-border/50 focus:border-primary"
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Type</label>
+                      <label className="text-sm font-medium text-muted-foreground">Type</label>
                       <Select value={newConversationType} onValueChange={setNewConversationType}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-background/50 border-border/50">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-background border border-border shadow-lg z-50">
+                        <SelectContent className="backdrop-blur-xl bg-background/95 border-border/50">
                           <SelectItem value="general">General</SelectItem>
                           <SelectItem value="performance">Performance</SelectItem>
-                          <SelectItem value="leave">Leave Request</SelectItem>
+                          <SelectItem value="leave">Leave</SelectItem>
                           <SelectItem value="training">Training</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={createNewConversation} className="w-full">
+                    <Button 
+                      onClick={createNewConversation} 
+                      className="w-full bg-gradient-primary text-primary-foreground hover:shadow-glow smooth-transition"
+                    >
                       Create Conversation
                     </Button>
                   </TabsContent>
                   
                   <TabsContent value="person" className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">Title</label>
+                      <label className="text-sm font-medium text-muted-foreground">Title</label>
                       <Input
                         value={newConversationTitle}
                         onChange={(e) => setNewConversationTitle(e.target.value)}
                         placeholder="Enter conversation title"
+                        className="bg-background/50 border-border/50"
                       />
                     </div>
-                    
                     <div>
-                      <label className="text-sm font-medium">Search People</label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          value={participantSearch}
-                          onChange={(e) => setParticipantSearch(e.target.value)}
-                          placeholder="Search by name or email"
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium">Select People</label>
-                      <div className="max-h-40 overflow-y-auto border rounded-md">
-                        {filteredProfiles.map((profile) => (
-                          <div
-                            key={profile.id}
-                            className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 border-b last:border-b-0 ${
-                              selectedParticipants.includes(profile.id) ? 'bg-primary/10' : ''
+                      <label className="text-sm font-medium text-muted-foreground">Add Participants</label>
+                      <Input
+                        value={participantSearch}
+                        onChange={(e) => setParticipantSearch(e.target.value)}
+                        placeholder="Search for people..."
+                        className="bg-background/50 border-border/50"
+                      />
+                      <div className="max-h-40 overflow-y-auto mt-2 space-y-2">
+                        {filteredProfiles.map(profile => (
+                          <div 
+                            key={profile.id} 
+                            className={`p-3 rounded-lg cursor-pointer smooth-transition ${
+                              selectedParticipants.includes(profile.id) 
+                                ? 'bg-primary/20 border border-primary/30' 
+                                : 'bg-muted/20 hover:bg-muted/40 border border-border/30'
                             }`}
                             onClick={() => toggleParticipant(profile.id)}
                           >
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                {profile.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="font-medium text-sm">{profile.full_name || 'Unknown User'}</div>
-                              <div className="text-xs text-muted-foreground">{profile.email}</div>
-                            </div>
-                            {selectedParticipants.includes(profile.id) && (
-                              <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                                  {profile.full_name?.charAt(0) || '?'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="font-medium">{profile.full_name}</div>
+                                <div className="text-sm text-muted-foreground">{profile.email}</div>
                               </div>
-                            )}
+                            </div>
                           </div>
                         ))}
-                        {filteredProfiles.length === 0 && (
-                          <div className="p-4 text-center text-muted-foreground text-sm">
-                            <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                            No people found
-                          </div>
-                        )}
                       </div>
                     </div>
-                    
-                    {selectedParticipants.length > 0 && (
-                      <div>
-                        <label className="text-sm font-medium">Selected ({selectedParticipants.length})</label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {selectedParticipants.map(id => {
-                            const profile = profiles.find(p => p.id === id);
-                            return (
-                              <Badge key={id} variant="secondary" className="text-xs">
-                                {profile?.full_name || 'Unknown'}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <label className="text-sm font-medium">Type</label>
-                      <Select value={newConversationType} onValueChange={setNewConversationType}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border border-border shadow-lg z-50">
-                          <SelectItem value="general">General</SelectItem>
-                          <SelectItem value="performance">Performance</SelectItem>
-                          <SelectItem value="leave">Leave Request</SelectItem>
-                          <SelectItem value="training">Training</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <Button onClick={createNewConversation} className="w-full">
-                      Create Conversation
+                    <Button 
+                      onClick={createNewConversation} 
+                      className="w-full bg-gradient-primary text-primary-foreground hover:shadow-glow smooth-transition"
+                      disabled={selectedParticipants.length === 0}
+                    >
+                      Start Personal Chat
                     </Button>
                   </TabsContent>
                 </Tabs>
@@ -609,23 +581,23 @@ const Communications = () => {
           </div>
 
           {/* Search and Filter */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search conversations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                placeholder="Search conversations..."
+                className="pl-10 bg-background/50 border-border/50 focus:border-primary backdrop-blur-sm"
               />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background/50 border-border/50">
+                <Filter className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-background border border-border shadow-lg z-50">
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="task_related">Task Related</SelectItem>
+              <SelectContent className="backdrop-blur-xl bg-background/95 border-border/50">
+                <SelectItem value="all">All Conversations</SelectItem>
                 <SelectItem value="general">General</SelectItem>
                 <SelectItem value="performance">Performance</SelectItem>
                 <SelectItem value="leave">Leave</SelectItem>
@@ -635,150 +607,217 @@ const Communications = () => {
           </div>
         </div>
 
-        {/* Conversations */}
-        <div className="flex-1 overflow-y-auto">
-          {filteredConversations.map((conv) => (
-            <div key={conv.task_evaluation_id} className="group relative">
-              <div
-                className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 ${
-                  selectedConversation === conv.task_evaluation_id ? 'bg-muted' : ''
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 relative z-10">
+          {filteredConversations.length === 0 ? (
+            <div className="text-center py-12">
+              <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+              <p className="text-muted-foreground">No conversations found</p>
+              <p className="text-sm text-muted-foreground/70">Start a new conversation to get chatting!</p>
+            </div>
+          ) : (
+            filteredConversations.map(conversation => (
+              <Card 
+                key={conversation.id}
+                className={`cursor-pointer smooth-transition interactive-lift border-border/30 hover:border-primary/30 ${
+                  selectedConversation === conversation.id 
+                    ? 'bg-primary/10 border-primary/30 shadow-glow' 
+                    : 'bg-background/60 backdrop-blur-sm hover:bg-background/80'
                 }`}
-                onClick={() => setSelectedConversation(conv.task_evaluation_id)}
+                onClick={() => setSelectedConversation(conversation.id)}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium truncate">
-                    {conv.conversation_title || `${conv.conversation_type} conversation`}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    {conv.unread_count > 0 && (
-                      <Badge variant="destructive" className="text-xs">
-                        {conv.unread_count}
-                      </Badge>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm('Are you sure you want to delete this conversation?')) {
-                          deleteConversation(conv.task_evaluation_id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                        {conversation.type === 'general' ? <Users className="h-6 w-6" /> : <User className="h-6 w-6" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold truncate">{conversation.title}</h3>
+                        {conversation.last_message_at && (
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(conversation.last_message_at), 'MMM dd')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className={`text-xs ${getConversationTypeColor(conversation.type)}`}>
+                          {conversation.type}
+                        </Badge>
+                        {conversation.unread_count > 0 && (
+                          <Badge className="bg-accent text-accent-foreground">
+                            {conversation.unread_count}
+                          </Badge>
+                        )}
+                      </div>
+                      {conversation.last_message && (
+                        <p className="text-sm text-muted-foreground truncate">{conversation.last_message}</p>
+                      )}
+                      {conversation.participant_names.length > 0 && (
+                        <div className="flex items-center gap-1 mt-2">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground truncate">
+                            {conversation.participant_names.join(', ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge className={`text-xs ${getConversationTypeColor(conv.conversation_type)} text-white`}>
-                    {conv.conversation_type.replace('_', ' ')}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {conv.message_count} messages
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground truncate">{conv.last_message}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {format(new Date(conv.last_message_at), 'MMM d, h:mm a')}
-                </p>
-              </div>
-            </div>
-          ))}
-          
-          {filteredConversations.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">
-              <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No conversations found</p>
-              <p className="text-sm">Start a new conversation to get started</p>
-            </div>
+                </CardContent>
+              </Card>
+            ))
           )}
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 flex flex-col">
+      {/* Messages Area */}
+      <div className="flex-1 flex flex-col backdrop-blur-xl bg-background/70 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-primary/5"></div>
+        
         {selectedConversation ? (
           <>
-            {/* Messages Header */}
-            <div className="p-4 border-b border-border">
-              <h2 className="text-lg font-semibold">
-                {conversations.find(c => c.task_evaluation_id === selectedConversation)?.conversation_title || 'Conversation'}
-              </h2>
-            </div>
-
-            {/* Messages List - WhatsApp Style */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[75%] ${message.sender_id === currentUser?.id ? 'mr-2' : 'ml-2'}`}>
-                    {/* Sender info - only show for others */}
-                    {message.sender_id !== currentUser?.id && (
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-xs font-medium text-muted-foreground">{message.sender_name}</span>
-                        <Badge variant="outline" className="text-xs h-4 px-1">
-                          {message.sender_role || 'employee'}
-                        </Badge>
-                      </div>
-                    )}
-                    
-                    {/* Message bubble */}
-                    <div className={`relative p-3 rounded-2xl shadow-sm ${
-                      message.sender_id === currentUser?.id 
-                        ? 'bg-primary text-primary-foreground rounded-br-md' 
-                        : 'bg-background border rounded-bl-md'
-                    }`}>
-                      <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                      
-                      {/* Timestamp */}
-                      <div className={`text-xs mt-1 ${
-                        message.sender_id === currentUser?.id 
-                          ? 'text-primary-foreground/70 text-right' 
-                          : 'text-muted-foreground'
-                      }`}>
-                        {format(new Date(message.created_at), 'h:mm a')}
-                      </div>
+            {/* Chat Header */}
+            <div className="p-6 border-b border-border/50 backdrop-blur-sm bg-background/80 relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                      <MessageCircle className="h-6 w-6" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="text-xl font-heading font-semibold">
+                      {conversations.find(c => c.id === selectedConversation)?.title}
+                    </h2>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>
+                        {conversations.find(c => c.id === selectedConversation)?.participant_names.join(', ')}
+                      </span>
+                      {typingUsers.length > 0 && (
+                        <span className="text-primary animate-pulse">
+                          {typingUsers.join(', ')} typing...
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
-              ))}
-              
-              {messages.length === 0 && (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                    <p className="text-lg font-medium">No messages yet</p>
-                    <p className="text-sm">Start the conversation by sending a message</p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                    <Video className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                    <Settings className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Send Message - WhatsApp Style */}
-            <div className="p-4 border-t border-border bg-background">
-              <div className="flex gap-3 items-end">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 relative z-10">
+              {messages.length === 0 ? (
+                <div className="text-center py-12">
+                  <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">No messages yet</p>
+                  <p className="text-sm text-muted-foreground/70">Start the conversation!</p>
+                </div>
+              ) : (
+                messages.map((message, index) => {
+                  const isCurrentUser = message.sender_id === currentUser?.id;
+                  const showAvatar = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                  
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                    >
+                      <div className={`flex gap-3 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {showAvatar && !isCurrentUser && (
+                          <Avatar className="h-8 w-8 ring-2 ring-border/20">
+                            <AvatarFallback className="bg-muted">
+                              {message.sender_name?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        
+                        <div
+                          className={`rounded-2xl p-4 backdrop-blur-sm border smooth-transition ${
+                            isCurrentUser
+                              ? 'bg-gradient-primary text-primary-foreground border-primary/30 shadow-glow'
+                              : 'bg-background/80 border-border/30 hover:bg-background/90'
+                          }`}
+                        >
+                          {!isCurrentUser && showAvatar && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-medium">{message.sender_name}</span>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${getRoleBadgeColor(message.sender_role || 'employee')}`}
+                              >
+                                {message.sender_role || 'employee'}
+                              </Badge>
+                            </div>
+                          )}
+                          
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.message}</p>
+                          
+                          <div className={`flex items-center justify-between mt-2 text-xs ${
+                            isCurrentUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}>
+                            <span>{format(new Date(message.created_at), 'HH:mm')}</span>
+                            {isCurrentUser && (
+                              <div className="flex items-center gap-1">
+                                {message.is_read ? (
+                                  <Eye className="h-3 w-3" />
+                                ) : (
+                                  <EyeOff className="h-3 w-3" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Message Input */}
+            <div className="p-6 border-t border-border/50 backdrop-blur-sm bg-background/80 relative z-10">
+              <div className="flex items-end gap-3">
+                <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                  <Paperclip className="h-4 w-4" />
+                </Button>
                 <div className="flex-1 relative">
                   <Textarea
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     placeholder="Type a message..."
-                    className="flex-1 min-h-[44px] max-h-32 resize-none rounded-full px-4 py-3 border-2 focus:border-primary/50"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
+                    className="resize-none min-h-[44px] max-h-32 bg-background/50 border-border/50 focus:border-primary backdrop-blur-sm rounded-2xl"
+                    rows={1}
                   />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="absolute right-2 bottom-2 hover:bg-primary/10"
+                  >
+                    <Smile className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button 
-                  onClick={sendMessage} 
+                <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                  <Mic className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={sendMessage}
                   disabled={!newMessage.trim()}
-                  size="icon"
-                  className="h-11 w-11 rounded-full bg-primary hover:bg-primary/90 transition-all duration-200 disabled:opacity-50"
+                  className="bg-gradient-primary text-primary-foreground hover:shadow-glow smooth-transition disabled:opacity-50 rounded-full h-11 w-11 p-0"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
@@ -786,11 +825,22 @@ const Communications = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Select a conversation to start messaging</p>
-              <p className="text-sm">Choose from the list or start a new conversation</p>
+          <div className="flex-1 flex items-center justify-center text-center relative z-10">
+            <div className="max-w-md mx-auto">
+              <div className="p-6 rounded-3xl bg-gradient-card backdrop-blur-xl border border-border/30 shadow-elevated">
+                <MessageCircle className="h-20 w-20 mx-auto mb-6 text-primary/50" />
+                <h3 className="text-2xl font-heading font-semibold mb-3">Welcome to Communications</h3>
+                <p className="text-muted-foreground mb-6">
+                  Select a conversation to start chatting, or create a new one to connect with your colleagues.
+                </p>
+                <Button 
+                  onClick={() => setIsNewConversationOpen(true)}
+                  className="bg-gradient-accent text-accent-foreground hover:shadow-accent-glow smooth-transition"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Start New Conversation
+                </Button>
+              </div>
             </div>
           </div>
         )}

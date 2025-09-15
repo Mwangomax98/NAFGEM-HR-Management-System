@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Send, MessageSquare, User, Users } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Send, MessageSquare, User, Users, Smile, Paperclip, Mic, Phone, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -32,6 +33,7 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -140,16 +142,12 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
           filter: `task_evaluation_id=eq.${evaluationId}`
         },
         (payload) => {
-          console.log('New message received:', payload);
           loadMessages();
         }
       )
-      .subscribe((status) => {
-        console.log('Subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
-      console.log('Cleaning up chat subscription');
       supabase.removeChannel(channel);
     };
   };
@@ -195,72 +193,102 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'hr':
-        return <Badge variant="default">HR</Badge>;
+        return <Badge className="bg-primary/10 text-primary border-primary/20">HR</Badge>;
       case 'admin':
-        return <Badge variant="destructive">Admin</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Admin</Badge>;
       default:
-        return <Badge variant="secondary">Employee</Badge>;
+        return <Badge variant="outline" className="bg-muted/10 text-muted-foreground border-muted/20">Employee</Badge>;
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Task Discussion: {taskTitle}
-          </DialogTitle>
-          <DialogDescription>
-            Discuss task details and provide explanations
-          </DialogDescription>
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col backdrop-blur-xl bg-background/95 border-border/50">
+        <DialogHeader className="border-b border-border/50 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
+                <MessageSquare className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-heading">Task Discussion</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  {taskTitle}
+                </DialogDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                <Phone className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                <Video className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-primary/5 pointer-events-none"></div>
+          
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20 rounded-lg">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 relative z-10">
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading conversation...
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading conversation...</p>
               </div>
             ) : messages.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No messages yet. Start the conversation!</p>
+              <div className="text-center py-12">
+                <div className="p-6 rounded-3xl bg-gradient-card backdrop-blur-xl border border-border/30 shadow-elevated">
+                  <MessageSquare className="h-16 w-16 mx-auto mb-4 text-primary/50" />
+                  <p className="text-lg font-medium mb-2">No messages yet</p>
+                  <p className="text-sm text-muted-foreground">Start the discussion about this task!</p>
+                </div>
               </div>
             ) : (
-              messages.map((message) => {
+              messages.map((message, index) => {
                 const isCurrentUser = message.sender_id === currentUser?.id;
+                const showAvatar = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                
                 return (
                   <div
                     key={message.id}
-                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
                   >
-                    <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
-                        isCurrentUser
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background border'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          {isCurrentUser ? (
-                            <User className="h-3 w-3" />
-                          ) : (
-                            <Users className="h-3 w-3" />
+                    <div className={`flex gap-3 max-w-[75%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {showAvatar && !isCurrentUser && (
+                        <Avatar className="h-8 w-8 ring-2 ring-border/20">
+                          <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm">
+                            {message.sender_name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      
+                      <div
+                        className={`rounded-2xl p-4 backdrop-blur-sm border smooth-transition ${
+                          isCurrentUser
+                            ? 'bg-gradient-primary text-primary-foreground border-primary/30 shadow-glow'
+                            : 'bg-background/80 border-border/30 hover:bg-background/90'
+                        }`}
+                      >
+                        {!isCurrentUser && showAvatar && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm font-medium">{message.sender_name}</span>
+                            {getRoleBadge(message.sender_role)}
+                          </div>
+                        )}
+                        
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.message}</p>
+                        
+                        <div className={`flex items-center justify-between mt-2 text-xs ${
+                          isCurrentUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                        }`}>
+                          <span>{format(new Date(message.created_at), 'MMM dd, HH:mm')}</span>
+                          {isCurrentUser && message.is_read && (
+                            <span className="text-xs opacity-70">Read</span>
                           )}
-                          <span className="text-xs font-medium">
-                            {message.sender_name}
-                          </span>
-                          {getRoleBadge(message.sender_role)}
                         </div>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                      <div className={`text-xs mt-2 ${
-                        isCurrentUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                      }`}>
-                        {format(new Date(message.created_at), 'MMM dd, HH:mm')}
                       </div>
                     </div>
                   </div>
@@ -271,28 +299,43 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
           </div>
 
           {/* Message Input */}
-          <div className="flex gap-2 pt-4">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              disabled={sending}
-              className="flex-1"
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={sending || !newMessage.trim()}
-              size="sm"
-            >
-              {sending ? (
-                "Sending..."
-              ) : (
-                <>
+          <div className="p-6 border-t border-border/50 backdrop-blur-sm bg-background/80 relative z-10">
+            <div className="flex items-end gap-3">
+              <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 relative">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message..."
+                  disabled={sending}
+                  className="bg-background/50 border-border/50 focus:border-primary backdrop-blur-sm rounded-2xl pr-12"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:bg-primary/10"
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                <Mic className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={sendMessage}
+                disabled={sending || !newMessage.trim()}
+                className="bg-gradient-primary text-primary-foreground hover:shadow-glow smooth-transition disabled:opacity-50 rounded-full h-11 w-11 p-0"
+              >
+                {sending ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
+                ) : (
                   <Send className="h-4 w-4" />
-                </>
-              )}
-            </Button>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

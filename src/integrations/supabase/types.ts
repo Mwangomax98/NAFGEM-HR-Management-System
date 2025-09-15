@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_availability: {
         Row: {
           availability_type: string
@@ -848,6 +869,7 @@ export type Database = {
       }
       task_conversations: {
         Row: {
+          conversation_id: string | null
           conversation_title: string | null
           conversation_type: string
           created_at: string
@@ -861,6 +883,7 @@ export type Database = {
           task_evaluation_id: string | null
         }
         Insert: {
+          conversation_id?: string | null
           conversation_title?: string | null
           conversation_type?: string
           created_at?: string
@@ -874,6 +897,7 @@ export type Database = {
           task_evaluation_id?: string | null
         }
         Update: {
+          conversation_id?: string | null
           conversation_title?: string | null
           conversation_type?: string
           created_at?: string
