@@ -52,50 +52,11 @@ export function QuickLogin() {
     }
   };
 
-  // Quick login buttons for testing
-  const quickLogin = async (email: string, password: string) => {
-    setEmail(email);
-    setPassword(password);
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        toast({
-          title: "Login Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Login Successful",
-        description: `Logged in as ${email}`,
-      });
-
-      navigate('/');
-    } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Quick Login</CardTitle>
-        <CardDescription>Login to test employee creation</CardDescription>
+        <CardTitle>Login</CardTitle>
+        <CardDescription>Login to access the system</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleLogin} className="space-y-4">
@@ -132,28 +93,6 @@ export function QuickLogin() {
             )}
           </Button>
         </form>
-
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Quick login options:</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => quickLogin('itofficernafgem@gmail.com', 'password123')}
-            disabled={isLoading}
-            className="w-full"
-          >
-            Login as Admin
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => quickLogin('nafgemhr@gmail.com', 'password123')}
-            disabled={isLoading}
-            className="w-full"
-          >
-            Login as HR
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
