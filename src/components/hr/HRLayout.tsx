@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AppRole } from "@/lib/roles";
+import nafgemLogo from "@/assets/nafgem-logo.png";
 
 export function HRLayout({ children }: { children?: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -76,8 +77,12 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
             <div className="flex items-center space-x-4">
               <SidebarTrigger />
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                  N
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={nafgemLogo} 
+                    alt="NAFGEM Logo" 
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-xl font-heading font-bold text-primary">

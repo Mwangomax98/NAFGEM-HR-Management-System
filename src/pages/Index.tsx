@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, LogIn } from "lucide-react";
 import type { User, Session } from "@supabase/supabase-js";
+import nafgemLogo from "@/assets/nafgem-logo.png";
 
 
 const Index = () => {
@@ -50,7 +51,7 @@ const Index = () => {
           {/* Welcome Section */}
           <div className="text-center lg:text-left space-y-6">
             <div className="flex items-center justify-center lg:justify-start space-x-3">
-              <div className="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-xl">N</div>
+              <img src={nafgemLogo} alt="NAFGEM Logo" className="h-12 w-12" />
               <div>
                 <h1 className="text-2xl font-bold text-foreground">NAFGEM</h1>
                 <p className="text-sm text-muted-foreground">HR Management System</p>
