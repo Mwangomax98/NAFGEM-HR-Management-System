@@ -20,6 +20,10 @@ import {
   TrendingUp
 } from "lucide-react";
 
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+
 interface AdminDashboardProps {
   userName: string;
 }
@@ -42,12 +46,81 @@ export function AdminDashboard({ userName }: AdminDashboardProps) {
     { name: "Security Score", value: 98, status: "Secure", icon: Shield }
   ];
 
-  const recentActivities = [
-    { action: "User Role Updated", user: "john.doe@nafgem.com", time: "2 min ago", type: "security" },
-    { action: "New Employee Added", user: "hr.manager@nafgem.com", time: "15 min ago", type: "user" },
-    { action: "System Backup Complete", user: "System", time: "1 hour ago", type: "system" },
-    { action: "Performance Report Generated", user: "admin@nafgem.com", time: "2 hours ago", type: "report" }
-  ];
+  const [activities, setActivities] = useState<Array<{ action: string; user: string; time: string; type: string; created_at: string }>>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadActivities() {
+      try {
+        setActivitiesLoading(true);
+        const { data: secEvents } = await supabase
+          .from('security_events')
+          .select('user_id, event_type, details, created_at')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        const { data: roleLogs } = await supabase
+          .from('role_audit_log')
+          .select('user_id, old_role, new_role, changed_by, action, created_at')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        const ids = Array.from(new Set([
+          ...(secEvents?.map((e: any) => e.user_id) || []),
+          ...(roleLogs?.map((r: any) => r.user_id) || []),
+          ...(roleLogs?.map((r: any) => r.changed_by) || []),
+        ].filter(Boolean)));
+
+        let emailMap: Record<string, string> = {};
+        if (ids.length) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id,email')
+            .in('id', ids);
+          emailMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p.email]));
+        }
+
+        const a1 = (secEvents || []).map((e: any) => ({
+          action: e.event_type?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Security Event',
+          user: emailMap[e.user_id as string] || (e.user_id ? String(e.user_id).slice(0, 8) : 'System'),
+          time: formatDistanceToNow(new Date(e.created_at), { addSuffix: true }),
+          type: 'security',
+          created_at: e.created_at as string,
+        }));
+
+        const a2 = (roleLogs || []).map((r: any) => ({
+          action:
+            r.action === 'assigned'
+              ? `Role assigned: ${r.new_role}`
+              : r.action === 'modified'
+              ? `Role modified: ${r.old_role} → ${r.new_role}`
+              : r.action === 'revoked'
+              ? `Role revoked: ${r.old_role}`
+              : 'Role change',
+          user: emailMap[r.user_id as string] || (r.user_id ? String(r.user_id).slice(0, 8) : 'User'),
+          time: formatDistanceToNow(new Date(r.created_at), { addSuffix: true }),
+          type: 'user',
+          created_at: r.created_at as string,
+        }));
+
+        const combined = [...a1, ...a2]
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 10);
+
+        if (!cancelled) setActivities(combined);
+      } finally {
+        if (!cancelled) setActivitiesLoading(false);
+      }
+    }
+
+    loadActivities();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   if (loading) {
     return (
@@ -274,22 +347,32 @@ export function AdminDashboard({ userName }: AdminDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.type === 'security' ? 'bg-destructive' :
-                    activity.type === 'user' ? 'bg-primary' :
-                    activity.type === 'system' ? 'bg-success' : 'bg-secondary'
-                  }`}></div>
-                  <div>
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.user}</p>
+            {activitiesLoading ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="h-14 bg-muted rounded-lg animate-pulse" />
+              ))
+            ) : activities.length ? (
+              activities.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-2 h-2 rounded-full ${
+                      activity.type === 'security' ? 'bg-destructive' :
+                      activity.type === 'user' ? 'bg-primary' :
+                      activity.type === 'system' ? 'bg-success' : 'bg-secondary'
+                    }`}></div>
+                    <div>
+                      <p className="text-sm font-medium">{activity.action}</p>
+                      <p className="text-xs text-muted-foreground">{activity.user}</p>
+                    </div>
                   </div>
+                  <span className="text-xs text-muted-foreground">{activity.time}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{activity.time}</span>
+              ))
+            ) : (
+              <div className="text-sm text-muted-foreground p-6 text-center border border-dashed rounded-lg">
+                No recent activities yet.
               </div>
-            ))}
+            )}
           </div>
           <Button 
             variant="outline" 
