@@ -20,6 +20,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserSelectionStep } from "./UserSelectionStep";
 import { useEmployeeValidation } from "@/hooks/useEmployeeValidation";
+import { RoleDiagnostics } from "./RoleDiagnostics";
 
 const employeeSchema = z.object({
   // User Selection
@@ -330,21 +331,38 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       if (error) {
         console.error('Error creating employee profile:', error);
         
-        // Provide more specific error messages
+        // Provide more specific error messages based on Supabase error codes
         let errorMessage = "Failed to create employee profile.";
+        let errorDetails = "";
+        
         if (error.message.includes("new row violates row-level security")) {
-          errorMessage = "You don't have permission to create employee profiles. Please ensure you are logged in with HR or Admin privileges.";
-        } else if (error.message.includes("duplicate key")) {
-          errorMessage = "An employee with this ID already exists.";
-        } else if (error.message.includes("user_id")) {
-          errorMessage = "The selected user already has an employee profile.";
-        } else if (error.message) {
-          errorMessage = error.message;
+          errorMessage = "Permission Denied: You don't have permission to create employee profiles.";
+          errorDetails = "Please ensure you are logged in with HR or Admin privileges and try again.";
+        } else if (error.code === "23505" || error.message.includes("duplicate key")) {
+          if (error.message.includes("employee_profiles_user_id_unique")) {
+            errorMessage = "User Already Has Profile: The selected user already has an employee profile.";
+            errorDetails = "Please select a different user or edit the existing profile.";
+          } else if (error.message.includes("employee_profiles_employee_id_unique")) {
+            errorMessage = "Employee ID Already Exists: This employee ID is already in use.";
+            errorDetails = `Please use a different employee ID. Current ID: ${data.employment.employeeId}`;
+          } else {
+            errorMessage = "Duplicate Data: A record with this information already exists.";
+            errorDetails = error.message;
+          }
+        } else if (error.code === "23503") {
+          errorMessage = "Invalid Reference: The selected user account is invalid.";
+          errorDetails = "The user account may have been deleted. Please refresh and try again.";
+        } else if (error.code === "42501") {
+          errorMessage = "Database Permission Error: Insufficient database privileges.";
+          errorDetails = "Please contact your system administrator.";
+        } else {
+          errorMessage = `Database Error (${error.code || 'Unknown'}): ${error.message}`;
+          errorDetails = "Please try again or contact support if the problem persists.";
         }
         
         toast({
-          title: "Error",
-          description: errorMessage,
+          title: errorMessage,
+          description: errorDetails,
           variant: "destructive",
         });
         return;
@@ -441,12 +459,14 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-heading font-bold text-primary">Add Employee</h1>
             <p className="text-muted-foreground">Personal Particulars Form</p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col items-end gap-2">
+            <RoleDiagnostics />
+            <div className="flex items-center space-x-2">
             <Button variant="outline" onClick={onCancel} type="button">
               Cancel
             </Button>
@@ -472,6 +492,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                 </>
               )}
             </Button>
+            </div>
           </div>
         </div>
 

@@ -48,14 +48,44 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
         .select('id, email, full_name, project, title')
         .order('full_name');
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        
+        // Handle specific RLS permission errors
+        if (profilesError.message.includes("new row violates row-level security") || 
+            profilesError.code === "42501" ||
+            profilesError.message.includes("permission denied")) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to view user profiles. Please ensure you are logged in with HR or Admin privileges.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw profilesError;
+      }
 
       // Get users who already have employee profiles
       const { data: existingEmployees, error: employeeError } = await supabase
         .from('employee_profiles')
         .select('user_id');
 
-      if (employeeError) throw employeeError;
+      if (employeeError) {
+        console.error('Error fetching employee profiles:', employeeError);
+        
+        // Handle specific RLS permission errors for employee_profiles
+        if (employeeError.message.includes("new row violates row-level security") || 
+            employeeError.code === "42501" ||
+            employeeError.message.includes("permission denied")) {
+          toast({
+            title: "Access Denied", 
+            description: "You don't have permission to view employee profiles. Contact your administrator to grant HR access.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw employeeError;
+      }
 
       // Filter out users who already have employee profiles
       const existingUserIds = new Set(existingEmployees?.map(emp => emp.user_id));
@@ -68,7 +98,7 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
       console.error('Error fetching available users:', error);
       toast({
         title: "Error",
-        description: "Failed to load available users.",
+        description: `Failed to load available users: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
