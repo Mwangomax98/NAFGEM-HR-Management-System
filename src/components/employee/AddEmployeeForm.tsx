@@ -191,8 +191,32 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
     setIsSubmitting(true);
     
     try {
-      // Comprehensive validation
-      const validationResult = await validateEmployeeData(data, data.selectedUserId);
+      // Merge current form data with saved draft sections
+      const mergedData = { ...data };
+      
+      if (draft?.sections) {
+        // Merge saved draft sections with current form data
+        if (draft.sections.personalParticulars) {
+          mergedData.personal = { ...mergedData.personal, ...draft.sections.personalParticulars };
+        }
+        if (draft.sections.familyParticulars) {
+          mergedData.family = { ...mergedData.family, ...draft.sections.familyParticulars };
+        }
+        if (draft.sections.educationQualification) {
+          mergedData.education = draft.sections.educationQualification;
+        }
+        if (draft.sections.nextOfKin) {
+          mergedData.nextOfKin = draft.sections.nextOfKin;
+        }
+        if (draft.sections.declaration) {
+          mergedData.declaration = { ...mergedData.declaration, ...draft.sections.declaration };
+        }
+      }
+      
+      console.log("🔄 Merged data with draft sections:", mergedData);
+      
+      // Comprehensive validation using merged data
+      const validationResult = await validateEmployeeData(mergedData, mergedData.selectedUserId);
       
       if (!validationResult.isValid) {
         showValidationResults(validationResult);
@@ -255,9 +279,9 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       console.log('User has permission to create employees:', userRole.role);
 
       // Validate selected user
-      console.log("🔍 Validating selectedUserId:", data.selectedUserId);
+      console.log("🔍 Validating selectedUserId:", mergedData.selectedUserId);
       console.log("🔍 Validating selectedUser:", selectedUser);
-      if (!data.selectedUserId || !selectedUser) {
+      if (!mergedData.selectedUserId || !selectedUser) {
         console.log("❌ User selection validation failed");
         toast({
           title: "Validation Error",
@@ -267,50 +291,50 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         return;
       }
 
-      // Transform form data to database format
+      // Transform merged data to database format
       const employeeProfileData = {
-        name_full: data.personal.nameFull,
-        national_id: data.personal.nationalId,
-        tin_no: data.personal.tinNo || null,
-        contact_address: data.personal.contactAddress,
-        mobile_phones: Array.isArray(data.personal.mobilePhones) ? data.personal.mobilePhones : [data.personal.mobilePhones].filter(Boolean),
-        designation: data.personal.designation,
-        place_of_work: data.personal.placeOfWork,
-        date_of_appointment: data.personal.dateOfAppointment.toISOString().split('T')[0],
-        terms_of_service: data.personal.termsOfService,
-        nationality: data.personal.nationality,
-        date_of_birth: data.personal.dateOfBirth.toISOString().split('T')[0],
-        place_of_birth: data.personal.placeOfBirth,
-        religion: data.personal.religion || null,
-        marital_status: data.personal.maritalStatus,
-        spouse_name: data.personal.spouseName || null,
-        spouse_contacts: data.personal.spouseContacts || null,
-        passport_photo_url: data.personal.passportPhotoUrl || null,
-        father_name: data.family.fatherName,
-        father_place_of_birth: data.family.fatherPlaceOfBirth,
-        father_nationality: data.family.fatherNationality,
-        mother_name: data.family.motherName,
-        mother_place_of_birth: data.family.motherPlaceOfBirth,
-        mother_nationality: data.family.motherNationality,
-        children: JSON.parse(JSON.stringify(data.family.children?.map(child => ({
+        name_full: mergedData.personal.nameFull,
+        national_id: mergedData.personal.nationalId,
+        tin_no: mergedData.personal.tinNo || null,
+        contact_address: mergedData.personal.contactAddress,
+        mobile_phones: Array.isArray(mergedData.personal.mobilePhones) ? mergedData.personal.mobilePhones : [mergedData.personal.mobilePhones].filter(Boolean),
+        designation: mergedData.personal.designation,
+        place_of_work: mergedData.personal.placeOfWork,
+        date_of_appointment: mergedData.personal.dateOfAppointment.toISOString().split('T')[0],
+        terms_of_service: mergedData.personal.termsOfService,
+        nationality: mergedData.personal.nationality,
+        date_of_birth: mergedData.personal.dateOfBirth.toISOString().split('T')[0],
+        place_of_birth: mergedData.personal.placeOfBirth,
+        religion: mergedData.personal.religion || null,
+        marital_status: mergedData.personal.maritalStatus,
+        spouse_name: mergedData.personal.spouseName || null,
+        spouse_contacts: mergedData.personal.spouseContacts || null,
+        passport_photo_url: mergedData.personal.passportPhotoUrl || null,
+        father_name: mergedData.family.fatherName,
+        father_place_of_birth: mergedData.family.fatherPlaceOfBirth,
+        father_nationality: mergedData.family.fatherNationality,
+        mother_name: mergedData.family.motherName,
+        mother_place_of_birth: mergedData.family.motherPlaceOfBirth,
+        mother_nationality: mergedData.family.motherNationality,
+        children: JSON.parse(JSON.stringify(mergedData.family.children?.map(child => ({
           ...child,
           dateOfBirth: child.dateOfBirth instanceof Date ? child.dateOfBirth.toISOString().split('T')[0] : child.dateOfBirth
         })) || [])),
-        education: JSON.parse(JSON.stringify(data.education.map(edu => ({
+        education: JSON.parse(JSON.stringify(mergedData.education.map(edu => ({
           ...edu,
           fromDate: edu.fromDate instanceof Date ? edu.fromDate.toISOString().split('T')[0] : edu.fromDate,
           toDate: edu.toDate instanceof Date ? edu.toDate.toISOString().split('T')[0] : edu.toDate
         })))),
-        next_of_kin: data.nextOfKin,
-        declaration_text: data.declaration.text,
-        declaration_signed_by: data.declaration.signedBy,
-        declaration_signed_at: data.declaration.signedAt.toISOString().split('T')[0],
-        employee_id: data.employment.employeeId,
-        user_role: data.employment.userRole.toLowerCase(),
+        next_of_kin: mergedData.nextOfKin,
+        declaration_text: mergedData.declaration.text,
+        declaration_signed_by: mergedData.declaration.signedBy,
+        declaration_signed_at: mergedData.declaration.signedAt.toISOString().split('T')[0],
+        employee_id: mergedData.employment.employeeId,
+        user_role: mergedData.employment.userRole.toLowerCase(),
         status: 'active',
-        projects: data.employment.projects || [],
+        projects: mergedData.employment.projects || [],
         // Link to the selected user account
-        user_id: data.selectedUserId,
+        user_id: mergedData.selectedUserId,
         created_by: currentUser.user?.id
       };
 
@@ -410,10 +434,10 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         const { error: profileUpdateError } = await supabase
           .from('profiles')
           .update({
-            full_name: data.personal.nameFull,
-            title: data.personal.designation
+            full_name: mergedData.personal.nameFull,
+            title: mergedData.personal.designation
           })
-          .eq('id', data.selectedUserId);
+          .eq('id', mergedData.selectedUserId);
 
         if (profileUpdateError) {
           console.warn('Could not update user profile:', profileUpdateError);
@@ -427,10 +451,10 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         await completeDraft();
       }
 
-      onSave?.(data);
+      onSave?.(mergedData);
       toast({
         title: "Employee Added Successfully",
-        description: `${data.personal.nameFull} has been added to the system with employee ID ${data.employment.employeeId}.`,
+        description: `${mergedData.personal.nameFull} has been added to the system with employee ID ${mergedData.employment.employeeId}.`,
       });
     } catch (error) {
       console.error('Unexpected error:', error);
