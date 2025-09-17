@@ -121,6 +121,36 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_profile_drafts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_complete: boolean
+          sections: Json
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_complete?: boolean
+          sections?: Json
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_complete?: boolean
+          sections?: Json
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       employee_profiles: {
         Row: {
           children: Json | null

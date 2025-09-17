@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserSelectionStep } from "./UserSelectionStep";
 import { useEmployeeValidation } from "@/hooks/useEmployeeValidation";
 import { RoleDiagnostics } from "./RoleDiagnostics";
+import { useEmployeeDraft } from "@/hooks/useEmployeeDraft";
 
 const employeeSchema = z.object({
   // User Selection
@@ -124,6 +125,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { validateEmployeeData, showValidationResults, validating } = useEmployeeValidation();
+  const { draft, saving, saveSection, completeDraft, getSectionData, isSectionSaved } = useEmployeeDraft(selectedUser?.id);
 
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
@@ -420,6 +422,11 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         console.warn('Error updating user profile:', profileUpdateError);
       }
 
+      // Complete draft when successfully saved
+      if (completeDraft) {
+        await completeDraft();
+      }
+
       onSave?.(data);
       toast({
         title: "Employee Added Successfully",
@@ -450,10 +457,87 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
     }
   };
 
+  // Load draft data when user is selected
+  React.useEffect(() => {
+    if (selectedUser?.id && draft) {
+      const sections = draft.sections;
+      
+      // Load personal section
+      if (sections.personalParticulars) {
+        Object.keys(sections.personalParticulars).forEach(key => {
+          form.setValue(`personal.${key}` as any, sections.personalParticulars[key]);
+        });
+      }
+      
+      // Load family section
+      if (sections.familyParticulars) {
+        Object.keys(sections.familyParticulars).forEach(key => {
+          form.setValue(`family.${key}` as any, sections.familyParticulars[key]);
+        });
+      }
+      
+      // Load education section
+      if (sections.educationQualification) {
+        form.setValue("education", sections.educationQualification);
+      }
+      
+      // Load next of kin section
+      if (sections.nextOfKin) {
+        form.setValue("nextOfKin", sections.nextOfKin);
+      }
+      
+      // Load declaration section
+      if (sections.declaration) {
+        if (sections.declaration.declaration) {
+          Object.keys(sections.declaration.declaration).forEach(key => {
+            form.setValue(`declaration.${key}` as any, sections.declaration.declaration[key]);
+          });
+        }
+        if (sections.declaration.employment) {
+          Object.keys(sections.declaration.employment).forEach(key => {
+            form.setValue(`employment.${key}` as any, sections.declaration.employment[key]);
+          });
+        }
+      }
+    }
+  }, [selectedUser?.id, draft, form]);
+
   const handleUserSelectionNext = () => {
     if (selectedUser) {
       setActiveTab("personal");
     }
+  };
+
+  // Section save handlers
+  const savePersonalSection = async () => {
+    const personalData = form.getValues("personal");
+    if (!selectedUser?.id) return;
+    return await saveSection("personalParticulars", personalData);
+  };
+
+  const saveFamilySection = async () => {
+    const familyData = form.getValues("family");
+    if (!selectedUser?.id) return;
+    return await saveSection("familyParticulars", familyData);
+  };
+
+  const saveEducationSection = async () => {
+    const educationData = form.getValues("education");
+    if (!selectedUser?.id) return;
+    return await saveSection("educationQualification", educationData);
+  };
+
+  const saveNextOfKinSection = async () => {
+    const nextOfKinData = form.getValues("nextOfKin");
+    if (!selectedUser?.id) return;
+    return await saveSection("nextOfKin", nextOfKinData);
+  };
+
+  const saveDeclarationSection = async () => {
+    const declarationData = form.getValues("declaration");
+    const employmentData = form.getValues("employment");
+    if (!selectedUser?.id) return;
+    return await saveSection("declaration", { declaration: declarationData, employment: employmentData });
   };
 
   return (
@@ -960,8 +1044,33 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                           </div>
                         </Card>
                       ))}
-                    </div>
+                     </div>
                   </CardContent>
+                  <div className="flex justify-between items-center p-6 bg-muted/50 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {isSectionSaved("personalParticulars") && (
+                        <span className="text-green-600">✓ Section saved</span>
+                      )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={savePersonalSection} 
+                      disabled={saving}
+                      variant="outline"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Section
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Card>
               </TabsContent>
 
@@ -1184,8 +1293,33 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                           </div>
                         </Card>
                       ))}
-                    </div>
+                     </div>
                   </CardContent>
+                  <div className="flex justify-between items-center p-6 bg-muted/50 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {isSectionSaved("familyParticulars") && (
+                        <span className="text-green-600">✓ Section saved</span>
+                      )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={saveFamilySection} 
+                      disabled={saving}
+                      variant="outline"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Section
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Card>
               </TabsContent>
 
@@ -1339,8 +1473,33 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                           </div>
                         </div>
                       </Card>
-                    ))}
+                     ))}
                   </CardContent>
+                  <div className="flex justify-between items-center p-6 bg-muted/50 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {isSectionSaved("educationQualification") && (
+                        <span className="text-green-600">✓ Section saved</span>
+                      )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={saveEducationSection} 
+                      disabled={saving}
+                      variant="outline"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Section
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Card>
               </TabsContent>
 
@@ -1463,8 +1622,33 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                           </div>
                         </div>
                       </Card>
-                    ))}
+                     ))}
                   </CardContent>
+                  <div className="flex justify-between items-center p-6 bg-muted/50 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {isSectionSaved("nextOfKin") && (
+                        <span className="text-green-600">✓ Section saved</span>
+                      )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={saveNextOfKinSection} 
+                      disabled={saving}
+                      variant="outline"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Section
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Card>
               </TabsContent>
 
@@ -1657,8 +1841,33 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                           </div>
                         </Card>
                       ))}
-                    </div>
+                     </div>
                   </CardContent>
+                  <div className="flex justify-between items-center p-6 bg-muted/50 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {isSectionSaved("declaration") && (
+                        <span className="text-green-600">✓ Section saved</span>
+                      )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={saveDeclarationSection} 
+                      disabled={saving}
+                      variant="outline"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Section
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Card>
               </TabsContent>
 
