@@ -1671,6 +1671,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_create_employee_profile: {
+        Args: { p_profile_data: Json; p_user_id: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           p_max_attempts: number

@@ -364,56 +364,38 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       console.log('Full payload size:', JSON.stringify(employeeProfileData).length, 'characters');
       console.log('============================================');
 
-      // Insert the employee profile with detailed error tracking
-      console.log('Starting database insert...');
-      const { data: insertedProfile, error } = await supabase
-        .from('employee_profiles')
-        .insert(employeeProfileData)
-        .select()
-        .single();
-      console.log('Database insert completed. Error:', error, 'Data:', insertedProfile);
+      // Use secure RPC function to create employee profile
+      console.log('Starting RPC function call...');
+      const { data: rpcResult, error: rpcError } = await supabase
+        .rpc('admin_create_employee_profile', {
+          p_user_id: mergedData.selectedUserId,
+          p_profile_data: employeeProfileData
+        });
+      console.log('RPC function completed. Error:', rpcError, 'Result:', rpcResult);
 
-      if (error) {
-        console.error('Error creating employee profile:', error);
-        
-        // Provide more specific error messages based on Supabase error codes
-        let errorMessage = "Failed to create employee profile.";
-        let errorDetails = "";
-        
-        if (error.message.includes("new row violates row-level security")) {
-          errorMessage = "Permission Denied: You don't have permission to create employee profiles.";
-          errorDetails = "Please ensure you are logged in with HR or Admin privileges and try again.";
-        } else if (error.code === "23505" || error.message.includes("duplicate key")) {
-          if (error.message.includes("employee_profiles_user_id_unique")) {
-            errorMessage = "User Already Has Profile: The selected user already has an employee profile.";
-            errorDetails = "Please select a different user or edit the existing profile.";
-          } else if (error.message.includes("employee_profiles_employee_id_unique")) {
-            errorMessage = "Employee ID Already Exists: This employee ID is already in use.";
-            errorDetails = `Please use a different employee ID. Current ID: ${data.employment.employeeId}`;
-          } else {
-            errorMessage = "Duplicate Data: A record with this information already exists.";
-            errorDetails = error.message;
-          }
-        } else if (error.code === "23503") {
-          errorMessage = "Invalid Reference: The selected user account is invalid.";
-          errorDetails = "The user account may have been deleted. Please refresh and try again.";
-        } else if (error.code === "42501") {
-          errorMessage = "Database Permission Error: Insufficient database privileges.";
-          errorDetails = "Please contact your system administrator.";
-        } else {
-          errorMessage = `Database Error (${error.code || 'Unknown'}): ${error.message}`;
-          errorDetails = "Please try again or contact support if the problem persists.";
-        }
-        
+      if (rpcError) {
+        console.error('RPC Error:', rpcError);
         toast({
-          title: errorMessage,
-          description: errorDetails,
+          title: "Database Error",
+          description: `Failed to create employee profile: ${rpcError.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      console.log('Employee profile created successfully:', insertedProfile);
+      // Check RPC function result
+      const result = rpcResult as any;
+      if (!result?.success) {
+        console.error('RPC Function Error:', result);
+        toast({
+          title: "Error", 
+          description: result?.error || "Failed to create employee profile",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Employee profile created successfully:', rpcResult);
 
       // Update user role if specified and different from current
       if (data.employment.userRole.toLowerCase() !== 'employee') {
