@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { UserProfile, useAvailableUsers } from '@/hooks/useAvailableUsers';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -49,6 +51,25 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
       place: string;
       from_date: string;
       to_date: string;
+    }>,
+    // Section D - Next of Kin
+    nextOfKin: [] as Array<{
+      name: string;
+      age: string;
+      relation: string;
+      contact: string;
+      primary: boolean;
+    }>,
+    // Section E - Declaration & Projects
+    declaration_text: 'I hereby declare that the information provided above is true and correct to the best of my knowledge and belief.',
+    declaration_signed_by: '',
+    declaration_signed_at: '',
+    projects: [] as Array<{
+      projectId: string;
+      projectName: string;
+      donor: string;
+      code: string;
+      isPrimary: boolean;
     }>,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,6 +120,52 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
     }));
   };
 
+  const addNextOfKin = () => {
+    setFormData(prev => ({
+      ...prev,
+      nextOfKin: [...prev.nextOfKin, { name: '', age: '', relation: '', contact: '', primary: false }]
+    }));
+  };
+
+  const removeNextOfKin = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      nextOfKin: prev.nextOfKin.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateNextOfKin = (index: number, field: string, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      nextOfKin: prev.nextOfKin.map((kin, i) => 
+        i === index ? { ...kin, [field]: value } : kin
+      )
+    }));
+  };
+
+  const addProject = () => {
+    setFormData(prev => ({
+      ...prev,
+      projects: [...prev.projects, { projectId: '', projectName: '', donor: '', code: '', isPrimary: false }]
+    }));
+  };
+
+  const removeProject = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      projects: prev.projects.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateProject = (index: number, field: string, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      projects: prev.projects.map((project, i) => 
+        i === index ? { ...project, [field]: value } : project
+      )
+    }));
+  };
+
   const handleUserSelect = (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (user) {
@@ -107,6 +174,7 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
         ...prev,
         name_full: user.full_name || '',
         designation: user.title || '',
+        declaration_signed_by: user.full_name || '',
       }));
     }
   };
@@ -150,6 +218,11 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
         mother_nationality: formData.mother_nationality,
         children: formData.children,
         education: formData.education,
+        next_of_kin: formData.nextOfKin,
+        declaration_text: formData.declaration_text,
+        declaration_signed_by: formData.declaration_signed_by,
+        declaration_signed_at: formData.declaration_signed_at,
+        projects: formData.projects,
       };
 
       const { data, error } = await supabase.rpc('admin_create_employee_profile', {
