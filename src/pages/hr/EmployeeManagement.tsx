@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Users, Plus, Search, Filter, Mail, Phone, Edit, Trash2, Eye, UserCheck, Clock, Building, UserPlus } from "lucide-react";
 import { useState } from "react";
-import AddEmployeeForm from "@/components/employee/AddEmployeeForm";
+import QuickAddEmployeeForm from "@/components/employee/QuickAddEmployeeForm";
 import EmployeeProfile from "@/components/employee/EmployeeProfile";
 import { useAllEmployeeProfiles } from "@/hooks/useEmployeeProfile";
 import { useToast } from "@/hooks/use-toast";
@@ -279,7 +279,7 @@ export default function EmployeeManagement() {
               Fill in the employee information below to create a new employee record.
             </DialogDescription>
           </DialogHeader>
-          <AddEmployeeForm
+          <QuickAddEmployeeForm
             onSave={handleSaveEmployee}
             onCancel={() => setShowAddForm(false)}
           />
