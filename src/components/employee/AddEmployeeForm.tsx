@@ -82,12 +82,14 @@ const employeeSchema = z.object({
     primary: z.boolean().default(false),
   })).min(1, "At least one next of kin is required"),
   
-  // Section E - Declaration
-  declaration: z.object({
-    text: z.string().min(1, "Declaration text is required"),
-    signedBy: z.string().min(1, "Signature is required"),
-    signedAt: z.date(),
-  }),
+  // Section E - Declaration (optional in UI; auto-filled at submit)
+  declaration: z
+    .object({
+      text: z.string().optional(),
+      signedBy: z.string().optional(),
+      signedAt: z.date().optional(),
+    })
+    .optional(),
   
   // System Fields
   employment: z.object({
@@ -291,6 +293,15 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         return;
       }
 
+      // Auto-fill declaration defaults if missing
+      const defaultDeclarationText = (mergedData.declaration?.text || '').trim() ||
+        'I hereby declare that the information provided above is true and correct to the best of my knowledge and belief.';
+      const defaultSignedBy = (mergedData.declaration?.signedBy || '').trim() ||
+        mergedData.personal.nameFull || selectedUser?.full_name || 'System';
+      const defaultSignedAt = mergedData.declaration?.signedAt instanceof Date
+        ? mergedData.declaration.signedAt
+        : new Date();
+
       // Transform merged data to database format
       const employeeProfileData = {
         name_full: mergedData.personal.nameFull,
@@ -326,9 +337,9 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
           toDate: edu.toDate instanceof Date ? edu.toDate.toISOString().split('T')[0] : edu.toDate
         })))),
         next_of_kin: mergedData.nextOfKin,
-        declaration_text: mergedData.declaration.text,
-        declaration_signed_by: mergedData.declaration.signedBy,
-        declaration_signed_at: mergedData.declaration.signedAt.toISOString().split('T')[0],
+        declaration_text: defaultDeclarationText,
+        declaration_signed_by: defaultSignedBy,
+        declaration_signed_at: defaultSignedAt.toISOString().split('T')[0],
         employee_id: mergedData.employment.employeeId,
         user_role: mergedData.employment.userRole.toLowerCase(),
         status: 'active',
