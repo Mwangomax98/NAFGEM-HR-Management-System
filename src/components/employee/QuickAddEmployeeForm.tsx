@@ -32,7 +32,7 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
     place_of_birth: '',
     date_of_birth: '',
     date_of_appointment: '',
-    marital_status: 'single',
+    marital_status: 'Single',
     // Section B - Family Particulars
     father_name: '',
     father_place_of_birth: '',
@@ -403,10 +403,8 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="single">Single</SelectItem>
-                  <SelectItem value="married">Married</SelectItem>
-                  <SelectItem value="divorced">Divorced</SelectItem>
-                  <SelectItem value="widowed">Widowed</SelectItem>
+                  <SelectItem value="Single">Single</SelectItem>
+                  <SelectItem value="Married">Married</SelectItem>
                 </SelectContent>
               </Select>
             </div>
