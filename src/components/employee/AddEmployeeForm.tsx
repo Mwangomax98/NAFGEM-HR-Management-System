@@ -338,21 +338,29 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         created_by: currentUser.user?.id
       };
 
-      console.log('Attempting to save employee profile:', {
+      // Enhanced debugging before database insert
+      console.log('=== EMPLOYEE PROFILE SUBMISSION DEBUG ===');
+      console.log('Current user:', currentUser);
+      console.log('User role:', userRole?.role);
+      console.log('Selected user ID:', mergedData.selectedUserId);
+      console.log('Employee profile data to insert:', {
         employee_id: employeeProfileData.employee_id,
-        name: employeeProfileData.name_full,
-        user_role: userRole.role,
-        mobile_phones: employeeProfileData.mobile_phones,
-        children: employeeProfileData.children,
-        projects: employeeProfileData.projects
+        name_full: employeeProfileData.name_full,
+        user_id: employeeProfileData.user_id,
+        created_by: employeeProfileData.created_by,
+        status: employeeProfileData.status
       });
+      console.log('Full payload size:', JSON.stringify(employeeProfileData).length, 'characters');
+      console.log('============================================');
 
-      // Insert the employee profile
+      // Insert the employee profile with detailed error tracking
+      console.log('Starting database insert...');
       const { data: insertedProfile, error } = await supabase
         .from('employee_profiles')
         .insert(employeeProfileData)
         .select()
         .single();
+      console.log('Database insert completed. Error:', error, 'Data:', insertedProfile);
 
       if (error) {
         console.error('Error creating employee profile:', error);
