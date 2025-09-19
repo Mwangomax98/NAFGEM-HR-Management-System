@@ -280,7 +280,7 @@ export default function EmployeeManagement() {
             </DialogDescription>
           </DialogHeader>
           <QuickAddEmployeeForm
-            onSave={handleSaveEmployee}
+            onSave={() => setShowAddForm(false)}
             onCancel={() => setShowAddForm(false)}
           />
         </DialogContent>

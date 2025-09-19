@@ -1,283 +1,258 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useAvailableUsers } from "@/hooks/useAvailableUsers";
-
-const quickEmployeeSchema = z.object({
-  userId: z.string().min(1, "Please select a user"),
-  nameFull: z.string().min(1, "Full name is required"),
-  nationalId: z.string().min(1, "National ID is required"),
-  employeeId: z.string().min(1, "Employee ID is required"),
-  contactAddress: z.string().min(1, "Contact address is required"),
-  mobilePhone: z.string().min(1, "Mobile phone is required"),
-  designation: z.string().min(1, "Designation is required"),
-  placeOfWork: z.string().min(1, "Place of work is required"),
-  nationality: z.string().min(1, "Nationality is required"),
-  placeOfBirth: z.string().min(1, "Place of birth is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  dateOfAppointment: z.string().min(1, "Date of appointment is required"),
-  maritalStatus: z.string().min(1, "Marital status is required"),
-  fatherName: z.string().min(1, "Father's name is required"),
-  motherName: z.string().min(1, "Mother's name is required"),
-});
-
-type QuickEmployeeFormData = z.infer<typeof quickEmployeeSchema>;
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UserProfile, useAvailableUsers } from '@/hooks/useAvailableUsers';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 interface QuickAddEmployeeFormProps {
-  onSave: (data?: any) => void;
+  onSave: () => void;
   onCancel: () => void;
 }
 
 export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmployeeFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { users, loading: usersLoading } = useAvailableUsers();
-  
-  const form = useForm<QuickEmployeeFormData>({
-    resolver: zodResolver(quickEmployeeSchema),
-    defaultValues: {
-      maritalStatus: "single",
-      nationality: "Tanzanian",
-      dateOfAppointment: new Date().toISOString().split('T')[0],
-    }
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [formData, setFormData] = useState({
+    name_full: '',
+    national_id: '',
+    employee_id: '',
+    contact_address: '',
+    mobile_phone: '',
+    designation: '',
+    place_of_work: '',
+    nationality: 'Tanzanian',
+    place_of_birth: '',
+    date_of_birth: '',
+    date_of_appointment: '',
+    marital_status: 'single',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onSubmit = async (data: QuickEmployeeFormData) => {
-    setIsSubmitting(true);
+  const handleUserSelect = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setSelectedUser(user);
+      setFormData(prev => ({
+        ...prev,
+        name_full: user.full_name || '',
+        designation: user.title || '',
+      }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
+    if (!selectedUser) {
+      toast.error('Please select a user');
+      return;
+    }
+
+    if (!formData.name_full || !formData.national_id || !formData.employee_id) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       // Prepare data for RPC function
       const profileData = {
-        name_full: data.nameFull,
-        national_id: data.nationalId,
-        employee_id: data.employeeId,
-        contact_address: data.contactAddress,
-        mobile_phone: data.mobilePhone,
-        mobile_phones: [data.mobilePhone],
-        designation: data.designation,
-        place_of_work: data.placeOfWork,
-        nationality: data.nationality,
-        place_of_birth: data.placeOfBirth,
-        date_of_birth: data.dateOfBirth,
-        date_of_appointment: data.dateOfAppointment,
-        marital_status: data.maritalStatus,
-        father_name: data.fatherName,
-        father_place_of_birth: data.placeOfBirth,
-        father_nationality: data.nationality,
-        mother_name: data.motherName,
-        mother_place_of_birth: data.placeOfBirth,
-        mother_nationality: data.nationality,
-        terms_of_service: "contract",
-        user_role: "employee",
-        status: "active"
+        name_full: formData.name_full,
+        national_id: formData.national_id,
+        employee_id: formData.employee_id,
+        contact_address: formData.contact_address,
+        mobile_phone: formData.mobile_phone,
+        designation: formData.designation,
+        place_of_work: formData.place_of_work,
+        nationality: formData.nationality,
+        place_of_birth: formData.place_of_birth,
+        date_of_birth: formData.date_of_birth,
+        date_of_appointment: formData.date_of_appointment,
+        marital_status: formData.marital_status,
       };
 
-      const { data: result, error } = await supabase.rpc('admin_create_employee_profile', {
-        p_user_id: data.userId,
+      const { data, error } = await supabase.rpc('admin_create_employee_profile', {
+        p_user_id: selectedUser.id,
         p_profile_data: profileData
       });
 
       if (error) {
         console.error('RPC Error:', error);
-        toast.error('Failed to create employee profile: ' + error.message);
+        toast.error(`Failed to create employee profile: ${error.message}`);
         return;
       }
 
-      if (result && typeof result === 'object' && 'success' in result && !result.success) {
-        toast.error('Failed to create employee profile: ' + (result as any).error);
+      if (!(data as any)?.success) {
+        toast.error((data as any)?.error || 'Failed to create employee profile');
         return;
       }
 
-      // Update user role to employee
-      const { error: roleError } = await supabase.rpc('admin_assign_role', {
-        target_user_id: data.userId,
-        new_role: 'employee'
-      });
-
-      if (roleError) {
-        console.warn('Role assignment warning:', roleError);
-        toast.warning('Profile created but role assignment failed: ' + roleError.message);
-      }
-
-      toast.success('Employee profile created successfully!');
-      onSave(data);
-      
-    } catch (error) {
-      console.error('Submission error:', error);
-      toast.error('An unexpected error occurred');
+      toast.success('Employee profile created successfully');
+      onSave();
+    } catch (error: any) {
+      console.error('Error creating employee profile:', error);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (usersLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading users...</span>
+      </div>
+    );
+  }
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>Quick Add Employee</CardTitle>
+        <CardDescription>
+          Create a new employee profile with essential information
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* User Selection */}
           <div className="space-y-2">
-            <Label>Select User Account</Label>
-            <Select 
-              value={form.watch("userId")} 
-              onValueChange={(value) => form.setValue("userId", value)}
-              disabled={usersLoading}
-            >
+            <Label htmlFor="user">Select User *</Label>
+            <Select onValueChange={handleUserSelect}>
               <SelectTrigger>
-                <SelectValue placeholder={usersLoading ? "Loading users..." : "Select a user"} />
+                <SelectValue placeholder="Choose a user to create employee profile for" />
               </SelectTrigger>
               <SelectContent>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.full_name || user.email} ({user.email})
+                    {user.full_name || user.email} - {user.title}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {form.formState.errors.userId && (
-              <p className="text-sm text-destructive">{form.formState.errors.userId.message}</p>
-            )}
           </div>
 
-          {/* Basic Information */}
+          {/* Required Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nameFull">Full Name *</Label>
+              <Label htmlFor="name_full">Full Name *</Label>
               <Input
-                id="nameFull"
-                {...form.register("nameFull")}
-                placeholder="John Doe"
+                id="name_full"
+                value={formData.name_full}
+                onChange={(e) => setFormData(prev => ({ ...prev, name_full: e.target.value }))}
+                required
               />
-              {form.formState.errors.nameFull && (
-                <p className="text-sm text-destructive">{form.formState.errors.nameFull.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nationalId">National ID *</Label>
+              <Label htmlFor="national_id">National ID *</Label>
               <Input
-                id="nationalId"
-                {...form.register("nationalId")}
-                placeholder="National ID number"
+                id="national_id"
+                value={formData.national_id}
+                onChange={(e) => setFormData(prev => ({ ...prev, national_id: e.target.value }))}
+                required
               />
-              {form.formState.errors.nationalId && (
-                <p className="text-sm text-destructive">{form.formState.errors.nationalId.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employeeId">Employee ID *</Label>
+              <Label htmlFor="employee_id">Employee ID *</Label>
               <Input
-                id="employeeId"
-                {...form.register("employeeId")}
-                placeholder="EMP001"
+                id="employee_id"
+                value={formData.employee_id}
+                onChange={(e) => setFormData(prev => ({ ...prev, employee_id: e.target.value }))}
+                required
               />
-              {form.formState.errors.employeeId && (
-                <p className="text-sm text-destructive">{form.formState.errors.employeeId.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mobilePhone">Mobile Phone *</Label>
-              <Input
-                id="mobilePhone"
-                {...form.register("mobilePhone")}
-                placeholder="+255 123 456 789"
-              />
-              {form.formState.errors.mobilePhone && (
-                <p className="text-sm text-destructive">{form.formState.errors.mobilePhone.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="designation">Designation *</Label>
+              <Label htmlFor="designation">Designation</Label>
               <Input
                 id="designation"
-                {...form.register("designation")}
-                placeholder="Software Engineer"
+                value={formData.designation}
+                onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
               />
-              {form.formState.errors.designation && (
-                <p className="text-sm text-destructive">{form.formState.errors.designation.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="placeOfWork">Place of Work *</Label>
+              <Label htmlFor="contact_address">Address</Label>
               <Input
-                id="placeOfWork"
-                {...form.register("placeOfWork")}
-                placeholder="Headquarters"
+                id="contact_address"
+                value={formData.contact_address}
+                onChange={(e) => setFormData(prev => ({ ...prev, contact_address: e.target.value }))}
               />
-              {form.formState.errors.placeOfWork && (
-                <p className="text-sm text-destructive">{form.formState.errors.placeOfWork.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nationality">Nationality *</Label>
+              <Label htmlFor="mobile_phone">Mobile Phone</Label>
+              <Input
+                id="mobile_phone"
+                value={formData.mobile_phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, mobile_phone: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="place_of_work">Place of Work</Label>
+              <Input
+                id="place_of_work"
+                value={formData.place_of_work}
+                onChange={(e) => setFormData(prev => ({ ...prev, place_of_work: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nationality">Nationality</Label>
               <Input
                 id="nationality"
-                {...form.register("nationality")}
-                placeholder="Tanzanian"
+                value={formData.nationality}
+                onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
               />
-              {form.formState.errors.nationality && (
-                <p className="text-sm text-destructive">{form.formState.errors.nationality.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="placeOfBirth">Place of Birth *</Label>
+              <Label htmlFor="place_of_birth">Place of Birth</Label>
               <Input
-                id="placeOfBirth"
-                {...form.register("placeOfBirth")}
-                placeholder="Dar es Salaam"
+                id="place_of_birth"
+                value={formData.place_of_birth}
+                onChange={(e) => setFormData(prev => ({ ...prev, place_of_birth: e.target.value }))}
               />
-              {form.formState.errors.placeOfBirth && (
-                <p className="text-sm text-destructive">{form.formState.errors.placeOfBirth.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+              <Label htmlFor="date_of_birth">Date of Birth</Label>
               <Input
-                id="dateOfBirth"
+                id="date_of_birth"
                 type="date"
-                {...form.register("dateOfBirth")}
+                value={formData.date_of_birth}
+                onChange={(e) => setFormData(prev => ({ ...prev, date_of_birth: e.target.value }))}
               />
-              {form.formState.errors.dateOfBirth && (
-                <p className="text-sm text-destructive">{form.formState.errors.dateOfBirth.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dateOfAppointment">Date of Appointment *</Label>
+              <Label htmlFor="date_of_appointment">Date of Appointment</Label>
               <Input
-                id="dateOfAppointment"
+                id="date_of_appointment"
                 type="date"
-                {...form.register("dateOfAppointment")}
+                value={formData.date_of_appointment}
+                onChange={(e) => setFormData(prev => ({ ...prev, date_of_appointment: e.target.value }))}
               />
-              {form.formState.errors.dateOfAppointment && (
-                <p className="text-sm text-destructive">{form.formState.errors.dateOfAppointment.message}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Marital Status *</Label>
+              <Label htmlFor="marital_status">Marital Status</Label>
               <Select 
-                value={form.watch("maritalStatus")} 
-                onValueChange={(value) => form.setValue("maritalStatus", value)}
+                value={formData.marital_status} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, marital_status: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select marital status" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="single">Single</SelectItem>
@@ -286,47 +261,7 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
                   <SelectItem value="widowed">Widowed</SelectItem>
                 </SelectContent>
               </Select>
-              {form.formState.errors.maritalStatus && (
-                <p className="text-sm text-destructive">{form.formState.errors.maritalStatus.message}</p>
-              )}
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fatherName">Father's Name *</Label>
-              <Input
-                id="fatherName"
-                {...form.register("fatherName")}
-                placeholder="Father's full name"
-              />
-              {form.formState.errors.fatherName && (
-                <p className="text-sm text-destructive">{form.formState.errors.fatherName.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="motherName">Mother's Name *</Label>
-              <Input
-                id="motherName"
-                {...form.register("motherName")}
-                placeholder="Mother's full name"
-              />
-              {form.formState.errors.motherName && (
-                <p className="text-sm text-destructive">{form.formState.errors.motherName.message}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Contact Address */}
-          <div className="space-y-2">
-            <Label htmlFor="contactAddress">Contact Address *</Label>
-            <Input
-              id="contactAddress"
-              {...form.register("contactAddress")}
-              placeholder="P.O. Box 123, Dar es Salaam"
-            />
-            {form.formState.errors.contactAddress && (
-              <p className="text-sm text-destructive">{form.formState.errors.contactAddress.message}</p>
-            )}
           </div>
 
           {/* Actions */}
@@ -334,8 +269,15 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Employee"}
+            <Button type="submit" disabled={isSubmitting || !selectedUser}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Employee'
+              )}
             </Button>
           </div>
         </form>
