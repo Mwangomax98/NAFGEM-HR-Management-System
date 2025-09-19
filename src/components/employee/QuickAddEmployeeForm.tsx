@@ -587,6 +587,174 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
             )}
           </div>
 
+          {/* Section D - Next of Kin */}
+          <Separator className="my-6" />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Section D - Next of Kin</h3>
+              <Button type="button" variant="outline" size="sm" onClick={addNextOfKin}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Next of Kin
+              </Button>
+            </div>
+            
+            {formData.nextOfKin.map((kin, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={kin.name}
+                    onChange={(e) => updateNextOfKin(index, 'name', e.target.value)}
+                    placeholder="Full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Age</Label>
+                  <Input
+                    value={kin.age}
+                    onChange={(e) => updateNextOfKin(index, 'age', e.target.value)}
+                    placeholder="Age"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Relation</Label>
+                  <Input
+                    value={kin.relation}
+                    onChange={(e) => updateNextOfKin(index, 'relation', e.target.value)}
+                    placeholder="Relationship"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contact</Label>
+                  <Input
+                    value={kin.contact}
+                    onChange={(e) => updateNextOfKin(index, 'contact', e.target.value)}
+                    placeholder="Phone/Address"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2 mt-6">
+                    <Checkbox
+                      checked={kin.primary}
+                      onCheckedChange={(checked) => updateNextOfKin(index, 'primary', checked as boolean)}
+                    />
+                    <Label className="text-sm">Primary Contact</Label>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => removeNextOfKin(index)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            
+            {formData.nextOfKin.length === 0 && (
+              <p className="text-muted-foreground text-sm">No next of kin added yet. Click "Add Next of Kin" to add one.</p>
+            )}
+          </div>
+
+          {/* Section E - Declaration & Projects */}
+          <Separator className="my-6" />
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Section E - Declaration & Projects</h3>
+            
+            {/* Declaration */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="declaration_text">Declaration</Label>
+                <Textarea
+                  id="declaration_text"
+                  value={formData.declaration_text}
+                  onChange={(e) => setFormData(prev => ({ ...prev, declaration_text: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="declaration_signed_by">Signed By</Label>
+                  <Input
+                    id="declaration_signed_by"
+                    value={formData.declaration_signed_by}
+                    onChange={(e) => setFormData(prev => ({ ...prev, declaration_signed_by: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="declaration_signed_at">Date Signed</Label>
+                  <Input
+                    id="declaration_signed_at"
+                    type="date"
+                    value={formData.declaration_signed_at}
+                    onChange={(e) => setFormData(prev => ({ ...prev, declaration_signed_at: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Project Assignments */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Project Assignments</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addProject}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Project
+                </Button>
+              </div>
+              
+              {formData.projects.map((project, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+                  <div className="space-y-2">
+                    <Label>Project ID</Label>
+                    <Input
+                      value={project.projectId}
+                      onChange={(e) => updateProject(index, 'projectId', e.target.value)}
+                      placeholder="Project ID"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Project Name</Label>
+                    <Input
+                      value={project.projectName}
+                      onChange={(e) => updateProject(index, 'projectName', e.target.value)}
+                      placeholder="Project name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Donor</Label>
+                    <Input
+                      value={project.donor}
+                      onChange={(e) => updateProject(index, 'donor', e.target.value)}
+                      placeholder="Donor organization"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Code</Label>
+                    <Input
+                      value={project.code}
+                      onChange={(e) => updateProject(index, 'code', e.target.value)}
+                      placeholder="Project code"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2 mt-6">
+                      <Checkbox
+                        checked={project.isPrimary}
+                        onCheckedChange={(checked) => updateProject(index, 'isPrimary', checked as boolean)}
+                      />
+                      <Label className="text-sm">Primary Project</Label>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => removeProject(index)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {formData.projects.length === 0 && (
+                <p className="text-muted-foreground text-sm">No projects assigned yet. Click "Add Project" to add one.</p>
+              )}
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onCancel}>
