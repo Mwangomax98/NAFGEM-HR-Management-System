@@ -28,6 +28,7 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
     mobile_phone: '',
     designation: '',
     place_of_work: '',
+    terms_of_service: 'Contract',
     nationality: 'Tanzanian',
     place_of_birth: '',
     date_of_birth: '',
@@ -205,10 +206,11 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
         mobile_phone: formData.mobile_phone,
         designation: formData.designation,
         place_of_work: formData.place_of_work,
+        terms_of_service: formData.terms_of_service,
         nationality: formData.nationality,
         place_of_birth: formData.place_of_birth,
-        date_of_birth: formData.date_of_birth,
-        date_of_appointment: formData.date_of_appointment,
+        ...(formData.date_of_birth && { date_of_birth: formData.date_of_birth }),
+        ...(formData.date_of_appointment && { date_of_appointment: formData.date_of_appointment }),
         marital_status: formData.marital_status,
         father_name: formData.father_name,
         father_place_of_birth: formData.father_place_of_birth,
@@ -391,6 +393,24 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
                 value={formData.date_of_appointment}
                 onChange={(e) => setFormData(prev => ({ ...prev, date_of_appointment: e.target.value }))}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="terms_of_service">Terms of Service</Label>
+              <Select 
+                value={formData.terms_of_service} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, terms_of_service: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pensionable">Pensionable</SelectItem>
+                  <SelectItem value="Temporary">Temporary</SelectItem>
+                  <SelectItem value="Secondment">Secondment</SelectItem>
+                  <SelectItem value="Contract">Contract</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
