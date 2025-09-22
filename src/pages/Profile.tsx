@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EmployeeProfile from "@/components/employee/EmployeeProfile";
 import { exportProfileToPDF } from "@/utils/pdfExport";
 import { useToast } from "@/hooks/use-toast";
@@ -6,10 +6,18 @@ import { useEmployeeProfile } from "@/hooks/useEmployeeProfile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { debugUserAccess } from "@/utils/debug";
 
 export default function Profile() {
   const { profile, loading, error } = useEmployeeProfile();
   const { toast } = useToast();
+
+  // Debug user access on component mount
+  useEffect(() => {
+    debugUserAccess().then(result => {
+      console.log('Profile page debug result:', result);
+    });
+  }, []);
 
   const handleEdit = () => {
     toast({

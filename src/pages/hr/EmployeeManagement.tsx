@@ -9,7 +9,9 @@ import { Users, Plus, Search, Filter, Mail, Phone, Edit, Trash2, Eye, UserCheck,
 import { useState } from "react";
 import QuickAddEmployeeForm from "@/components/employee/QuickAddEmployeeForm";
 import EmployeeProfile from "@/components/employee/EmployeeProfile";
+import EditProfileModal from "@/components/modals/EditProfileModal";
 import { useAllEmployeeProfiles } from "@/hooks/useEmployeeProfile";
+import { useEmployeeProfileUpdate } from "@/hooks/useEmployeeProfileUpdate";
 import { useToast } from "@/hooks/use-toast";
 import { useEmployeeNotifications } from "@/hooks/useEmployeeNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +22,9 @@ export default function EmployeeManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const { profiles, loading, error, refetch } = useAllEmployeeProfiles();
+  const { updateEmployeeProfile, isLoading: isUpdating } = useEmployeeProfileUpdate();
   const { toast } = useToast();
   
   // Set up employee notifications
@@ -39,9 +43,9 @@ export default function EmployeeManagement() {
     }
   };
 
-  const handleViewProfile = (employee: any) => {
-    // Transform database format to component format
-    const transformedEmployee = {
+  // Transform database format to component format
+  const transformEmployeeData = (employee: any) => {
+    return {
       personal: {
         nameFull: employee.name_full,
         nationalId: employee.national_id,
@@ -84,7 +88,10 @@ export default function EmployeeManagement() {
         projects: employee.projects || [],
       },
     };
-    
+  };
+
+  const handleViewProfile = (employee: any) => {
+    const transformedEmployee = transformEmployeeData(employee);
     setSelectedEmployee(transformedEmployee);
     setShowProfile(true);
   };
@@ -104,6 +111,28 @@ export default function EmployeeManagement() {
         title: "Success",
         description: "Employee has been added successfully.",
       });
+    }
+  };
+
+  const handleEditEmployee = (employee: any) => {
+    setSelectedEmployee(employee);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateEmployee = async (updatedEmployee: any) => {
+    try {
+      // Find the original employee profile to get the ID
+      const originalProfile = profiles.find(p => p.name_full === selectedEmployee.personal.nameFull);
+      if (!originalProfile) {
+        throw new Error('Employee profile not found');
+      }
+
+      await updateEmployeeProfile(originalProfile.id, updatedEmployee);
+      setShowEditModal(false);
+      setSelectedEmployee(null);
+      // The real-time subscription will handle the refresh
+    } catch (error) {
+      console.error('Error updating employee:', error);
     }
   };
 
@@ -254,7 +283,11 @@ export default function EmployeeManagement() {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditEmployee(transformEmployeeData(employee))}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button variant="outline" size="sm" className="text-destructive">
@@ -307,6 +340,19 @@ export default function EmployeeManagement() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Employee Profile Modal */}
+      {selectedEmployee && (
+        <EditProfileModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedEmployee(null);
+          }}
+          employee={selectedEmployee}
+          onSave={handleUpdateEmployee}
+        />
+      )}
     </div>
   );
 }

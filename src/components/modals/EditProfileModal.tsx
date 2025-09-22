@@ -197,8 +197,6 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                     <SelectContent>
                       <SelectItem value="Single">Single</SelectItem>
                       <SelectItem value="Married">Married</SelectItem>
-                      <SelectItem value="Divorced">Divorced</SelectItem>
-                      <SelectItem value="Widowed">Widowed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
