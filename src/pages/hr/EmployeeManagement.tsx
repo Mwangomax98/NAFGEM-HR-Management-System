@@ -17,6 +17,8 @@ import { useEmployeeNotifications } from "@/hooks/useEmployeeNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAvailableUsers } from "@/hooks/useAvailableUsers";
 
 export default function EmployeeManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -27,9 +29,36 @@ export default function EmployeeManagement() {
   const { updateEmployeeProfile, isLoading: isUpdating } = useEmployeeProfileUpdate();
   const { toast } = useToast();
   
+  // Users without employee profiles (available to create)
+  const { users: availableUsers, loading: loadingAvailable, error: availableError, refetch: refetchAvailable } = useAvailableUsers();
+  
   // Set up employee notifications
   useEmployeeNotifications();
 
+  const handleCreateProfile = async (user: { id: string; email: string; full_name: string | null; project: string | null; title: string | null; }) => {
+    try {
+      const profileData = {
+        name_full: user.full_name || user.email.split("@")[0],
+        designation: user.title || "Unknown",
+        place_of_work: user.project || "Unknown"
+      };
+
+      const { data, error } = await supabase.rpc('admin_create_employee_profile', {
+        p_user_id: user.id,
+        p_profile_data: profileData
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Profile Created", description: `Employee profile created for ${user.full_name || user.email}.` });
+      // Refresh both lists
+      refetch();
+      refetchAvailable();
+    } catch (err: any) {
+      console.error('Error creating employee profile:', err);
+      toast({ title: "Creation Failed", description: err.message || "Could not create profile.", variant: "destructive" });
+    }
+  };
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
@@ -229,6 +258,38 @@ export default function EmployeeManagement() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Users Without Profiles */}
+        {availableUsers.length > 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="text-orange-600">Users Without Employee Profiles</CardTitle>
+              <CardDescription>Create employee profiles for users who don't have them yet</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableUsers.map((user) => (
+                  <div key={user.id} className="bg-white p-4 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{user.full_name || "No name"}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">{user.title}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleCreateProfile(user)}
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        Create Profile
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Employee Directory */}
 
