@@ -12,6 +12,13 @@ import { Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface Project {
+  id: string;
+  name: string;
+  status: string;
+  description: string;
+}
+
 interface KPI {
   id: string;
   project_id: string;
@@ -37,7 +44,9 @@ interface KPIFormData {
 
 export function KPIManagement() {
   const [kpis, setKpis] = useState<KPI[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [projectsLoading, setProjectsLoading] = useState(true);
   const [editingKPI, setEditingKPI] = useState<KPI | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [formData, setFormData] = useState<KPIFormData>({
@@ -53,6 +62,7 @@ export function KPIManagement() {
 
   useEffect(() => {
     loadKPIs();
+    loadProjects();
   }, []);
 
   const loadKPIs = async () => {
@@ -75,6 +85,47 @@ export function KPIManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadProjects = async () => {
+    try {
+      setProjectsLoading(true);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, status, description')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load projects",
+        variant: "destructive",
+      });
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const getProjectName = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    return project ? project.name : projectId;
+  };
+
+  const getProjectBadge = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return projectId;
+    
+    return (
+      <div className="flex flex-col">
+        <span className="font-medium">{project.name}</span>
+        <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="w-fit text-xs">
+          {project.status}
+        </Badge>
+      </div>
+    );
   };
 
   const handleCreateKPI = async (e: React.FormEvent) => {
@@ -230,14 +281,28 @@ export function KPIManagement() {
             <form onSubmit={handleCreateKPI} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="project_id">Project ID</Label>
-                  <Input
-                    id="project_id"
+                  <Label htmlFor="project_id">Project</Label>
+                  <Select
                     value={formData.project_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, project_id: e.target.value }))}
-                    placeholder="Enter project identifier"
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, project_id: value }))}
                     required
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={projectsLoading ? "Loading projects..." : "Select a project"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          <div className="flex items-center space-x-2">
+                            <span>{project.name}</span>
+                            <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                              {project.status}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
@@ -389,12 +454,28 @@ export function KPIManagement() {
                   </TableCell>
                   <TableCell>
                     {editingKPI?.id === kpi.id ? (
-                      <Input
+                      <Select
                         value={editingKPI.project_id}
-                        onChange={(e) => setEditingKPI(prev => prev ? { ...prev, project_id: e.target.value } : null)}
-                      />
+                        onValueChange={(value) => setEditingKPI(prev => prev ? { ...prev, project_id: value } : null)}
+                      >
+                        <SelectTrigger className="w-48">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map((project) => (
+                            <SelectItem key={project.id} value={project.id}>
+                              <div className="flex items-center space-x-2">
+                                <span>{project.name}</span>
+                                <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                                  {project.status}
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
-                      kpi.project_id
+                      getProjectBadge(kpi.project_id)
                     )}
                   </TableCell>
                   <TableCell>

@@ -45,39 +45,9 @@ export function TrendAnalysis() {
   const loadTrends = async () => {
     try {
       setLoading(true);
-      // Simulate trend data - in real app, this would come from Supabase analytics
-      const mockTrends: KPITrend[] = [
-        {
-          kpi_id: '1',
-          title: 'Website Traffic',
-          project_id: 'Digital Marketing',
-          overall_trend: 'improving',
-          trend_percentage: 15.5,
-          trends: [
-            { period: 'Jan', target: 1000, actual: 850, percentage: 85, trend: 'up' },
-            { period: 'Feb', target: 1000, actual: 920, percentage: 92, trend: 'up' },
-            { period: 'Mar', target: 1000, actual: 1050, percentage: 105, trend: 'up' },
-            { period: 'Apr', target: 1200, actual: 1150, percentage: 96, trend: 'stable' },
-            { period: 'May', target: 1200, actual: 1300, percentage: 108, trend: 'up' },
-          ]
-        },
-        {
-          kpi_id: '2',
-          title: 'Customer Satisfaction',
-          project_id: 'Service Quality',
-          overall_trend: 'stable',
-          trend_percentage: 2.1,
-          trends: [
-            { period: 'Jan', target: 4.5, actual: 4.2, percentage: 93, trend: 'down' },
-            { period: 'Feb', target: 4.5, actual: 4.3, percentage: 96, trend: 'up' },
-            { period: 'Mar', target: 4.5, actual: 4.4, percentage: 98, trend: 'up' },
-            { period: 'Apr', target: 4.5, actual: 4.5, percentage: 100, trend: 'up' },
-            { period: 'May', target: 4.5, actual: 4.6, percentage: 102, trend: 'up' },
-          ]
-        }
-      ];
-      
-      setTrends(mockTrends);
+      // Real trend data would come from Supabase analytics
+      // For now, we start with empty data
+      setTrends([]);
     } catch (error) {
       console.error('Error loading trends:', error);
       toast({
