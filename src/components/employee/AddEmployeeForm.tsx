@@ -302,52 +302,85 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
         ? mergedData.declaration.signedAt
         : new Date();
 
-      // Transform merged data to database format
+      // Add debugging to check what data we have
+      console.log('=== FORM DATA VALIDATION ===');
+      console.log('mergedData.personal:', mergedData.personal);
+      console.log('mergedData.family:', mergedData.family);
+      console.log('mergedData.education:', mergedData.education);
+      console.log('mergedData.nextOfKin:', mergedData.nextOfKin);
+      console.log('mergedData.employment:', mergedData.employment);
+      
+      // Transform merged data to database format - ensure we use actual form values
       const employeeProfileData = {
-        name_full: mergedData.personal.nameFull,
-        national_id: mergedData.personal.nationalId,
-        tin_no: mergedData.personal.tinNo || null,
-        contact_address: mergedData.personal.contactAddress,
-        mobile_phones: Array.isArray(mergedData.personal.mobilePhones) ? mergedData.personal.mobilePhones : [mergedData.personal.mobilePhones].filter(Boolean),
-        designation: mergedData.personal.designation,
-        place_of_work: mergedData.personal.placeOfWork,
-        date_of_appointment: mergedData.personal.dateOfAppointment.toISOString().split('T')[0],
-        terms_of_service: mergedData.personal.termsOfService,
-        nationality: mergedData.personal.nationality,
-        date_of_birth: mergedData.personal.dateOfBirth.toISOString().split('T')[0],
-        place_of_birth: mergedData.personal.placeOfBirth,
-        religion: mergedData.personal.religion || null,
-        marital_status: mergedData.personal.maritalStatus,
-        spouse_name: mergedData.personal.spouseName || null,
-        spouse_contacts: mergedData.personal.spouseContacts || null,
-        passport_photo_url: mergedData.personal.passportPhotoUrl || null,
-        father_name: mergedData.family.fatherName,
-        father_place_of_birth: mergedData.family.fatherPlaceOfBirth,
-        father_nationality: mergedData.family.fatherNationality,
-        mother_name: mergedData.family.motherName,
-        mother_place_of_birth: mergedData.family.motherPlaceOfBirth,
-        mother_nationality: mergedData.family.motherNationality,
-        children: JSON.parse(JSON.stringify(mergedData.family.children?.map(child => ({
-          ...child,
-          dateOfBirth: child.dateOfBirth instanceof Date ? child.dateOfBirth.toISOString().split('T')[0] : child.dateOfBirth
-        })) || [])),
-        education: JSON.parse(JSON.stringify(mergedData.education.map(edu => ({
-          ...edu,
-          fromDate: edu.fromDate instanceof Date ? edu.fromDate.toISOString().split('T')[0] : edu.fromDate,
-          toDate: edu.toDate instanceof Date ? edu.toDate.toISOString().split('T')[0] : edu.toDate
-        })))),
-        next_of_kin: mergedData.nextOfKin,
+        name_full: mergedData.personal?.nameFull || '',
+        national_id: mergedData.personal?.nationalId || '',
+        tin_no: mergedData.personal?.tinNo || null,
+        contact_address: mergedData.personal?.contactAddress || '',
+        mobile_phones: mergedData.personal?.mobilePhones ? 
+          (Array.isArray(mergedData.personal.mobilePhones) ? 
+            mergedData.personal.mobilePhones.filter(Boolean) : 
+            [mergedData.personal.mobilePhones].filter(Boolean)
+          ) : [],
+        designation: mergedData.personal?.designation || '',
+        place_of_work: mergedData.personal?.placeOfWork || '',
+        date_of_appointment: mergedData.personal?.dateOfAppointment ? 
+          (mergedData.personal.dateOfAppointment instanceof Date ? 
+            mergedData.personal.dateOfAppointment.toISOString().split('T')[0] : 
+            mergedData.personal.dateOfAppointment) : 
+          new Date().toISOString().split('T')[0],
+        terms_of_service: mergedData.personal?.termsOfService || 'contract',
+        nationality: mergedData.personal?.nationality || '',
+        date_of_birth: mergedData.personal?.dateOfBirth ? 
+          (mergedData.personal.dateOfBirth instanceof Date ? 
+            mergedData.personal.dateOfBirth.toISOString().split('T')[0] : 
+            mergedData.personal.dateOfBirth) : 
+          new Date().toISOString().split('T')[0],
+        place_of_birth: mergedData.personal?.placeOfBirth || '',
+        religion: mergedData.personal?.religion || null,
+        marital_status: mergedData.personal?.maritalStatus || 'single',
+        spouse_name: mergedData.personal?.spouseName || null,
+        spouse_contacts: mergedData.personal?.spouseContacts || null,
+        passport_photo_url: mergedData.personal?.passportPhotoUrl || null,
+        father_name: mergedData.family?.fatherName || '',
+        father_place_of_birth: mergedData.family?.fatherPlaceOfBirth || '',
+        father_nationality: mergedData.family?.fatherNationality || mergedData.personal?.nationality || '',
+        mother_name: mergedData.family?.motherName || '',
+        mother_place_of_birth: mergedData.family?.motherPlaceOfBirth || '',
+        mother_nationality: mergedData.family?.motherNationality || mergedData.personal?.nationality || '',
+        children: mergedData.family?.children ? 
+          JSON.parse(JSON.stringify(mergedData.family.children.map(child => ({
+            ...child,
+            dateOfBirth: child.dateOfBirth instanceof Date ? child.dateOfBirth.toISOString().split('T')[0] : child.dateOfBirth
+          })))) : [],
+        education: mergedData.education ? 
+          JSON.parse(JSON.stringify(mergedData.education.map(edu => ({
+            ...edu,
+            fromDate: edu.fromDate instanceof Date ? edu.fromDate.toISOString().split('T')[0] : edu.fromDate,
+            toDate: edu.toDate instanceof Date ? edu.toDate.toISOString().split('T')[0] : edu.toDate
+          })))) : [],
+        next_of_kin: mergedData.nextOfKin || [],
         declaration_text: defaultDeclarationText,
         declaration_signed_by: defaultSignedBy,
         declaration_signed_at: defaultSignedAt.toISOString().split('T')[0],
-        employee_id: mergedData.employment.employeeId,
-        user_role: mergedData.employment.userRole.toLowerCase(),
+        employee_id: mergedData.employment?.employeeId || `EMP${Date.now().toString().slice(-6)}`,
+        user_role: (mergedData.employment?.userRole || 'employee').toLowerCase(),
         status: 'active',
-        projects: mergedData.employment.projects || [],
+        projects: mergedData.employment?.projects || [],
         // Link to the selected user account
         user_id: mergedData.selectedUserId,
         created_by: currentUser.user?.id
       };
+      
+      // Add detailed debugging for the transformed data
+      console.log('=== TRANSFORMED EMPLOYEE PROFILE DATA ===');
+      console.log('name_full:', employeeProfileData.name_full);
+      console.log('contact_address:', employeeProfileData.contact_address);
+      console.log('mobile_phones:', employeeProfileData.mobile_phones);
+      console.log('father_name:', employeeProfileData.father_name);
+      console.log('mother_name:', employeeProfileData.mother_name);
+      console.log('place_of_birth:', employeeProfileData.place_of_birth);
+      console.log('date_of_birth:', employeeProfileData.date_of_birth);
+      console.log('============================================');
 
       // Enhanced debugging before database insert
       console.log('=== EMPLOYEE PROFILE SUBMISSION DEBUG ===');

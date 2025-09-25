@@ -197,35 +197,42 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
     setIsSubmitting(true);
 
     try {
-      // Prepare data for RPC function
+      // Debug the form data before transformation
+      console.log('=== QUICK ADD FORM DATA ===');
+      console.log('Raw form data:', formData);
+      
+      // Prepare data for RPC function - ensure we pass actual values
       const profileData = {
-        name_full: formData.name_full,
-        national_id: formData.national_id,
-        employee_id: formData.employee_id,
-        contact_address: formData.contact_address,
-        mobile_phone: formData.mobile_phone,
-        designation: formData.designation,
-        place_of_work: formData.place_of_work,
-        terms_of_service: formData.terms_of_service,
-        nationality: formData.nationality,
-        place_of_birth: formData.place_of_birth,
-        ...(formData.date_of_birth && { date_of_birth: formData.date_of_birth }),
-        ...(formData.date_of_appointment && { date_of_appointment: formData.date_of_appointment }),
-        marital_status: formData.marital_status,
-        father_name: formData.father_name,
-        father_place_of_birth: formData.father_place_of_birth,
-        father_nationality: formData.father_nationality,
-        mother_name: formData.mother_name,
-        mother_place_of_birth: formData.mother_place_of_birth,
-        mother_nationality: formData.mother_nationality,
-        children: formData.children,
-        education: formData.education,
-        next_of_kin: formData.nextOfKin,
-        declaration_text: formData.declaration_text,
-        declaration_signed_by: formData.declaration_signed_by,
-        declaration_signed_at: formData.declaration_signed_at,
-        projects: formData.projects,
+        name_full: formData.name_full || '',
+        national_id: formData.national_id || '',
+        employee_id: formData.employee_id || '',
+        contact_address: formData.contact_address || '',
+        mobile_phones: formData.mobile_phone ? [formData.mobile_phone] : [],
+        designation: formData.designation || '',
+        place_of_work: formData.place_of_work || '',
+        terms_of_service: formData.terms_of_service || 'contract',
+        nationality: formData.nationality || '',
+        place_of_birth: formData.place_of_birth || '',
+        date_of_birth: formData.date_of_birth || new Date().toISOString().split('T')[0],
+        date_of_appointment: formData.date_of_appointment || new Date().toISOString().split('T')[0],
+        marital_status: formData.marital_status || 'single',
+        father_name: formData.father_name || '',
+        father_place_of_birth: formData.father_place_of_birth || '',
+        father_nationality: formData.father_nationality || formData.nationality || '',
+        mother_name: formData.mother_name || '',
+        mother_place_of_birth: formData.mother_place_of_birth || '',
+        mother_nationality: formData.mother_nationality || formData.nationality || '',
+        children: formData.children || [],
+        education: formData.education || [],
+        next_of_kin: formData.nextOfKin || [],
+        declaration_text: formData.declaration_text || 'I hereby declare that the information provided above is true and correct to the best of my knowledge and belief.',
+        declaration_signed_by: formData.declaration_signed_by || formData.name_full || 'System',
+        declaration_signed_at: formData.declaration_signed_at || new Date().toISOString().split('T')[0],
+        projects: formData.projects || [],
       };
+      
+      console.log('=== TRANSFORMED PROFILE DATA ===');
+      console.log('Transformed data:', profileData);
 
       const { data, error } = await supabase.rpc('admin_create_employee_profile', {
         p_user_id: selectedUser.id,
