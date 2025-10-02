@@ -3,11 +3,13 @@ import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { logLogout } from "@/utils/auditLogger";
 
 export function LogoutConfirmation() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
+    await logLogout();
     await supabase.auth.signOut();
     setIsOpen(false);
     window.location.href = "/";

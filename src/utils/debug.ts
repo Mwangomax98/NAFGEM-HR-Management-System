@@ -4,7 +4,9 @@ export const debugUserAccess = async () => {
   try {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('Current user:', user?.id);
+    if (import.meta.env.DEV) {
+      console.log('Current user:', user?.id);
+    }
 
     // Check user role
     const { data: roleData, error: roleError } = await supabase
@@ -12,7 +14,9 @@ export const debugUserAccess = async () => {
       .select('*')
       .eq('user_id', user?.id);
     
-    console.log('User role data:', roleData, 'Error:', roleError);
+    if (import.meta.env.DEV) {
+      console.log('User role data:', roleData, 'Error:', roleError);
+    }
 
     // Try to fetch employee profile
     const { data: profileData, error: profileError } = await supabase
@@ -20,14 +24,18 @@ export const debugUserAccess = async () => {
       .select('*')
       .eq('user_id', user?.id);
     
-    console.log('Employee profile data:', profileData, 'Error:', profileError);
+    if (import.meta.env.DEV) {
+      console.log('Employee profile data:', profileData, 'Error:', profileError);
+    }
 
     // Try to fetch all profiles (HR/Admin only)
     const { data: allProfiles, error: allProfilesError } = await supabase
       .from('employee_profiles')
       .select('*');
     
-    console.log('All profiles data:', allProfiles?.length || 0, 'Error:', allProfilesError);
+    if (import.meta.env.DEV) {
+      console.log('All profiles data:', allProfiles?.length || 0, 'Error:', allProfilesError);
+    }
 
     return {
       user: user?.id,

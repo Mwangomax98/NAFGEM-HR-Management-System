@@ -14,6 +14,8 @@ import { CalendarIcon, AlertTriangle, Users, MapPin, Clock, FileText } from "luc
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast, toast } from "@/hooks/use-toast";
+import { checkRateLimit, RATE_LIMITS, getRateLimitResetTime } from "@/utils/rateLimiter";
+import { logRateLimitExceeded } from "@/utils/auditLogger";
 
 interface TripRequestFormProps {
   onSubmit: (trip: any) => void;
@@ -200,6 +202,24 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
         variant: "destructive"
       });
       return;
+    }
+
+    // Check rate limit (only for submissions, not drafts)
+    if (!isDraft) {
+      const rateLimitKey = `trip-request-${currentUser.id}`;
+      if (!checkRateLimit(rateLimitKey, RATE_LIMITS.TRIP_REQUEST)) {
+        const resetTime = getRateLimitResetTime(rateLimitKey);
+        const minutes = Math.ceil(resetTime / 60000);
+        
+        await logRateLimitExceeded('trip_request');
+        
+        toast({
+          title: "Too Many Requests",
+          description: `Please wait ${minutes} minutes before submitting another trip request.`,
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setSaving(true);

@@ -18,6 +18,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { checkRateLimit, RATE_LIMITS, getRateLimitResetTime } from "@/utils/rateLimiter";
+import { logRateLimitExceeded } from "@/utils/auditLogger";
+import { validateFiles, FILE_VALIDATION_CONFIGS } from "@/utils/fileValidation";
 
 const formSchema = z.object({
   employeeName: z.string().min(2, "Name must be at least 2 characters"),
@@ -152,6 +155,19 @@ export default function LeaveRequestForm() {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
+    
+    // Validate files
+    const validation = validateFiles(files, FILE_VALIDATION_CONFIGS.DOCUMENTS);
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Invalid File(s)",
+        description: validation.errors.join('. '),
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setAttachedFiles([...attachedFiles, ...files]);
   };
 
@@ -169,6 +185,22 @@ export default function LeaveRequestForm() {
         toast({
           title: "Error",
           description: "You must be logged in to submit a leave request.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check rate limit
+      const rateLimitKey = `leave-request-${user.id}`;
+      if (!checkRateLimit(rateLimitKey, RATE_LIMITS.LEAVE_REQUEST)) {
+        const resetTime = getRateLimitResetTime(rateLimitKey);
+        const minutes = Math.ceil(resetTime / 60000);
+        
+        await logRateLimitExceeded('leave_request');
+        
+        toast({
+          title: "Too Many Requests",
+          description: `Please wait ${minutes} minutes before submitting another leave request.`,
           variant: "destructive"
         });
         return;

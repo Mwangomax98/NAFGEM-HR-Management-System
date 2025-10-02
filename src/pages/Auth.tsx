@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { logLogin, logLoginFailed, logLogout } from "@/utils/auditLogger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,7 +88,9 @@ export default function Auth() {
 
       if (error) {
         setError(error.message);
+        await logLoginFailed(email);
       } else {
+        await logLogin();
         toast({
           title: "Welcome back!",
           description: "You have been successfully signed in.",
@@ -96,6 +99,7 @@ export default function Auth() {
       }
     } catch (err) {
       setError("An unexpected error occurred");
+      await logLoginFailed(email);
     } finally {
       setIsLoading(false);
     }

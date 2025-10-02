@@ -13,6 +13,7 @@ import { format, addWeeks } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { validateFiles, FILE_VALIDATION_CONFIGS } from "@/utils/fileValidation";
 
 interface Asset {
   type: string;
@@ -90,36 +91,22 @@ export function ExitRequestModal({ open, onOpenChange, onSubmitted }: ExitReques
     const files = event.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "Error",
-          description: `File ${file.name} is too large. Maximum size is 10MB.`,
-          variant: "destructive"
-        });
-        return;
-      }
+    const filesArray = Array.from(files);
+    
+    // Validate all files at once
+    const validation = validateFiles(filesArray, FILE_VALIDATION_CONFIGS.EXIT_ATTACHMENTS);
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Invalid File(s)",
+        description: validation.errors.join('. '),
+        variant: "destructive"
+      });
+      return;
+    }
 
-      // Validate file type (documents only)
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'image/jpeg',
-        'image/png'
-      ];
-      
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: "Error",
-          description: `File ${file.name} is not supported. Please upload PDF, Word, text, or image files.`,
-          variant: "destructive"
-        });
-        return;
-      }
-
+    // Add valid files to attachments
+    filesArray.forEach(file => {
       const newAttachment: Attachment = {
         file_name: file.name,
         file_size: file.size,

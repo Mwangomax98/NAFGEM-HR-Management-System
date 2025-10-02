@@ -21,6 +21,8 @@ interface TaskSuggestion {
 }
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
+import { checkRateLimit, RATE_LIMITS, getRateLimitResetTime } from "@/utils/rateLimiter";
+import { logRateLimitExceeded } from "@/utils/auditLogger";
 
 interface TaskSubmission {
   id?: string;
@@ -200,6 +202,18 @@ export default function WeeklyTaskSubmission() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Check rate limit
+      const rateLimitKey = `weekly-task-${user.id}`;
+      if (!checkRateLimit(rateLimitKey, RATE_LIMITS.WEEKLY_TASK_SUBMISSION)) {
+        const resetTime = getRateLimitResetTime(rateLimitKey);
+        const minutes = Math.ceil(resetTime / 60000);
+        
+        await logRateLimitExceeded('weekly_task_submission');
+        
+        toast.error(`Too many saves. Please wait ${minutes} minutes before trying again.`);
+        return;
+      }
 
       let weeklyTaskId = weeklyTask.id;
 
