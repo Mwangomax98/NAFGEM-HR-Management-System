@@ -28,7 +28,40 @@ export function NotificationDropdown() {
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
+
+    // Subscribe to real-time notifications
+    const channel = supabase
+      .channel('notifications-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${supabase.auth.getSession().then(s => s.data.session?.user?.id)}`
+        },
+        (payload) => {
+          const newNotification = {
+            ...payload.new,
+            type: payload.new.type as "info" | "warning" | "success" | "error"
+          } as Notification;
+          
+          setNotifications(prev => [newNotification, ...prev]);
+          
+          // Show toast for new notifications
+          toast({
+            title: newNotification.title,
+            description: newNotification.message,
+            variant: newNotification.type === 'error' ? 'destructive' : 'default',
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
 
   const fetchNotifications = async () => {
     try {
