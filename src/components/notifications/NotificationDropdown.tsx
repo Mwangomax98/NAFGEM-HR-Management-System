@@ -137,6 +137,35 @@ export function NotificationDropdown() {
     }
   };
 
+  const deleteNotification = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotifications(notifications.filter(n => n.id !== id));
+      toast({
+        title: "Success",
+        description: "Notification deleted",
+      });
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete notification",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filterNotifications = (type?: string) => {
+    if (!type) return notifications;
+    return notifications.filter(n => n.type === type);
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case "warning":
@@ -242,7 +271,11 @@ export function NotificationDropdown() {
           </div>
         </ScrollArea>
         <div className="p-3 border-t">
-          <Button variant="ghost" className="w-full text-sm">
+          <Button 
+            variant="ghost" 
+            className="w-full text-sm"
+            onClick={() => window.location.href = '/notifications'}
+          >
             View All Notifications
           </Button>
         </div>

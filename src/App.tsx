@@ -27,6 +27,7 @@ import Performance from "./pages/hr/Performance";
 import Communications from "./pages/Communications";
 import Reports from "./pages/Reports";
 import MonitoringEvaluation from "./pages/MonitoringEvaluation";
+import Notifications from "./pages/Notifications";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ROLES } from "@/lib/roles";
 
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/communications" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Communications /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Reports /></ProtectedRoute>} />
           <Route path="/hr/monitoring-evaluation" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><MonitoringEvaluation /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Notifications /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requiredRole={ROLES.ADMIN}><UserManagement /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute requiredRole={ROLES.ADMIN}><SystemSettings /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
