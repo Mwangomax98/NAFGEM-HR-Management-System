@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, RefreshCw, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield, RefreshCw, CheckCircle, XCircle, AlertCircle, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DiagnosticData {
@@ -16,20 +17,40 @@ interface DiagnosticData {
 export function RoleDiagnostics() {
   const [diagnosticData, setDiagnosticData] = useState<DiagnosticData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const runDiagnostics = async () => {
-    setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('debug_user_role');
+      setLoading(true);
+      setError(null);
       
-      if (error) {
-        console.error('Diagnostic error:', error);
-        return;
-      }
+      console.log('🔧 [RoleDiagnostics] Running diagnostics...');
+      
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) throw sessionError;
+      
+      console.log('🔐 [RoleDiagnostics] Session:', {
+        hasSession: !!session,
+        userId: session?.user?.id,
+        email: session?.user?.email
+      });
+
+      // Call debug function
+      const { data, error: rpcError } = await supabase.rpc('debug_user_role');
+      
+      console.log('📊 [RoleDiagnostics] Debug response:', {
+        data,
+        error: rpcError
+      });
+
+      if (rpcError) throw rpcError;
       
       setDiagnosticData(data as unknown as DiagnosticData);
-    } catch (error) {
-      console.error('Failed to run diagnostics:', error);
+    } catch (err: any) {
+      console.error('❌ [RoleDiagnostics] Error:', err);
+      setError(err.message || 'Failed to run diagnostics');
     } finally {
       setLoading(false);
     }
@@ -39,84 +60,119 @@ export function RoleDiagnostics() {
     runDiagnostics();
   }, []);
 
-  if (!diagnosticData && !loading) {
-    return null;
-  }
-
   const canCreateEmployees = diagnosticData?.has_hr_role || diagnosticData?.has_admin_role;
+  const currentRole = diagnosticData?.role_record?.role || 'employee';
 
   return (
     <Card className="border-blue-200 bg-blue-50/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <Shield className="h-4 w-4" />
-          Role Diagnostics
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={runDiagnostics}
-            disabled={loading}
-            className="ml-auto h-6 w-6 p-0"
-          >
-            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-blue-900">
+          <Shield className="h-5 w-5" />
+          Role & Permissions Diagnostics
         </CardTitle>
+        <CardDescription>
+          Current user authentication and permission status
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2 text-xs">
+      <CardContent className="space-y-4">
         {loading ? (
-          <div className="flex items-center gap-2">
-            <RefreshCw className="h-3 w-3 animate-spin" />
-            <span className="text-muted-foreground">Running diagnostics...</span>
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
           </div>
-        ) : (
+        ) : error ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : diagnosticData ? (
           <>
-            <div className="flex items-center justify-between">
-              <span>Authentication:</span>
-              {diagnosticData?.auth_uid ? (
-                <Badge variant="default" className="h-5 text-xs">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Authenticated
-                </Badge>
-              ) : (
-                <Badge variant="destructive" className="h-5 text-xs">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Not Authenticated
-                </Badge>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Authentication Status:</span>
+                  {diagnosticData.auth_uid ? (
+                    <Badge className="bg-green-500">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Authenticated
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Not Authenticated
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">User Exists:</span>
+                  {diagnosticData.user_exists ? (
+                    <Badge className="bg-green-500">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Yes
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      No
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Current Role:</span>
+                  <Badge variant={canCreateEmployees ? "default" : "secondary"}>
+                    {currentRole.toUpperCase()}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Can Create Employees:</span>
+                  {canCreateEmployees ? (
+                    <Badge className="bg-green-500">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Yes
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      No
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <span>Current Role:</span>
-              <Badge 
-                variant={canCreateEmployees ? "default" : "secondary"} 
-                className="h-5 text-xs"
-              >
-                {diagnosticData?.role_record?.role || 'No Role'}
-              </Badge>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span>Can Create Employees:</span>
-              {canCreateEmployees ? (
-                <Badge variant="default" className="h-5 text-xs">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Yes
-                </Badge>
-              ) : (
-                <Badge variant="destructive" className="h-5 text-xs">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  No
-                </Badge>
-              )}
-            </div>
-            
+
             {!canCreateEmployees && (
-              <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-800">
-                ⚠️ You need HR or Admin role to create employee profiles.
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  You need HR or Admin role to create employee profiles. Please contact your administrator to be assigned the appropriate role.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {diagnosticData.auth_uid && (
+              <div className="pt-2 border-t">
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                  <span>User ID: {diagnosticData.auth_uid}</span>
+                </div>
               </div>
             )}
+
+            <Button 
+              onClick={runDiagnostics} 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Diagnostics
+            </Button>
           </>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

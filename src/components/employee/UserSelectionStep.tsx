@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, CheckCircle, AlertCircle } from "lucide-react";
+import { User, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { RoleDiagnostics } from "./RoleDiagnostics";
 
 interface UserProfile {
   id: string;
@@ -42,14 +43,22 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
     try {
       setLoading(true);
       
+      console.log('🔍 [UserSelectionStep] Fetching available users...');
+      
       // Get all users from profiles table
       const { data: allProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, full_name, project, title')
         .order('full_name');
 
+      console.log('📊 [UserSelectionStep] Profiles query result:', {
+        count: allProfiles?.length || 0,
+        error: profilesError,
+        data: allProfiles
+      });
+
       if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+        console.error('❌ [UserSelectionStep] Profiles error:', profilesError);
         
         // Handle specific RLS permission errors
         if (profilesError.message.includes("new row violates row-level security") || 
@@ -70,8 +79,14 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
         .from('employee_profiles')
         .select('user_id');
 
+      console.log('👥 [UserSelectionStep] Employee profiles query result:', {
+        count: existingEmployees?.length || 0,
+        error: employeeError,
+        data: existingEmployees
+      });
+
       if (employeeError) {
-        console.error('Error fetching employee profiles:', employeeError);
+        console.error('❌ [UserSelectionStep] Employee profiles error:', employeeError);
         
         // Handle specific RLS permission errors for employee_profiles
         if (employeeError.message.includes("new row violates row-level security") || 
@@ -93,9 +108,16 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
         profile.id && !existingUserIds.has(profile.id)
       ) || [];
 
+      console.log('✅ [UserSelectionStep] Filtering complete:', {
+        total_profiles: allProfiles?.length || 0,
+        existing_employees: existingEmployees?.length || 0,
+        available_users: availableProfiles.length,
+        filtered_users: availableProfiles
+      });
+
       setAvailableUsers(availableProfiles);
-    } catch (error) {
-      console.error('Error fetching available users:', error);
+    } catch (error: any) {
+      console.error('❌ [UserSelectionStep] Error:', error);
       toast({
         title: "Error",
         description: `Failed to load available users: ${error.message || 'Unknown error'}`,
@@ -141,62 +163,88 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
 
   if (availableUsers.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-            No Users Available
-          </CardTitle>
-          <CardDescription>
-            All users in the system already have employee profiles.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            To create a new employee profile, first add a new user account to the system.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <RoleDiagnostics />
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              No Users Available
+            </CardTitle>
+            <CardDescription>
+              All users in the system already have employee profiles.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              To create a new employee profile, first add a new user account to the system.
+            </p>
+            
+            <Button 
+              onClick={fetchAvailableUsers}
+              variant="outline"
+              className="w-full"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Select User
-        </CardTitle>
-        <CardDescription>
-          Choose a user account to create an employee profile for. Only users without existing employee profiles are shown.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Available Users</label>
-          <Select value={selectedUser?.id || ""} onValueChange={handleUserSelection}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a user to create employee profile for..." />
-            </SelectTrigger>
-            <SelectContent>
-              {availableUsers.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs">
-                        {user.full_name?.split(' ').map(n => n[0]).join('') || user.email[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{user.full_name || user.email}</span>
-                      <span className="text-xs text-muted-foreground">{user.email}</span>
+    <div className="space-y-4">
+      <RoleDiagnostics />
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Select User
+          </CardTitle>
+          <CardDescription>
+            Choose a user account to create an employee profile for. {availableUsers.length} user{availableUsers.length !== 1 ? 's' : ''} available.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Available Users ({availableUsers.length})</label>
+              <Button 
+                onClick={fetchAvailableUsers}
+                variant="ghost"
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+            <Select value={selectedUser?.id || ""} onValueChange={handleUserSelection}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a user to create employee profile for..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableUsers.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="text-xs">
+                          {user.full_name?.split(' ').map(n => n[0]).join('') || user.email[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{user.full_name || user.email}</span>
+                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                      </div>
                     </div>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
         {selectedUser && (
           <Card className="border-primary/20 bg-primary/5">
@@ -253,6 +301,7 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
           </Button>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
