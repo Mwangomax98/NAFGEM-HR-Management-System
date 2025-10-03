@@ -75,23 +75,24 @@ export default function EmployeeManagement() {
   // Transform database format to component format
   const transformEmployeeData = (employee: any) => {
     return {
+      id: employee.id, // Include database ID for updates
       personal: {
         nameFull: employee.name_full,
         nationalId: employee.national_id,
-        tinNo: employee.tin_no || "Not set",
+        tinNo: employee.tin_no || "",
         contactAddress: employee.contact_address,
-        mobilePhones: employee.mobile_phones,
+        mobilePhones: employee.mobile_phones?.join(", ") || "",
         designation: employee.designation,
         placeOfWork: employee.place_of_work,
-        dateOfAppointment: new Date(employee.date_of_appointment),
+        dateOfAppointment: employee.date_of_appointment,
         termsOfService: employee.terms_of_service,
         nationality: employee.nationality,
-        dateOfBirth: new Date(employee.date_of_birth),
+        dateOfBirth: employee.date_of_birth,
         placeOfBirth: employee.place_of_birth,
-        religion: employee.religion || "Not set",
+        religion: employee.religion || "",
         maritalStatus: employee.marital_status,
-        spouseName: employee.spouse_name || "Not set",
-        spouseContacts: employee.spouse_contacts || "Not set",
+        spouseName: employee.spouse_name || "",
+        spouseContacts: employee.spouse_contacts || "",
         passportPhotoUrl: employee.passport_photo_url || "/placeholder.svg",
       },
       family: {
@@ -112,6 +113,7 @@ export default function EmployeeManagement() {
       },
       employment: {
         employeeId: employee.employee_id,
+        dateOfAppointment: employee.date_of_appointment,
         userRole: employee.user_role,
         status: employee.status,
         projects: employee.projects || [],
@@ -144,24 +146,32 @@ export default function EmployeeManagement() {
   };
 
   const handleEditEmployee = (employee: any) => {
-    setSelectedEmployee(employee);
+    const transformedEmployee = transformEmployeeData(employee);
+    setSelectedEmployee(transformedEmployee);
     setShowEditModal(true);
   };
 
   const handleUpdateEmployee = async (updatedEmployee: any) => {
     try {
-      // Find the original employee profile to get the ID
-      const originalProfile = profiles.find(p => p.name_full === selectedEmployee.personal.nameFull);
-      if (!originalProfile) {
-        throw new Error('Employee profile not found');
+      if (!selectedEmployee?.id) {
+        throw new Error('Employee ID is missing');
       }
 
-      await updateEmployeeProfile(originalProfile.id, updatedEmployee);
+      await updateEmployeeProfile(selectedEmployee.id, updatedEmployee);
       setShowEditModal(false);
       setSelectedEmployee(null);
-      // The real-time subscription will handle the refresh
-    } catch (error) {
+      toast({
+        title: "Profile Updated",
+        description: "Employee profile has been successfully updated.",
+      });
+      refetch();
+    } catch (error: any) {
       console.error('Error updating employee:', error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update employee profile.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -347,7 +357,7 @@ export default function EmployeeManagement() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleEditEmployee(transformEmployeeData(employee))}
+                          onClick={() => handleEditEmployee(employee)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>

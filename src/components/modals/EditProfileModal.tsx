@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,324 +7,419 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { User, Users, GraduationCap, Heart, Save, X } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { User, Users, Briefcase, GraduationCap, Heart, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EditProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   employee: any;
-  onSave: (data: any) => void;
+  onSave: (employee: any) => void;
 }
 
 export default function EditProfileModal({ isOpen, onClose, employee, onSave }: EditProfileModalProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-
   const form = useForm({
     defaultValues: {
-      // Personal Details
-      nameFull: employee.personal.nameFull,
-      nationalId: employee.personal.nationalId,
-      tinNo: employee.personal.tinNo || "",
-      contactAddress: employee.personal.contactAddress,
-      mobilePhones: employee.personal.mobilePhones.join(", "),
-      designation: employee.personal.designation,
-      placeOfWork: employee.personal.placeOfWork,
-      nationality: employee.personal.nationality,
-      dateOfBirth: new Date(employee.personal.dateOfBirth).toISOString().split('T')[0],
-      placeOfBirth: employee.personal.placeOfBirth,
-      religion: employee.personal.religion || "",
-      maritalStatus: employee.personal.maritalStatus,
-      spouseName: employee.personal.spouseName || "",
-      spouseContacts: employee.personal.spouseContacts || "",
-      // Family Details
-      fatherName: employee.family.fatherName,
-      fatherPlaceOfBirth: employee.family.fatherPlaceOfBirth,
-      fatherNationality: employee.family.fatherNationality,
-      motherName: employee.family.motherName,
-      motherPlaceOfBirth: employee.family.motherPlaceOfBirth,
-      motherNationality: employee.family.motherNationality,
-    }
+      personal: {
+        nameFull: "",
+        nationalId: "",
+        tinNo: "",
+        contactAddress: "",
+        mobilePhones: "",
+        designation: "",
+        placeOfWork: "",
+        termsOfService: "contract",
+        nationality: "",
+        dateOfBirth: "",
+        placeOfBirth: "",
+        religion: "",
+        maritalStatus: "single",
+        spouseName: "",
+        spouseContacts: "",
+      },
+      family: {
+        fatherName: "",
+        fatherPlaceOfBirth: "",
+        fatherNationality: "",
+        motherName: "",
+        motherPlaceOfBirth: "",
+        motherNationality: "",
+      },
+      children: [] as any[],
+      education: [] as any[],
+      nextOfKin: [] as any[],
+      employment: {
+        employeeId: "",
+        dateOfAppointment: "",
+        projects: [] as any[],
+        userRole: "employee",
+        status: "active",
+      },
+    },
   });
 
-  const onSubmit = async (data: any) => {
-    setIsLoading(true);
-    try {
-      // Transform the data back to the expected format
-      const updatedEmployee = {
-        ...employee,
+  const { fields: childrenFields, append: appendChild, remove: removeChild } = useFieldArray({
+    control: form.control,
+    name: "children",
+  });
+
+  const { fields: educationFields, append: appendEducation, remove: removeEducation } = useFieldArray({
+    control: form.control,
+    name: "education",
+  });
+
+  const { fields: nextOfKinFields, append: appendNextOfKin, remove: removeNextOfKin } = useFieldArray({
+    control: form.control,
+    name: "nextOfKin",
+  });
+
+  const { fields: projectFields, append: appendProject, remove: removeProject } = useFieldArray({
+    control: form.control,
+    name: "employment.projects",
+  });
+
+  useEffect(() => {
+    if (employee) {
+      form.reset({
         personal: {
           ...employee.personal,
-          nameFull: data.nameFull,
-          nationalId: data.nationalId,
-          tinNo: data.tinNo,
-          contactAddress: data.contactAddress,
-          mobilePhones: data.mobilePhones.split(",").map((phone: string) => phone.trim()),
-          designation: data.designation,
-          placeOfWork: data.placeOfWork,
-          nationality: data.nationality,
-          dateOfBirth: new Date(data.dateOfBirth),
-          placeOfBirth: data.placeOfBirth,
-          religion: data.religion,
-          maritalStatus: data.maritalStatus,
-          spouseName: data.spouseName,
-          spouseContacts: data.spouseContacts,
+          termsOfService: employee.personal.termsOfService || "contract",
+          maritalStatus: employee.personal.maritalStatus || "single",
         },
-        family: {
-          ...employee.family,
-          fatherName: data.fatherName,
-          fatherPlaceOfBirth: data.fatherPlaceOfBirth,
-          fatherNationality: data.fatherNationality,
-          motherName: data.motherName,
-          motherPlaceOfBirth: data.motherPlaceOfBirth,
-          motherNationality: data.motherNationality,
-        }
-      };
+        family: employee.family || {},
+        children: employee.family?.children || [],
+        education: employee.education || [],
+        nextOfKin: employee.nextOfKin || [],
+        employment: {
+          employeeId: employee.employment?.employeeId || "",
+          dateOfAppointment: employee.employment?.dateOfAppointment || "",
+          projects: employee.employment?.projects || [],
+          userRole: employee.employment?.userRole || "employee",
+          status: employee.employment?.status || "active",
+        },
+      });
+    }
+  }, [employee, form]);
 
-      onSave(updatedEmployee);
+  const onSubmit = (data: any) => {
+    try {
+      onSave(data);
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
+        title: "Success",
+        description: "Employee profile updated successfully",
       });
       onClose();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: "Failed to update employee profile",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <User className="w-5 h-5" />
-            <span>Edit Profile</span>
-          </DialogTitle>
+          <DialogTitle>Edit Employee Profile</DialogTitle>
         </DialogHeader>
-
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center space-x-2">
-                <User className="w-5 h-5" />
-                <span>Personal Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nameFull">Full Name</Label>
-                  <Input
-                    id="nameFull"
-                    {...form.register("nameFull", { required: true })}
-                  />
+        <ScrollArea className="h-[calc(90vh-120px)] pr-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Personal Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <User className="w-5 h-5" />
+                  <span>Personal Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nameFull">Full Name *</Label>
+                    <Input id="nameFull" {...form.register("personal.nameFull", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nationalId">National ID *</Label>
+                    <Input id="nationalId" {...form.register("personal.nationalId", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tinNo">TIN Number</Label>
+                    <Input id="tinNo" {...form.register("personal.tinNo")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="designation">Designation *</Label>
+                    <Input id="designation" {...form.register("personal.designation", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="placeOfWork">Place of Work *</Label>
+                    <Input id="placeOfWork" {...form.register("personal.placeOfWork", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nationality">Nationality *</Label>
+                    <Input id="nationality" {...form.register("personal.nationality", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                    <Input id="dateOfBirth" type="date" {...form.register("personal.dateOfBirth", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="placeOfBirth">Place of Birth *</Label>
+                    <Input id="placeOfBirth" {...form.register("personal.placeOfBirth", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="religion">Religion</Label>
+                    <Input id="religion" {...form.register("personal.religion")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maritalStatus">Marital Status *</Label>
+                    <Select value={form.watch("personal.maritalStatus")} onValueChange={(value) => form.setValue("personal.maritalStatus", value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">Single</SelectItem>
+                        <SelectItem value="married">Married</SelectItem>
+                        <SelectItem value="divorced">Divorced</SelectItem>
+                        <SelectItem value="widowed">Widowed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nationalId">National ID</Label>
-                  <Input
-                    id="nationalId"
-                    {...form.register("nationalId", { required: true })}
-                  />
+                  <Label htmlFor="contactAddress">Contact Address *</Label>
+                  <Textarea id="contactAddress" {...form.register("personal.contactAddress", { required: true })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tinNo">TIN Number</Label>
-                  <Input
-                    id="tinNo"
-                    {...form.register("tinNo")}
-                  />
+                  <Label htmlFor="mobilePhones">Mobile Phones *</Label>
+                  <Input id="mobilePhones" {...form.register("personal.mobilePhones", { required: true })} placeholder="Separate multiple numbers with commas" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="designation">Designation</Label>
-                  <Input
-                    id="designation"
-                    {...form.register("designation", { required: true })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="placeOfWork">Place of Work</Label>
-                  <Input
-                    id="placeOfWork"
-                    {...form.register("placeOfWork", { required: true })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nationality">Nationality</Label>
-                  <Input
-                    id="nationality"
-                    {...form.register("nationality", { required: true })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    {...form.register("dateOfBirth", { required: true })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="placeOfBirth">Place of Birth</Label>
-                  <Input
-                    id="placeOfBirth"
-                    {...form.register("placeOfBirth", { required: true })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="religion">Religion</Label>
-                  <Input
-                    id="religion"
-                    {...form.register("religion")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maritalStatus">Marital Status</Label>
-                  <Select 
-                    value={form.watch("maritalStatus")} 
-                    onValueChange={(value) => form.setValue("maritalStatus", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Single">Single</SelectItem>
-                      <SelectItem value="Married">Married</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contactAddress">Contact Address</Label>
-                <Textarea
-                  id="contactAddress"
-                  rows={3}
-                  {...form.register("contactAddress", { required: true })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="mobilePhones">Mobile Phones (comma separated)</Label>
-                <Input
-                  id="mobilePhones"
-                  placeholder="e.g., +255 123 456 789, +255 987 654 321"
-                  {...form.register("mobilePhones", { required: true })}
-                />
-              </div>
-
-              {form.watch("maritalStatus") === "Married" && (
-                <>
-                  <Separator />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {form.watch("personal.maritalStatus") === "married" && (
+                  <>
                     <div className="space-y-2">
                       <Label htmlFor="spouseName">Spouse Name</Label>
-                      <Input
-                        id="spouseName"
-                        {...form.register("spouseName")}
-                      />
+                      <Input id="spouseName" {...form.register("personal.spouseName")} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="spouseContacts">Spouse Contacts</Label>
-                      <Input
-                        id="spouseContacts"
-                        {...form.register("spouseContacts")}
-                      />
+                      <Input id="spouseContacts" {...form.register("personal.spouseContacts")} />
                     </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Family Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center space-x-2">
-                <Users className="w-5 h-5" />
-                <span>Family Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Father's Information */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-primary">Father's Information</h4>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="fatherName">Father's Name</Label>
-                      <Input
-                        id="fatherName"
-                        {...form.register("fatherName")}
-                      />
+            {/* Employment Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <Briefcase className="w-5 h-5" />
+                  <span>Employment Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="employeeId">Employee ID *</Label>
+                    <Input id="employeeId" {...form.register("employment.employeeId", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfAppointment">Date of Appointment *</Label>
+                    <Input id="dateOfAppointment" type="date" {...form.register("employment.dateOfAppointment", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="termsOfService">Terms of Service *</Label>
+                    <Select value={form.watch("personal.termsOfService")} onValueChange={(value) => form.setValue("personal.termsOfService", value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="contract">Contract</SelectItem>
+                        <SelectItem value="permanent">Permanent</SelectItem>
+                        <SelectItem value="temporary">Temporary</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select value={form.watch("employment.status")} onValueChange={(value) => form.setValue("employment.status", value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="on_leave">On Leave</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="userRole">Role *</Label>
+                    <Select value={form.watch("employment.userRole")} onValueChange={(value) => form.setValue("employment.userRole", value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="employee">Employee</SelectItem>
+                        <SelectItem value="hr">HR</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Projects */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Projects</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendProject({ name: "" })}>
+                      <Plus className="w-4 h-4 mr-1" /> Add Project
+                    </Button>
+                  </div>
+                  {projectFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2">
+                      <Input {...form.register(`employment.projects.${index}.name`)} placeholder="Project name" />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeProject(index)}>
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="fatherPlaceOfBirth">Place of Birth</Label>
-                      <Input
-                        id="fatherPlaceOfBirth"
-                        {...form.register("fatherPlaceOfBirth")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="fatherNationality">Nationality</Label>
-                      <Input
-                        id="fatherNationality"
-                        {...form.register("fatherNationality")}
-                      />
-                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Family Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <Users className="w-5 h-5" />
+                  <span>Family Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fatherName">Father's Name *</Label>
+                    <Input id="fatherName" {...form.register("family.fatherName", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fatherPlaceOfBirth">Father's Place of Birth *</Label>
+                    <Input id="fatherPlaceOfBirth" {...form.register("family.fatherPlaceOfBirth", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fatherNationality">Father's Nationality *</Label>
+                    <Input id="fatherNationality" {...form.register("family.fatherNationality", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="motherName">Mother's Name *</Label>
+                    <Input id="motherName" {...form.register("family.motherName", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="motherPlaceOfBirth">Mother's Place of Birth *</Label>
+                    <Input id="motherPlaceOfBirth" {...form.register("family.motherPlaceOfBirth", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="motherNationality">Mother's Nationality *</Label>
+                    <Input id="motherNationality" {...form.register("family.motherNationality", { required: true })} />
                   </div>
                 </div>
 
-                {/* Mother's Information */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-primary">Mother's Information</h4>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="motherName">Mother's Name</Label>
-                      <Input
-                        id="motherName"
-                        {...form.register("motherName")}
-                      />
+                {/* Children */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Children</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendChild({ name: "", dateOfBirth: "" })}>
+                      <Plus className="w-4 h-4 mr-1" /> Add Child
+                    </Button>
+                  </div>
+                  {childrenFields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-2 gap-2">
+                      <Input {...form.register(`children.${index}.name`)} placeholder="Child's name" />
+                      <div className="flex gap-2">
+                        <Input type="date" {...form.register(`children.${index}.dateOfBirth`)} />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeChild(index)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="motherPlaceOfBirth">Place of Birth</Label>
-                      <Input
-                        id="motherPlaceOfBirth"
-                        {...form.register("motherPlaceOfBirth")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="motherNationality">Nationality</Label>
-                      <Input
-                        id="motherNationality"
-                        {...form.register("motherNationality")}
-                      />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Education */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <GraduationCap className="w-5 h-5" />
+                  <span>Education</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Education History</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => appendEducation({ institution: "", qualification: "", year: "" })}>
+                    <Plus className="w-4 h-4 mr-1" /> Add Education
+                  </Button>
+                </div>
+                {educationFields.map((field, index) => (
+                  <div key={field.id} className="grid grid-cols-3 gap-2">
+                    <Input {...form.register(`education.${index}.institution`)} placeholder="Institution" />
+                    <Input {...form.register(`education.${index}.qualification`)} placeholder="Qualification" />
+                    <div className="flex gap-2">
+                      <Input {...form.register(`education.${index}.year`)} placeholder="Year" />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeEducation(index)}>
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              <X className="w-4 h-4 mr-2" />
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </form>
+            {/* Next of Kin */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <Heart className="w-5 h-5" />
+                  <span>Next of Kin</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Next of Kin Contacts</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => appendNextOfKin({ name: "", relationship: "", contact: "" })}>
+                    <Plus className="w-4 h-4 mr-1" /> Add Next of Kin
+                  </Button>
+                </div>
+                {nextOfKinFields.map((field, index) => (
+                  <div key={field.id} className="grid grid-cols-3 gap-2">
+                    <Input {...form.register(`nextOfKin.${index}.name`)} placeholder="Name" />
+                    <Input {...form.register(`nextOfKin.${index}.relationship`)} placeholder="Relationship" />
+                    <div className="flex gap-2">
+                      <Input {...form.register(`nextOfKin.${index}.contact`)} placeholder="Contact" />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeNextOfKin(index)}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
