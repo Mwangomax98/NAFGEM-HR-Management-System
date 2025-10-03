@@ -43,79 +43,41 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
     try {
       setLoading(true);
       
-      console.log('🔍 [UserSelectionStep] Fetching available users...');
+      console.log('🔍 [UserSelectionStep] Fetching available users via RPC...');
       
-      // Get all users from profiles table
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, project, title')
-        .order('full_name');
+      // Use the secure RPC function to get available users
+      const { data: availableProfiles, error: rpcError } = await supabase
+        .rpc('admin_get_available_users');
 
-      console.log('📊 [UserSelectionStep] Profiles query result:', {
-        count: allProfiles?.length || 0,
-        error: profilesError,
-        data: allProfiles
+      console.log('📊 [UserSelectionStep] RPC result:', {
+        count: availableProfiles?.length || 0,
+        error: rpcError,
+        users: availableProfiles
       });
 
-      if (profilesError) {
-        console.error('❌ [UserSelectionStep] Profiles error:', profilesError);
+      if (rpcError) {
+        console.error('❌ [UserSelectionStep] RPC error:', rpcError);
         
-        // Handle specific RLS permission errors
-        if (profilesError.message.includes("new row violates row-level security") || 
-            profilesError.code === "42501" ||
-            profilesError.message.includes("permission denied")) {
+        // Check if it's a permission error
+        if (rpcError.message?.includes('Access denied') || rpcError.message?.includes('Only HR or Admin')) {
           toast({
             title: "Access Denied",
-            description: "You don't have permission to view user profiles. Please ensure you are logged in with HR or Admin privileges.",
+            description: "You need HR or Admin role to view available users",
             variant: "destructive",
           });
+          setAvailableUsers([]);
           return;
         }
-        throw profilesError;
-      }
-
-      // Get users who already have employee profiles
-      const { data: existingEmployees, error: employeeError } = await supabase
-        .from('employee_profiles')
-        .select('user_id');
-
-      console.log('👥 [UserSelectionStep] Employee profiles query result:', {
-        count: existingEmployees?.length || 0,
-        error: employeeError,
-        data: existingEmployees
-      });
-
-      if (employeeError) {
-        console.error('❌ [UserSelectionStep] Employee profiles error:', employeeError);
         
-        // Handle specific RLS permission errors for employee_profiles
-        if (employeeError.message.includes("new row violates row-level security") || 
-            employeeError.code === "42501" ||
-            employeeError.message.includes("permission denied")) {
-          toast({
-            title: "Access Denied", 
-            description: "You don't have permission to view employee profiles. Contact your administrator to grant HR access.",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw employeeError;
+        throw rpcError;
       }
 
-      // Filter out users who already have employee profiles
-      const existingUserIds = new Set(existingEmployees?.map(emp => emp.user_id));
-      const availableProfiles = allProfiles?.filter(profile => 
-        profile.id && !existingUserIds.has(profile.id)
-      ) || [];
-
-      console.log('✅ [UserSelectionStep] Filtering complete:', {
-        total_profiles: allProfiles?.length || 0,
-        existing_employees: existingEmployees?.length || 0,
-        available_users: availableProfiles.length,
-        filtered_users: availableProfiles
+      console.log('✅ [UserSelectionStep] Available users loaded:', {
+        available: availableProfiles?.length || 0,
+        users: availableProfiles
       });
 
-      setAvailableUsers(availableProfiles);
+      setAvailableUsers(availableProfiles || []);
     } catch (error: any) {
       console.error('❌ [UserSelectionStep] Error:', error);
       toast({
@@ -123,6 +85,7 @@ export function UserSelectionStep({ selectedUserId, onUserSelect, onNext }: User
         description: `Failed to load available users: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       });
+      setAvailableUsers([]);
     } finally {
       setLoading(false);
     }
