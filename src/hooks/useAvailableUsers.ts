@@ -21,55 +21,42 @@ export function useAvailableUsers() {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 [useAvailableUsers] Starting fetch...');
+      console.log('🔍 [useAvailableUsers] Starting fetch via RPC...');
 
-      // Get all users from profiles table
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, project, title')
-        .order('full_name');
+      // Use secure RPC function that checks HR/Admin role and returns available users
+      const { data, error } = await supabase
+        .rpc('admin_get_available_users');
 
-      console.log('📊 [useAvailableUsers] Profiles fetched:', {
-        count: allProfiles?.length || 0,
-        error: profilesError,
-        profiles: allProfiles
+      console.log('📊 [useAvailableUsers] RPC result:', {
+        count: data?.length || 0,
+        error: error,
+        users: data
       });
 
-      if (profilesError) {
-        console.error('❌ [useAvailableUsers] Profiles error:', profilesError);
-        throw profilesError;
+      if (error) {
+        console.error('❌ [useAvailableUsers] RPC error:', error);
+        
+        // Check if it's an access denied error
+        if (error.message?.includes('Access denied') || error.message?.includes('permission')) {
+          const accessError = 'You need HR or Admin role to view available users';
+          setError(accessError);
+          toast({
+            title: "Access Denied",
+            description: accessError,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        throw error;
       }
-
-      // Get users who already have employee profiles
-      const { data: existingEmployees, error: employeeError } = await supabase
-        .from('employee_profiles')
-        .select('user_id');
-
-      console.log('👥 [useAvailableUsers] Existing employees:', {
-        count: existingEmployees?.length || 0,
-        error: employeeError,
-        employees: existingEmployees
-      });
-
-      if (employeeError) {
-        console.error('❌ [useAvailableUsers] Employee profiles error:', employeeError);
-        throw employeeError;
-      }
-
-      // Filter out users who already have employee profiles
-      const existingUserIds = new Set(existingEmployees?.map(emp => emp.user_id));
-      const availableProfiles = allProfiles?.filter(profile => 
-        profile.id && !existingUserIds.has(profile.id)
-      ) || [];
 
       console.log('✅ [useAvailableUsers] Available users:', {
-        total_profiles: allProfiles?.length || 0,
-        existing_employees: existingEmployees?.length || 0,
-        available: availableProfiles.length,
-        users: availableProfiles
+        available: data?.length || 0,
+        users: data
       });
 
-      setUsers(availableProfiles);
+      setUsers(data || []);
     } catch (err: any) {
       console.error('❌ [useAvailableUsers] Error:', err);
       const errorMessage = err.message || 'Failed to load available users';

@@ -1675,6 +1675,16 @@ export type Database = {
         Args: { p_profile_data: Json; p_user_id: string }
         Returns: Json
       }
+      admin_get_available_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          project: string
+          title: string
+        }[]
+      }
       check_rate_limit: {
         Args: {
           p_max_attempts: number

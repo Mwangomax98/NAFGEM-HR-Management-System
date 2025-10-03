@@ -10,7 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { UserProfile, useAvailableUsers } from '@/hooks/useAvailableUsers';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
+import { RoleDiagnostics } from './RoleDiagnostics';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface QuickAddEmployeeFormProps {
   onSave: () => void;
@@ -18,7 +20,7 @@ interface QuickAddEmployeeFormProps {
 }
 
 export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmployeeFormProps) {
-  const { users, loading: usersLoading } = useAvailableUsers();
+  const { users, loading: usersLoading, error: usersError, refetch } = useAvailableUsers();
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
     name_full: '',
@@ -262,10 +264,72 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
 
   if (usersLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading users...</span>
-      </div>
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Quick Add Employee</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <RoleDiagnostics />
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading available users...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (usersError) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Quick Add Employee</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <RoleDiagnostics />
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{usersError}</AlertDescription>
+          </Alert>
+          <div className="flex gap-2">
+            <Button onClick={refetch} variant="outline" className="flex-1">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry Loading Users
+            </Button>
+            <Button onClick={onCancel} variant="secondary" className="flex-1">
+              Cancel
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!users || users.length === 0) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Quick Add Employee</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <RoleDiagnostics />
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No users available to create employee profiles. All existing users already have employee profiles.
+            </AlertDescription>
+          </Alert>
+          <div className="flex gap-2">
+            <Button onClick={refetch} variant="outline" className="flex-1">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh User List
+            </Button>
+            <Button onClick={onCancel} variant="secondary" className="flex-1">
+              Close
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
