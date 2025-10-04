@@ -257,18 +257,19 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
     }
   }, [employee, form]);
 
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: any) => {
     try {
-      onSave(data);
+      await onSave(data);
       toast({
         title: "Success",
         description: "Employee profile updated successfully",
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to update employee profile",
+        description: error.message || "Failed to update employee profile",
         variant: "destructive",
       });
     }
@@ -318,7 +319,36 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                    <Input id="dateOfBirth" type="date" {...form.register("personal.dateOfBirth", { required: true })} />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !form.watch("personal.dateOfBirth") && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.watch("personal.dateOfBirth") ? (
+                            format(form.watch("personal.dateOfBirth"), "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={form.watch("personal.dateOfBirth")}
+                          onSelect={(date) => form.setValue("personal.dateOfBirth", date || new Date())}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {form.formState.errors.personal?.dateOfBirth && (
+                      <p className="text-sm text-destructive">{form.formState.errors.personal.dateOfBirth.message}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="placeOfBirth">Place of Birth *</Label>

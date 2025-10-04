@@ -81,7 +81,7 @@ export default function EmployeeManagement() {
         nationalId: employee.national_id,
         tinNo: employee.tin_no || "",
         contactAddress: employee.contact_address,
-        mobilePhones: employee.mobile_phones?.join(", ") || "",
+        mobilePhones: employee.mobile_phones || [],
         designation: employee.designation,
         placeOfWork: employee.place_of_work,
         dateOfAppointment: employee.date_of_appointment,

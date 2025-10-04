@@ -20,7 +20,7 @@ export const useEmployeeProfileUpdate = () => {
       };
 
       // Transform the component format back to database format
-      const dbData = {
+      const dbData: any = {
         name_full: profileData.personal.nameFull,
         national_id: profileData.personal.nationalId,
         tin_no: profileData.personal.tinNo || null,
@@ -36,15 +36,11 @@ export const useEmployeeProfileUpdate = () => {
         designation: profileData.personal.designation,
         place_of_work: profileData.personal.placeOfWork,
         
-        // Add: date_of_appointment
-        date_of_appointment: formatDate(profileData.personal.dateOfAppointment),
-        
-        terms_of_service: profileData.personal.termsOfService.toLowerCase(),
+        terms_of_service: (profileData.personal.termsOfService || 'contract').toLowerCase(),
         nationality: profileData.personal.nationality,
-        date_of_birth: formatDate(profileData.personal.dateOfBirth),
         place_of_birth: profileData.personal.placeOfBirth,
         religion: profileData.personal.religion || null,
-        marital_status: profileData.personal.maritalStatus.toLowerCase(),
+        marital_status: (profileData.personal.maritalStatus || 'single').toLowerCase(),
         spouse_name: profileData.personal.spouseName || null,
         spouse_contacts: profileData.personal.spouseContacts || null,
         
@@ -96,8 +92,8 @@ export const useEmployeeProfileUpdate = () => {
         // Add: employee_id
         employee_id: profileData.employment.employeeId,
         
-        user_role: profileData.employment.userRole.toLowerCase(),
-        status: profileData.employment.status.toLowerCase(),
+        user_role: (profileData.employment.userRole || 'employee').toLowerCase(),
+        status: (profileData.employment.status || 'active').toLowerCase(),
         
         // Add: declaration fields
         declaration_text: profileData.declaration?.text || 'I hereby declare that the information provided above is true and correct to the best of my knowledge and belief.',
@@ -106,6 +102,17 @@ export const useEmployeeProfileUpdate = () => {
         
         updated_at: new Date().toISOString()
       };
+
+      // Only add dates if they exist to avoid null errors
+      const dateOfAppointment = formatDate(profileData.personal.dateOfAppointment);
+      const dateOfBirth = formatDate(profileData.personal.dateOfBirth);
+      
+      if (dateOfAppointment) {
+        dbData.date_of_appointment = dateOfAppointment;
+      }
+      if (dateOfBirth) {
+        dbData.date_of_birth = dateOfBirth;
+      }
 
       const { data, error } = await supabase
         .from('employee_profiles')
