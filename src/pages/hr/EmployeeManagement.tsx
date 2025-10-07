@@ -221,8 +221,9 @@ export default function EmployeeManagement() {
       // Update selected employee to show changes in view dialog
       const transformedUpdated = transformEmployeeData(updated);
       setSelectedEmployee(transformedUpdated);
-      
+
       setShowEditModal(false);
+      setShowProfile(true);
       toast({
         title: "Profile Updated",
         description: "Employee profile has been successfully updated.",
@@ -470,7 +471,7 @@ export default function EmployeeManagement() {
               canEdit={true}
               onEdit={() => {
                 setShowProfile(false);
-                // TODO: Open edit form
+                setShowEditModal(true);
               }}
             />
           )}
@@ -483,7 +484,6 @@ export default function EmployeeManagement() {
           isOpen={showEditModal}
           onClose={() => {
             setShowEditModal(false);
-            setSelectedEmployee(null);
           }}
           employee={selectedEmployee}
           onSave={handleUpdateEmployee}
