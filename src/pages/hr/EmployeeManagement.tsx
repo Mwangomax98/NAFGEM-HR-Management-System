@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Users, Plus, Search, Filter, Mail, Phone, Edit, Trash2, Eye, UserCheck, Clock, Building, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QuickAddEmployeeForm from "@/components/employee/QuickAddEmployeeForm";
 import EmployeeProfile from "@/components/employee/EmployeeProfile";
 import EditProfileModal from "@/components/modals/EditProfileModal";
@@ -72,8 +72,51 @@ export default function EmployeeManagement() {
     }
   };
 
-  // Transform database format to component format
+  // Transform database format to component format (normalize types and casing)
   const transformEmployeeData = (employee: any) => {
+    const toDate = (d: any) => (d ? new Date(d) : undefined);
+    const titleCase = (s?: string) =>
+      (s || "")
+        .toString()
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    const roleTitle = (r?: string) => {
+      const v = (r || "").toLowerCase();
+      if (v === "hr") return "HR";
+      if (v === "admin") return "Admin";
+      return "Employee";
+    };
+
+    const children = (employee.children || []).map((c: any) => ({
+      name: c.name || "",
+      sex: c.sex || "",
+      dateOfBirth: toDate(c.dateOfBirth || c.date_of_birth) as Date,
+    }));
+
+    const education = (employee.education || []).map((e: any) => ({
+      institution: e.institution || "",
+      place: e.place || "",
+      fromDate: toDate(e.fromDate || e.from_date) as Date,
+      toDate: toDate(e.toDate || e.to_date) as Date,
+    }));
+
+    const nextOfKin = (employee.next_of_kin || []).map((k: any) => ({
+      name: k.name || "",
+      age: Number(k.age) || 0,
+      relation: k.relation || "",
+      contact: k.contact || "",
+      primary: !!k.primary,
+    }));
+
+    const projects = (employee.projects || []).map((p: any) => ({
+      projectId: p.projectId ?? p.project_id,
+      projectName: p.projectName ?? p.project_name ?? "",
+      donor: p.donor || "",
+      code: p.code || "",
+      isPrimary: Boolean(p.isPrimary ?? p.is_primary),
+    }));
+
     return {
       id: employee.id, // Include database ID for updates
       personal: {
@@ -84,13 +127,13 @@ export default function EmployeeManagement() {
         mobilePhones: employee.mobile_phones || [],
         designation: employee.designation,
         placeOfWork: employee.place_of_work,
-        dateOfAppointment: employee.date_of_appointment,
-        termsOfService: employee.terms_of_service,
+        dateOfAppointment: toDate(employee.date_of_appointment) as Date,
+        termsOfService: titleCase(employee.terms_of_service),
         nationality: employee.nationality,
-        dateOfBirth: employee.date_of_birth,
+        dateOfBirth: toDate(employee.date_of_birth) as Date,
         placeOfBirth: employee.place_of_birth,
         religion: employee.religion || "",
-        maritalStatus: employee.marital_status,
+        maritalStatus: titleCase(employee.marital_status),
         spouseName: employee.spouse_name || "",
         spouseContacts: employee.spouse_contacts || "",
         passportPhotoUrl: employee.passport_photo_url || "/placeholder.svg",
@@ -102,21 +145,21 @@ export default function EmployeeManagement() {
         motherName: employee.mother_name,
         motherPlaceOfBirth: employee.mother_place_of_birth,
         motherNationality: employee.mother_nationality,
-        children: employee.children || [],
+        children,
       },
-      education: employee.education || [],
-      nextOfKin: employee.next_of_kin || [],
+      education,
+      nextOfKin,
       declaration: {
         text: employee.declaration_text,
         signedBy: employee.declaration_signed_by,
-        signedAt: new Date(employee.declaration_signed_at),
+        signedAt: toDate(employee.declaration_signed_at) as Date,
       },
       employment: {
         employeeId: employee.employee_id,
-        dateOfAppointment: employee.date_of_appointment,
-        userRole: employee.user_role,
-        status: employee.status,
-        projects: employee.projects || [],
+        dateOfAppointment: toDate(employee.date_of_appointment) as Date,
+        userRole: roleTitle(employee.user_role),
+        status: titleCase(employee.status),
+        projects,
       },
     };
   };
@@ -150,6 +193,15 @@ export default function EmployeeManagement() {
     setSelectedEmployee(transformedEmployee);
     setShowEditModal(true);
   };
+
+  // Keep the open view dialog in sync when profiles update
+  useEffect(() => {
+    if (!selectedEmployee?.id || !showProfile) return;
+    const latest = profiles.find((p) => p.id === selectedEmployee.id);
+    if (latest) {
+      setSelectedEmployee(transformEmployeeData(latest));
+    }
+  }, [profiles, selectedEmployee?.id, showProfile]);
 
   const handleUpdateEmployee = async (updatedEmployee: any) => {
     try {
