@@ -120,6 +120,7 @@ export default function EmployeeManagement() {
 
     return {
       id: employee.id, // Include database ID for updates
+      user_id: employee.user_id, // Include user_id for uploads
       personal: {
         nameFull: employee.name_full,
         nationalId: employee.national_id,
@@ -197,12 +198,12 @@ export default function EmployeeManagement() {
 
   // Keep the open view dialog in sync when profiles update
   useEffect(() => {
-    if (!selectedEmployee?.id || !showProfile) return;
+    if (!selectedEmployee?.id) return;
     const latest = profiles.find((p) => p.id === selectedEmployee.id);
     if (latest) {
       setSelectedEmployee(transformEmployeeData(latest));
     }
-  }, [profiles, selectedEmployee?.id, showProfile]);
+  }, [profiles, selectedEmployee?.id]);
 
   const handleUpdateEmployee = async (updatedEmployee: any) => {
     try {

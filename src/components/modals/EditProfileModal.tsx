@@ -16,9 +16,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Users, Briefcase, GraduationCap, Heart, Plus, X, CalendarIcon, FileText, Upload } from "lucide-react";
+import { User, Users, Briefcase, GraduationCap, Heart, Plus, X, CalendarIcon, FileText, Upload, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { validateAndLogFileUpload, sanitizeFileName, FILE_VALIDATION_CONFIGS } from "@/utils/fileValidation";
 
 const employeeEditSchema = z.object({
   personal: z.object({
@@ -99,7 +100,9 @@ interface EditProfileModalProps {
 export default function EditProfileModal({ isOpen, onClose, employee, onSave }: EditProfileModalProps) {
   const { toast } = useToast();
   const [uploadingPassport, setUploadingPassport] = useState(false);
+  const [uploadingCertificates, setUploadingCertificates] = useState<Record<number, boolean>>({});
   const passportInputRef = useRef<HTMLInputElement>(null);
+  const educationInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const form = useForm<EmployeeEditFormData>({
     resolver: zodResolver(employeeEditSchema),
     defaultValues: {
@@ -294,7 +297,17 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
 
     setUploadingPassport(true);
     try {
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const validation = await validateAndLogFileUpload(
+        file,
+        'profile-photos',
+        FILE_VALIDATION_CONFIGS.IMAGES
+      );
+      
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+      }
+
+      const sanitizedName = sanitizeFileName(file.name);
       const passportPath = `${employee.user_id}/passport_${Date.now()}_${sanitizedName}`;
       
       const { error: uploadError } = await supabase.storage
@@ -313,15 +326,67 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
         title: "Success",
         description: "Passport photo uploaded successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Passport upload error:', error);
       toast({
         title: "Upload Failed",
-        description: "Failed to upload passport photo",
+        description: error.message || "Failed to upload passport photo",
         variant: "destructive",
       });
     } finally {
       setUploadingPassport(false);
+    }
+  };
+
+  const handleEducationCertificateUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    educationIndex: number
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !employee?.user_id) return;
+
+    setUploadingCertificates(prev => ({ ...prev, [educationIndex]: true }));
+    
+    try {
+      const validation = await validateAndLogFileUpload(
+        file,
+        'education-certificates',
+        FILE_VALIDATION_CONFIGS.DOCUMENTS
+      );
+      
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+      }
+
+      const sanitizedName = sanitizeFileName(file.name);
+      const certPath = `${employee.user_id}/edu_${educationIndex}/${Date.now()}_${sanitizedName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('education-certificates')
+        .upload(certPath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('education-certificates')
+        .getPublicUrl(certPath);
+
+      const currentUrls = form.watch(`education.${educationIndex}.certificateUrls`) || [];
+      form.setValue(`education.${educationIndex}.certificateUrls`, [...currentUrls, publicUrl]);
+      
+      toast({
+        title: "Success",
+        description: "Certificate uploaded successfully",
+      });
+    } catch (error: any) {
+      console.error('Certificate upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload certificate",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingCertificates(prev => ({ ...prev, [educationIndex]: false }));
     }
   };
 
@@ -764,6 +829,65 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                           </PopoverContent>
                         </Popover>
                       </div>
+                      
+                      {/* Certificate Upload Section */}
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Certificates</Label>
+                        <div className="space-y-2">
+                          {/* Display uploaded certificates */}
+                          {(form.watch(`education.${index}.certificateUrls`) || []).map((url, certIdx) => (
+                            <div key={certIdx} className="flex items-center justify-between bg-muted/50 p-2 rounded">
+                              <span className="text-sm truncate flex-1">{url.split('/').pop()}</span>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(url, '_blank')}
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const urls = form.watch(`education.${index}.certificateUrls`) || [];
+                                    form.setValue(
+                                      `education.${index}.certificateUrls`,
+                                      urls.filter((_, i) => i !== certIdx)
+                                    );
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {/* Upload new certificate */}
+                          <div className="flex gap-2">
+                            <input
+                              ref={(el) => educationInputRefs.current[index] = el}
+                              type="file"
+                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                              onChange={(e) => handleEducationCertificateUpload(e, index)}
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => educationInputRefs.current[index]?.click()}
+                              disabled={uploadingCertificates[index]}
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              {uploadingCertificates[index] ? "Uploading..." : "Upload Certificate"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div className="flex justify-end items-end md:col-span-2">
                         <Button type="button" variant="destructive" size="sm" onClick={() => removeEducation(index)}>
                           <X className="w-4 h-4 mr-1" /> Remove
