@@ -66,7 +66,7 @@ const employeeEditSchema = z.object({
     relation: z.string().min(1, "Relation is required"),
     contact: z.string().min(1, "Contact is required"),
     primary: z.boolean().default(false),
-  })).min(1, "At least one next of kin is required"),
+  })).optional().default([]),
   declaration: z.object({
     text: z.string().optional(),
     signedBy: z.string().optional(),
@@ -82,7 +82,7 @@ const employeeEditSchema = z.object({
       donor: z.string(),
       code: z.string(),
       isPrimary: z.boolean().default(false),
-    })).min(1, "At least one project assignment is required"),
+    })).optional().default([]),
   }),
 });
 
@@ -275,6 +275,15 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
     }
   };
 
+  const onError = (errors: any) => {
+    const errorCount = Object.keys(errors).length;
+    toast({
+      title: "Validation Error",
+      description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} before saving`,
+      variant: "destructive",
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
@@ -282,7 +291,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
           <DialogTitle>Edit Employee Profile</DialogTitle>
         </DialogHeader>
         <ScrollArea className="h-[calc(90vh-120px)] pr-4">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
             {/* Personal Information */}
             <Card>
               <CardHeader>
@@ -816,7 +825,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={form.formState.isSubmitting}>
                 Save Changes
               </Button>
             </div>
