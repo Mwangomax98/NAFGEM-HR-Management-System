@@ -25,7 +25,7 @@ export default function EmployeeManagement() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const { profiles, loading, error, refetch } = useAllEmployeeProfiles();
+  const { profiles, loading, error, refetch, applyLocalUpdate } = useAllEmployeeProfiles();
   const { updateEmployeeProfile, isLoading: isUpdating } = useEmployeeProfileUpdate();
   const { toast } = useToast();
   
@@ -157,13 +157,24 @@ export default function EmployeeManagement() {
         throw new Error('Employee ID is missing');
       }
 
-      await updateEmployeeProfile(selectedEmployee.id, updatedEmployee);
+      const updated = await updateEmployeeProfile(selectedEmployee.id, updatedEmployee);
+      
+      // Apply local update immediately for instant UI feedback
+      if (updated && applyLocalUpdate) {
+        applyLocalUpdate(updated);
+      }
+      
+      // Update selected employee to show changes in view dialog
+      const transformedUpdated = transformEmployeeData(updated);
+      setSelectedEmployee(transformedUpdated);
+      
       setShowEditModal(false);
-      setSelectedEmployee(null);
       toast({
         title: "Profile Updated",
         description: "Employee profile has been successfully updated.",
       });
+      
+      // Background refetch for consistency
       refetch();
     } catch (error: any) {
       console.error('Error updating employee:', error);

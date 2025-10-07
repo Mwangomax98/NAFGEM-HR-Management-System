@@ -265,10 +265,25 @@ export function useAllEmployeeProfiles() {
     };
   }, []);
 
+  const applyLocalUpdate = (updatedRow: any) => {
+    const parsedProfile = {
+      ...updatedRow,
+      children: Array.isArray(updatedRow.children) ? updatedRow.children : JSON.parse(String(updatedRow.children || '[]')),
+      education: Array.isArray(updatedRow.education) ? updatedRow.education : JSON.parse(String(updatedRow.education || '[]')),
+      next_of_kin: Array.isArray(updatedRow.next_of_kin) ? updatedRow.next_of_kin : JSON.parse(String(updatedRow.next_of_kin || '[]')),
+      projects: Array.isArray(updatedRow.projects) ? updatedRow.projects : JSON.parse(String(updatedRow.projects || '[]')),
+    };
+    
+    setProfiles(current => current.map(profile => 
+      profile.id === updatedRow.id ? parsedProfile : profile
+    ));
+  };
+
   return {
     profiles,
     loading,
     error,
     refetch: fetchProfiles,
+    applyLocalUpdate,
   };
 }
