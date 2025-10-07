@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -97,6 +98,8 @@ interface EditProfileModalProps {
 
 export default function EditProfileModal({ isOpen, onClose, employee, onSave }: EditProfileModalProps) {
   const { toast } = useToast();
+  const [uploadingPassport, setUploadingPassport] = useState(false);
+  const passportInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<EmployeeEditFormData>({
     resolver: zodResolver(employeeEditSchema),
     defaultValues: {
@@ -285,6 +288,43 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
     });
   };
 
+  const handlePassportUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !employee?.user_id) return;
+
+    setUploadingPassport(true);
+    try {
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const passportPath = `${employee.user_id}/passport_${Date.now()}_${sanitizedName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(passportPath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(passportPath);
+
+      form.setValue('personal.passportPhotoUrl', publicUrl);
+      
+      toast({
+        title: "Success",
+        description: "Passport photo uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Passport upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload passport photo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingPassport(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
@@ -405,14 +445,28 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                   </Button>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="passportPhotoUrl">Passport Photo URL</Label>
+                  <Label htmlFor="passportPhotoUrl">Passport Photo</Label>
                   <div className="flex gap-2">
                     <Input 
                       id="passportPhotoUrl" 
                       {...form.register("personal.passportPhotoUrl")} 
                       placeholder="Upload or enter URL"
+                      readOnly
                     />
-                    <Button type="button" variant="outline" size="icon">
+                    <input
+                      ref={passportInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handlePassportUpload}
+                      className="hidden"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => passportInputRef.current?.click()}
+                      disabled={uploadingPassport}
+                    >
                       <Upload className="h-4 w-4" />
                     </Button>
                   </div>

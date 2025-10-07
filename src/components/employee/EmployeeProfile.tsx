@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, 
   Phone, 
@@ -17,7 +18,8 @@ import {
   Download,
   Edit,
   Building2,
-  Shield
+  Shield,
+  ExternalLink
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -59,6 +61,7 @@ interface EmployeeData {
     place: string;
     fromDate: Date;
     toDate: Date;
+    certificateUrls?: string[];
   }>;
   nextOfKin: Array<{
     name: string;
@@ -379,26 +382,74 @@ export default function EmployeeProfile({ employee, canEdit = false, onEdit, onE
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>School/Institution</TableHead>
-                  <TableHead>Place</TableHead>
-                  <TableHead>From</TableHead>
-                  <TableHead>To</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employee.education.map((edu, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{edu.institution}</TableCell>
-                    <TableCell>{edu.place}</TableCell>
-                    <TableCell>{format(edu.fromDate, "MMM yyyy")}</TableCell>
-                    <TableCell>{format(edu.toDate, "MMM yyyy")}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <Tabs defaultValue="education" className="w-full">
+              <TabsList>
+                <TabsTrigger value="education">Education</TabsTrigger>
+                <TabsTrigger value="attachments">Attachments</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="education" className="mt-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>School/Institution</TableHead>
+                      <TableHead>Place</TableHead>
+                      <TableHead>From</TableHead>
+                      <TableHead>To</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {employee.education.map((edu, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{edu.institution}</TableCell>
+                        <TableCell>{edu.place}</TableCell>
+                        <TableCell>{format(edu.fromDate, "MMM yyyy")}</TableCell>
+                        <TableCell>{format(edu.toDate, "MMM yyyy")}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+              
+              <TabsContent value="attachments" className="mt-4">
+                <div className="space-y-4">
+                  {employee.education.map((edu, index) => {
+                    const certs = edu.certificateUrls || [];
+                    if (certs.length === 0) return null;
+                    
+                    return (
+                      <div key={index} className="border rounded-lg p-4">
+                        <h4 className="font-medium text-primary mb-2">{edu.institution}</h4>
+                        <div className="space-y-2">
+                          {certs.map((certUrl, certIndex) => {
+                            const fileName = certUrl.split('/').pop() || `Certificate ${certIndex + 1}`;
+                            return (
+                              <div key={certIndex} className="flex items-center justify-between bg-muted/50 p-2 rounded">
+                                <span className="text-sm">{fileName}</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => window.open(certUrl, '_blank')}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-1" />
+                                  View
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {employee.education.every(edu => !edu.certificateUrls || edu.certificateUrls.length === 0) && (
+                    <div className="text-center text-muted-foreground py-8">
+                      No education certificates attached
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

@@ -195,6 +195,65 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
     try {
       // Merge current form data with saved draft sections
       const mergedData = { ...data };
+
+      // Upload passport photo if available
+      if (uploadedFiles.passportPhoto && uploadedFiles.passportPhoto.length > 0) {
+        const passportFile = uploadedFiles.passportPhoto[0];
+        const sanitizedName = passportFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const passportPath = `${data.selectedUserId}/passport_${Date.now()}_${sanitizedName}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('profile-photos')
+          .upload(passportPath, passportFile, { upsert: true });
+
+        if (uploadError) {
+          console.error('Passport upload error:', uploadError);
+          toast({
+            title: "Upload Failed",
+            description: "Failed to upload passport photo. Continuing without it.",
+            variant: "destructive",
+          });
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('profile-photos')
+            .getPublicUrl(passportPath);
+          mergedData.personal.passportPhotoUrl = publicUrl;
+        }
+      }
+
+      // Upload education certificates if available
+      if (mergedData.education) {
+        for (let i = 0; i < mergedData.education.length; i++) {
+          const certFiles = uploadedFiles[`educationCerts_${i}`];
+          if (certFiles && certFiles.length > 0) {
+            const certUrls: string[] = [];
+            
+            for (const certFile of certFiles) {
+              const sanitizedName = certFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+              const certPath = `${data.selectedUserId}/edu_${i}/${Date.now()}_${sanitizedName}`;
+              
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('education-certificates')
+                .upload(certPath, certFile, { upsert: true });
+
+              if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                  .from('education-certificates')
+                  .getPublicUrl(certPath);
+                certUrls.push(publicUrl);
+              }
+            }
+            
+            if (!mergedData.education[i].certificateUrls) {
+              mergedData.education[i].certificateUrls = [];
+            }
+            mergedData.education[i].certificateUrls = [
+              ...(mergedData.education[i].certificateUrls || []),
+              ...certUrls
+            ];
+          }
+        }
+      }
       
       if (draft?.sections) {
         // Merge saved draft sections with current form data
@@ -356,7 +415,8 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
           JSON.parse(JSON.stringify(mergedData.education.map(edu => ({
             ...edu,
             fromDate: edu.fromDate instanceof Date ? edu.fromDate.toISOString().split('T')[0] : edu.fromDate,
-            toDate: edu.toDate instanceof Date ? edu.toDate.toISOString().split('T')[0] : edu.toDate
+            toDate: edu.toDate instanceof Date ? edu.toDate.toISOString().split('T')[0] : edu.toDate,
+            certificateUrls: edu.certificateUrls || []
           })))) : [],
         next_of_kin: mergedData.nextOfKin || [],
         declaration_text: defaultDeclarationText,

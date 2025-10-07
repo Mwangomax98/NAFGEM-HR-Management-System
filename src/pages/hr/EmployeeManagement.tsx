@@ -99,6 +99,7 @@ export default function EmployeeManagement() {
       place: e.place || "",
       fromDate: toDate(e.fromDate || e.from_date) as Date,
       toDate: toDate(e.toDate || e.to_date) as Date,
+      certificateUrls: e.certificateUrls || e.certificate_urls || [],
     }));
 
     const nextOfKin = (employee.next_of_kin || []).map((k: any) => ({
