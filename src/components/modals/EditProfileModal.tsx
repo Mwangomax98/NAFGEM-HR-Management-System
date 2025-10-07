@@ -59,7 +59,7 @@ const employeeEditSchema = z.object({
     fromDate: z.date(),
     toDate: z.date(),
     certificateUrls: z.array(z.string()).optional(),
-  })),
+  })).optional().default([]),
   nextOfKin: z.array(z.object({
     name: z.string().min(1, "Name is required"),
     age: z.number().min(1, "Age is required"),
@@ -276,6 +276,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
   };
 
   const onError = (errors: any) => {
+    console.error("Form validation errors:", errors);
     const errorCount = Object.keys(errors).length;
     toast({
       title: "Validation Error",
