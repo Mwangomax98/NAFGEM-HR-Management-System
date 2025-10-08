@@ -266,10 +266,6 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
   const onSubmit = async (data: any) => {
     try {
       await onSave(data);
-      toast({
-        title: "Success",
-        description: "Employee profile updated successfully",
-      });
       onClose();
     } catch (error: any) {
       console.error('Form submission error:', error);
@@ -391,7 +387,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Edit Employee Profile</DialogTitle>

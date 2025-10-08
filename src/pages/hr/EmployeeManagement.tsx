@@ -25,6 +25,7 @@ export default function EmployeeManagement() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [profileViewKey, setProfileViewKey] = useState(0);
   const { profiles, loading, error, refetch, applyLocalUpdate } = useAllEmployeeProfiles();
   const { updateEmployeeProfile, isLoading: isUpdating } = useEmployeeProfileUpdate();
   const { toast } = useToast();
@@ -211,32 +212,44 @@ export default function EmployeeManagement() {
         throw new Error('Employee ID is missing');
       }
 
+      console.debug('handleUpdateEmployee:start', { id: selectedEmployee.id });
       const updated = await updateEmployeeProfile(selectedEmployee.id, updatedEmployee);
-      
-      // Apply local update immediately for instant UI feedback
+
       if (updated && applyLocalUpdate) {
         applyLocalUpdate(updated);
       }
-      
-      // Update selected employee to show changes in view dialog
-      const transformedUpdated = transformEmployeeData(updated);
-      setSelectedEmployee(transformedUpdated);
+
+      // Fetch fresh row to avoid stale data
+      const { data: fresh, error: fetchError } = await supabase
+        .from('employee_profiles')
+        .select('*')
+        .eq('id', selectedEmployee.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.warn('Fresh fetch failed, falling back to updated:', fetchError);
+      }
+
+      const nextSelected = fresh ? transformEmployeeData(fresh) : transformEmployeeData(updated);
+      setSelectedEmployee(nextSelected);
 
       setShowEditModal(false);
       setShowProfile(true);
+      setProfileViewKey((k) => k + 1);
+
       toast({
-        title: "Profile Updated",
-        description: "Employee profile has been successfully updated.",
+        title: 'Profile Updated',
+        description: 'Employee profile has been successfully updated.',
       });
-      
-      // Background refetch for consistency
+
       refetch();
+      console.debug('handleUpdateEmployee:done', { id: selectedEmployee.id });
     } catch (error: any) {
       console.error('Error updating employee:', error);
       toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update employee profile.",
-        variant: "destructive",
+        title: 'Update Failed',
+        description: error.message || 'Failed to update employee profile.',
+        variant: 'destructive',
       });
     }
   };
@@ -467,6 +480,7 @@ export default function EmployeeManagement() {
           </DialogHeader>
           {selectedEmployee && (
             <EmployeeProfile
+              key={profileViewKey}
               employee={selectedEmployee}
               canEdit={true}
               onEdit={() => {
