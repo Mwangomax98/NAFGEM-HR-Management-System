@@ -210,6 +210,8 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
           placeOfBirth: employee.personal?.placeOfBirth || "",
           religion: employee.personal?.religion || "",
           maritalStatus: (capitalizeEnum(employee.personal?.maritalStatus) || "Single") as "Single" | "Married",
+          // Debug log for marital status
+          ...(console.debug("Loaded maritalStatus:", employee.personal?.maritalStatus, "->", capitalizeEnum(employee.personal?.maritalStatus)), {}),
           spouseName: employee.personal?.spouseName || "",
           spouseContacts: employee.personal?.spouseContacts || "",
           passportPhotoUrl: employee.personal?.passportPhotoUrl || "",
@@ -471,7 +473,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="maritalStatus">Marital Status *</Label>
-                    <Select value={form.watch("personal.maritalStatus")} onValueChange={(value) => form.setValue("personal.maritalStatus", value as "Single" | "Married")}>
+                    <Select value={form.watch("personal.maritalStatus") || "Single"} onValueChange={(value) => form.setValue("personal.maritalStatus", value as "Single" | "Married")}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -532,7 +534,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                     </Button>
                   </div>
                 </div>
-                {form.watch("personal.maritalStatus") === "Married" && (
+                {form.watch("personal.maritalStatus")?.toLowerCase() === "married" && (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="spouseName">Spouse Name</Label>
