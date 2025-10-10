@@ -103,8 +103,8 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
   const [uploadingCertificates, setUploadingCertificates] = useState<Record<number, boolean>>({});
   const passportInputRef = useRef<HTMLInputElement>(null);
   const educationInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
-  const form = useForm<EmployeeEditFormData>({
-    resolver: zodResolver(employeeEditSchema),
+  const form = useForm<any>({
+    // resolver: zodResolver(employeeEditSchema), // Validation removed
     defaultValues: {
       personal: {
         nameFull: "",
@@ -457,8 +457,8 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                         />
                       </PopoverContent>
                     </Popover>
-                    {form.formState.errors.personal?.dateOfBirth && (
-                      <p className="text-sm text-destructive">{form.formState.errors.personal.dateOfBirth.message}</p>
+                    {(form.formState.errors.personal as any)?.dateOfBirth && (
+                      <p className="text-sm text-destructive">{(form.formState.errors.personal as any)?.dateOfBirth?.message}</p>
                     )}
                   </div>
                   <div className="space-y-2">
