@@ -204,7 +204,7 @@ export const exportProfileToPDF = (employee: any) => {
               <div class="info-item">
                 <span class="info-label">Marital Status:</span><br>
                 ${employee.personal.maritalStatus}
-                ${employee.personal.maritalStatus === "Married" && employee.personal.spouseName ? 
+                ${((employee.personal.maritalStatus || "").toLowerCase() === "married") && employee.personal.spouseName ? 
                   `<br><small>Spouse: ${employee.personal.spouseName}${employee.personal.spouseContacts ? ` (${employee.personal.spouseContacts})` : ''}</small>` : ''}
               </div>
             </div>

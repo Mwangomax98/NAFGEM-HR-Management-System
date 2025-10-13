@@ -396,7 +396,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
           new Date().toISOString().split('T')[0],
         place_of_birth: mergedData.personal?.placeOfBirth || '',
         religion: mergedData.personal?.religion || null,
-        marital_status: mergedData.personal?.maritalStatus || 'single',
+        marital_status: (mergedData.personal?.maritalStatus || 'single').toLowerCase(),
         spouse_name: mergedData.personal?.spouseName || null,
         spouse_contacts: mergedData.personal?.spouseContacts || null,
         passport_photo_url: mergedData.personal?.passportPhotoUrl || null,
@@ -1018,7 +1018,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                         )}
                       />
 
-                      {form.watch("personal.maritalStatus") === "Married" && (
+                      {(form.watch("personal.maritalStatus") || "").toLowerCase() === "married" && (
                         <>
                           <FormField
                             control={form.control}

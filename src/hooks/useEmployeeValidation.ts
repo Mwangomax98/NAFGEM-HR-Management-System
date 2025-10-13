@@ -81,7 +81,7 @@ export function useEmployeeValidation() {
       }
 
       // Validate spouse information for married status
-      if (employeeData.personal?.maritalStatus === 'Married' && !employeeData.personal?.spouseName) {
+      if ((employeeData.personal?.maritalStatus || '').toLowerCase() === 'married' && !employeeData.personal?.spouseName) {
         errors.push('Spouse name is required for married employees');
       }
 

@@ -217,7 +217,7 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
         place_of_birth: formData.place_of_birth || '',
         date_of_birth: formData.date_of_birth || new Date().toISOString().split('T')[0],
         date_of_appointment: formData.date_of_appointment || new Date().toISOString().split('T')[0],
-        marital_status: formData.marital_status || 'single',
+        marital_status: (formData.marital_status || 'single').toLowerCase(),
         father_name: formData.father_name || '',
         father_place_of_birth: formData.father_place_of_birth || '',
         father_nationality: formData.father_nationality || formData.nationality || '',
