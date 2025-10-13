@@ -11,7 +11,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Upload, Plus, Trash2, Save, UserPlus, Send, Loader2 } from "lucide-react";
@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserSelectionStep } from "./UserSelectionStep";
-import { useEmployeeValidation } from "@/hooks/useEmployeeValidation";
+
 import { RoleDiagnostics } from "./RoleDiagnostics";
 import { useEmployeeDraft } from "@/hooks/useEmployeeDraft";
 
@@ -126,11 +126,11 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { validateEmployeeData, showValidationResults, validating } = useEmployeeValidation();
+  
   const { draft, saving, saveSection, completeDraft, getSectionData, isSectionSaved } = useEmployeeDraft(selectedUser?.id);
 
   const form = useForm<EmployeeFormData>({
-    resolver: zodResolver(employeeSchema),
+    
     defaultValues: {
       selectedUserId: "",
       personal: {
@@ -276,18 +276,6 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
       
       console.log("🔄 Merged data with draft sections:", mergedData);
       
-      // Comprehensive validation using merged data
-      const validationResult = await validateEmployeeData(mergedData, mergedData.selectedUserId);
-      
-      if (!validationResult.isValid) {
-        showValidationResults(validationResult);
-        return;
-      }
-      
-      // Show warnings if any
-      if (validationResult.warnings.length > 0) {
-        showValidationResults(validationResult);
-      }
 
       // Check user permissions first
       const { data: currentUser, error: userError } = await supabase.auth.getUser();
@@ -675,17 +663,12 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
             <Button 
               type="submit"
               form="employee-form"
-              disabled={isSubmitting || validating}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Saving...
-                </>
-              ) : validating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Validating...
                 </>
               ) : (
                 <>
