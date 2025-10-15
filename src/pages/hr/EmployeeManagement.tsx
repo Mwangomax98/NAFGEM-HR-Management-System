@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableUsers } from "@/hooks/useAvailableUsers";
+import { toTitleMarital } from "@/utils/marital";
 
 export default function EmployeeManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
