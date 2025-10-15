@@ -19,7 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableUsers } from "@/hooks/useAvailableUsers";
-import { toTitleMarital } from "@/utils/marital";
+
 
 export default function EmployeeManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -137,7 +137,18 @@ export default function EmployeeManagement() {
         dateOfBirth: toDate(employee.date_of_birth) as Date,
         placeOfBirth: employee.place_of_birth,
         religion: employee.religion || "",
-        maritalStatus: toTitleMarital(employee.marital_status),
+        maritalStatus: (() => {
+          const v = (employee.marital_status || "").toString().trim().toLowerCase();
+          if (v === "married") return "Married";
+          if (v === "single") return "Single";
+          if (typeof employee.marital_status === "string" && employee.marital_status.length > 0) {
+            return (
+              employee.marital_status.charAt(0).toUpperCase() +
+              employee.marital_status.slice(1).toLowerCase()
+            );
+          }
+          return "Single"; // safe default
+        })(),
         spouseName: employee.spouse_name || "",
         spouseContacts: employee.spouse_contacts || "",
         passportPhotoUrl: employee.passport_photo_url || "/placeholder.svg",
