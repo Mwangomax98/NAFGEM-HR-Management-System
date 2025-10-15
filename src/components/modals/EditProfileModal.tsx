@@ -20,6 +20,7 @@ import { User, Users, Briefcase, GraduationCap, Heart, Plus, X, CalendarIcon, Fi
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { validateAndLogFileUpload, sanitizeFileName, FILE_VALIDATION_CONFIGS } from "@/utils/fileValidation";
+import { isMarried, normalizeMarital } from "@/utils/marital";
 
 const employeeEditSchema = z.object({
   personal: z.object({
@@ -473,7 +474,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="maritalStatus">Marital Status *</Label>
-                    <Select value={form.watch("personal.maritalStatus") || "Single"} onValueChange={(value) => form.setValue("personal.maritalStatus", value as "Single" | "Married")}>
+                    <Select value={form.watch("personal.maritalStatus") || "Single"} onValueChange={(value) => { console.debug('maritalStatus change', { raw: value, normalized: normalizeMarital(value), isMarried: isMarried(value) }); form.setValue("personal.maritalStatus", value as "Single" | "Married"); }}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -534,7 +535,7 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
                     </Button>
                   </div>
                 </div>
-                {form.watch("personal.maritalStatus")?.toLowerCase() === "married" && (
+                {isMarried(form.watch("personal.maritalStatus")) && (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="spouseName">Spouse Name</Label>

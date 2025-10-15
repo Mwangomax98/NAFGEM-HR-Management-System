@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { isMarried } from '@/utils/marital';
 
 export const useEmployeeProfileUpdate = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -103,6 +104,12 @@ export const useEmployeeProfileUpdate = () => {
         updated_at: new Date().toISOString()
       };
 
+      // Defensive guard: clear spouse fields when not married
+      if (!isMarried(dbData.marital_status)) {
+        dbData.spouse_name = null;
+        dbData.spouse_contacts = null;
+      }
+ 
       // Only add dates if they exist to avoid null errors
       const dateOfAppointment = formatDate(profileData.personal.dateOfAppointment);
       const dateOfBirth = formatDate(profileData.personal.dateOfBirth);

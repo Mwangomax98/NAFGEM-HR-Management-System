@@ -136,7 +136,7 @@ export default function EmployeeManagement() {
         dateOfBirth: toDate(employee.date_of_birth) as Date,
         placeOfBirth: employee.place_of_birth,
         religion: employee.religion || "",
-        maritalStatus: titleCase(employee.marital_status),
+        maritalStatus: toTitleMarital(employee.marital_status),
         spouseName: employee.spouse_name || "",
         spouseContacts: employee.spouse_contacts || "",
         passportPhotoUrl: employee.passport_photo_url || "/placeholder.svg",

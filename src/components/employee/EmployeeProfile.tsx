@@ -22,6 +22,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { format } from "date-fns";
+import { isMarried } from "@/utils/marital";
 
 interface EmployeeData {
   personal: {
@@ -280,7 +281,7 @@ export default function EmployeeProfile({ employee, canEdit = false, onEdit, onE
                 <div>
                   <h4 className="font-medium text-muted-foreground mb-1">Marital Status</h4>
                   <p className="font-medium">{employee.personal.maritalStatus}</p>
-                  {(employee.personal.maritalStatus || '').toLowerCase() === "married" && employee.personal.spouseName && (
+                  {isMarried(employee.personal.maritalStatus) && employee.personal.spouseName && (
                     <p className="text-sm text-muted-foreground mt-1">
                       Spouse: {employee.personal.spouseName}
                       {employee.personal.spouseContacts && ` (${employee.personal.spouseContacts})`}

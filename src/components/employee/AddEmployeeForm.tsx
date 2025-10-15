@@ -22,6 +22,7 @@ import { UserSelectionStep } from "./UserSelectionStep";
 
 import { RoleDiagnostics } from "./RoleDiagnostics";
 import { useEmployeeDraft } from "@/hooks/useEmployeeDraft";
+import { isMarried, normalizeMarital } from "@/utils/marital";
 
 const employeeSchema = z.object({
   // User Selection
@@ -982,7 +983,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                             <FormLabel>Marital Status</FormLabel>
                             <FormControl>
                               <RadioGroup
-                                onValueChange={field.onChange}
+                                onValueChange={(val) => { console.debug('maritalStatus change', { raw: val, normalized: normalizeMarital(val), isMarried: isMarried(val) }); field.onChange(val); }}
                                 defaultValue={field.value}
                                 className="flex flex-row space-x-4"
                               >
@@ -1001,7 +1002,7 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                         )}
                       />
 
-                      {(form.watch("personal.maritalStatus") || "").toLowerCase() === "married" && (
+                      {isMarried(form.watch("personal.maritalStatus")) && (
                         <>
                           <FormField
                             control={form.control}

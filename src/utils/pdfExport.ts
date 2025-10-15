@@ -1,3 +1,4 @@
+import { isMarried } from "@/utils/marital";
 // Utility function to export profile data as PDF
 export const exportProfileToPDF = (employee: any) => {
   // Create a new window for the PDF content
@@ -204,7 +205,7 @@ export const exportProfileToPDF = (employee: any) => {
               <div class="info-item">
                 <span class="info-label">Marital Status:</span><br>
                 ${employee.personal.maritalStatus}
-                ${((employee.personal.maritalStatus || "").toLowerCase() === "married") && employee.personal.spouseName ? 
+                ${isMarried(employee.personal.maritalStatus) && employee.personal.spouseName ? 
                   `<br><small>Spouse: ${employee.personal.spouseName}${employee.personal.spouseContacts ? ` (${employee.personal.spouseContacts})` : ''}</small>` : ''}
               </div>
             </div>
