@@ -12,7 +12,7 @@ export function useEmployeeValidation() {
   const [validating, setValidating] = useState(false);
   const { toast } = useToast();
 
-  const validateEmployeeData = async (employeeData: any, selectedUserId: string): Promise<ValidationResult> => {
+  const validateEmployeeData = async (employeeData: any, selectedUserId: string, currentEmployeeId?: string): Promise<ValidationResult> => {
     setValidating(true);
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -47,11 +47,17 @@ export function useEmployeeValidation() {
 
       // Check if employee ID is unique
       if (employeeData.employment?.employeeId) {
-        const { data: existingEmployee, error: idCheckError } = await supabase
+        let query = supabase
           .from('employee_profiles')
           .select('id, name_full')
-          .eq('employee_id', employeeData.employment.employeeId)
-          .maybeSingle();
+          .eq('employee_id', employeeData.employment.employeeId);
+        
+        // Exclude current employee when updating
+        if (currentEmployeeId) {
+          query = query.neq('id', currentEmployeeId);
+        }
+        
+        const { data: existingEmployee, error: idCheckError } = await query.maybeSingle();
 
         if (idCheckError && !idCheckError.message.includes('No rows found')) {
           warnings.push('Could not verify employee ID uniqueness');
@@ -62,11 +68,17 @@ export function useEmployeeValidation() {
 
       // Check if national ID is unique
       if (employeeData.personal?.nationalId) {
-        const { data: existingNationalId, error: nationalIdError } = await supabase
+        let query = supabase
           .from('employee_profiles')
           .select('id, name_full')
-          .eq('national_id', employeeData.personal.nationalId)
-          .maybeSingle();
+          .eq('national_id', employeeData.personal.nationalId);
+        
+        // Exclude current employee when updating
+        if (currentEmployeeId) {
+          query = query.neq('id', currentEmployeeId);
+        }
+        
+        const { data: existingNationalId, error: nationalIdError } = await query.maybeSingle();
 
         if (nationalIdError && !nationalIdError.message.includes('No rows found')) {
           warnings.push('Could not verify national ID uniqueness');
