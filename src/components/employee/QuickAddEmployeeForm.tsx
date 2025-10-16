@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
 import { RoleDiagnostics } from './RoleDiagnostics';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toTitleMarital, isMarried } from '@/utils/marital';
+import { toTitleMarital, isMarried, toTitleTermsOfService } from '@/utils/marital';
 
 interface QuickAddEmployeeFormProps {
   onSave: () => void;
@@ -213,7 +213,7 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
         mobile_phones: formData.mobile_phone ? [formData.mobile_phone] : [],
         designation: formData.designation || '',
         place_of_work: formData.place_of_work || '',
-        terms_of_service: formData.terms_of_service || 'contract',
+        terms_of_service: toTitleTermsOfService(formData.terms_of_service),
         nationality: formData.nationality || '',
         place_of_birth: formData.place_of_birth || '',
         date_of_birth: formData.date_of_birth || new Date().toISOString().split('T')[0],

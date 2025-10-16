@@ -13,3 +13,20 @@ export const toTitleMarital = (v: unknown): string => {
   }
   return "Single"; // safe default
 };
+
+export const toTitleTermsOfService = (v: unknown): string => {
+  const normalized = (v || "contract").toString().trim().toLowerCase();
+  
+  switch (normalized) {
+    case "pensionable":
+      return "Pensionable";
+    case "temporary":
+      return "Temporary";
+    case "secondment":
+      return "Secondment";
+    case "contract":
+      return "Contract";
+    default:
+      return "Contract"; // safe default
+  }
+};

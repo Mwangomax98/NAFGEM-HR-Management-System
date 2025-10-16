@@ -22,7 +22,7 @@ import { UserSelectionStep } from "./UserSelectionStep";
 
 import { RoleDiagnostics } from "./RoleDiagnostics";
 import { useEmployeeDraft } from "@/hooks/useEmployeeDraft";
-import { isMarried, normalizeMarital, toTitleMarital } from "@/utils/marital";
+import { isMarried, normalizeMarital, toTitleMarital, toTitleTermsOfService } from "@/utils/marital";
 
 const employeeSchema = z.object({
   // User Selection

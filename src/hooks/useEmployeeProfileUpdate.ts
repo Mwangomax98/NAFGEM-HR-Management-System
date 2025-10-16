@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { isMarried, toTitleMarital } from '@/utils/marital';
+import { isMarried, toTitleMarital, toTitleTermsOfService } from '@/utils/marital';
 
 export const useEmployeeProfileUpdate = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +37,7 @@ export const useEmployeeProfileUpdate = () => {
         designation: profileData.personal.designation,
         place_of_work: profileData.personal.placeOfWork,
         
-        terms_of_service: (profileData.personal.termsOfService || 'contract').toLowerCase(),
+        terms_of_service: toTitleTermsOfService(profileData.personal.termsOfService),
         nationality: profileData.personal.nationality,
         place_of_birth: profileData.personal.placeOfBirth,
         religion: profileData.personal.religion || null,
