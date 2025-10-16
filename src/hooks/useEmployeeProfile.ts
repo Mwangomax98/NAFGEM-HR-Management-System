@@ -116,6 +116,16 @@ export function useEmployeeProfile(userId?: string): UseEmployeeProfileReturn {
   useEffect(() => {
     fetchProfile();
 
+    // Refetch when page becomes visible (e.g., after navigating back)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refetching profile...');
+        fetchProfile();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Set up real-time subscription for individual profile
     const currentUserId = userId;
     const subscription = supabase
@@ -152,6 +162,7 @@ export function useEmployeeProfile(userId?: string): UseEmployeeProfileReturn {
       .subscribe();
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       subscription.unsubscribe();
     };
   }, [userId]);
