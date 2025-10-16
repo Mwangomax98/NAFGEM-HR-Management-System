@@ -87,7 +87,7 @@ export default function UserManagement() {
     try {
       setIsLoading(true);
 
-      // Prevent self-deletion
+      // Prevent self-deletion (frontend check)
       if (currentUserId === userId) {
         toast({
           title: "Error",
@@ -97,22 +97,16 @@ export default function UserManagement() {
         return;
       }
 
-      // Delete user via Supabase Admin API
-      // This will cascade delete: profiles, user_roles, employee_profiles
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (deleteError) throw deleteError;
-
-      // Log the deletion event for audit trail
-      await supabase.from('security_events').insert({
-        user_id: currentUserId,
-        event_type: 'user_deletion',
-        details: {
-          deleted_user_id: userId,
-          deleted_user_email: userEmail,
-          timestamp: new Date().toISOString()
-        }
+      // Call the edge function instead of admin API
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId, userEmail }
       });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Success",
