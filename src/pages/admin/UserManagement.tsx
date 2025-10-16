@@ -12,6 +12,8 @@ import AddUserModal from "@/components/modals/AddUserModal";
 import AssignRoleModal from "@/components/modals/AssignRoleModal";
 import DeleteUserModal from "@/components/modals/DeleteUserModal";
 import { ROLES, getRoleLabel } from "@/lib/roles";
+import QuickAddEmployeeForm from "@/components/employee/QuickAddEmployeeForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface User {
   id: string;
@@ -21,6 +23,7 @@ interface User {
   title: string;
   created_at: string;
   roles?: { role: string }[];
+  hasEmployeeProfile?: boolean;
 }
 
 export default function UserManagement() {
@@ -32,6 +35,8 @@ export default function UserManagement() {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [userForEmployeeProfile, setUserForEmployeeProfile] = useState<User | null>(null);
   const { toast } = useToast();
 
   const fetchUsers = async () => {
@@ -48,9 +53,19 @@ export default function UserManagement() {
 
       if (rolesError) throw rolesError;
 
+      // Fetch employee profiles to check who has one
+      const { data: employeeProfiles } = await supabase
+        .from('employee_profiles')
+        .select('user_id');
+
+      const employeeProfileUserIds = new Set(
+        (employeeProfiles || []).map(ep => ep.user_id)
+      );
+
       const usersWithRoles = profiles?.map(profile => ({
         ...profile,
         roles: roles?.filter(role => role.user_id === profile.id) || [],
+        hasEmployeeProfile: employeeProfileUserIds.has(profile.id)
       })) || [];
 
       setUsers(usersWithRoles);
@@ -314,9 +329,13 @@ export default function UserManagement() {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          title="Edit User"
+                          onClick={() => {
+                            setUserForEmployeeProfile(user);
+                            setShowEmployeeForm(true);
+                          }}
+                          title={user.hasEmployeeProfile ? "Edit Employee Profile" : "Create Employee Profile"}
                         >
-                          <Edit className="w-4 h-4" />
+                          {user.hasEmployeeProfile ? <Edit className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -424,6 +443,25 @@ export default function UserManagement() {
         user={userToDelete}
         onDelete={handleDeleteUser}
       />
+
+      {/* Create Employee Profile Dialog */}
+      <Dialog open={showEmployeeForm} onOpenChange={setShowEmployeeForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Employee Profile</DialogTitle>
+            <DialogDescription>
+              Create an employee profile for {userForEmployeeProfile?.full_name || userForEmployeeProfile?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <QuickAddEmployeeForm
+            onSave={async () => {
+              await fetchUsers();
+              setShowEmployeeForm(false);
+            }}
+            onCancel={() => setShowEmployeeForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
