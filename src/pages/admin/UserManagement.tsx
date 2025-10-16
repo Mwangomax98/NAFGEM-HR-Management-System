@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AddUserModal from "@/components/modals/AddUserModal";
 import AssignRoleModal from "@/components/modals/AssignRoleModal";
+import DeleteUserModal from "@/components/modals/DeleteUserModal";
 import { ROLES, getRoleLabel } from "@/lib/roles";
 
 interface User {
@@ -26,7 +27,10 @@ export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isAssignRoleOpen, setIsAssignRoleOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -63,6 +67,12 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
   }, []);
 
   const handleUserAdded = () => {
@@ -71,6 +81,59 @@ export default function UserManagement() {
 
   const handleRoleAssigned = () => {
     fetchUsers();
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    try {
+      setIsLoading(true);
+
+      // Prevent self-deletion
+      if (currentUserId === userId) {
+        toast({
+          title: "Error",
+          description: "You cannot delete your own account",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Delete user via Supabase Admin API
+      // This will cascade delete: profiles, user_roles, employee_profiles
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (deleteError) throw deleteError;
+
+      // Log the deletion event for audit trail
+      await supabase.from('security_events').insert({
+        user_id: currentUserId,
+        event_type: 'user_deletion',
+        details: {
+          deleted_user_id: userId,
+          deleted_user_email: userEmail,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      toast({
+        title: "Success",
+        description: `User ${userEmail} has been permanently deleted`,
+      });
+
+      // Refresh the user list
+      await fetchUsers();
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
+
+    } catch (error: any) {
+      console.error('Delete user error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getRoleBadge = (user: User) => {
@@ -250,11 +313,29 @@ export default function UserManagement() {
                             setSelectedUser(user);
                             setIsAssignRoleOpen(true);
                           }}
+                          title="Assign Role"
                         >
                           <Settings className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          title="Edit User"
+                        >
                           <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => {
+                            setUserToDelete(user);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          disabled={user.id === currentUserId}
+                          title={user.id === currentUserId ? "Cannot delete your own account" : "Delete User"}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -341,6 +422,13 @@ export default function UserManagement() {
         onOpenChange={setIsAssignRoleOpen}
         user={selectedUser}
         onRoleAssigned={handleRoleAssigned}
+      />
+
+      <DeleteUserModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        user={userToDelete}
+        onDelete={handleDeleteUser}
       />
     </div>
   );
