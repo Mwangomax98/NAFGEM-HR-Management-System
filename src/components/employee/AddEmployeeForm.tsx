@@ -22,7 +22,7 @@ import { UserSelectionStep } from "./UserSelectionStep";
 
 import { RoleDiagnostics } from "./RoleDiagnostics";
 import { useEmployeeDraft } from "@/hooks/useEmployeeDraft";
-import { isMarried, normalizeMarital } from "@/utils/marital";
+import { isMarried, normalizeMarital, toTitleMarital } from "@/utils/marital";
 
 const employeeSchema = z.object({
   // User Selection
@@ -385,9 +385,9 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
           new Date().toISOString().split('T')[0],
         place_of_birth: mergedData.personal?.placeOfBirth || '',
         religion: mergedData.personal?.religion || null,
-        marital_status: (mergedData.personal?.maritalStatus || 'single').toLowerCase(),
-        spouse_name: mergedData.personal?.spouseName || null,
-        spouse_contacts: mergedData.personal?.spouseContacts || null,
+        marital_status: toTitleMarital(mergedData.personal?.maritalStatus),
+        spouse_name: !isMarried(mergedData.personal?.maritalStatus) ? null : (mergedData.personal?.spouseName || null),
+        spouse_contacts: !isMarried(mergedData.personal?.maritalStatus) ? null : (mergedData.personal?.spouseContacts || null),
         passport_photo_url: mergedData.personal?.passportPhotoUrl || null,
         father_name: mergedData.family?.fatherName || '',
         father_place_of_birth: mergedData.family?.fatherPlaceOfBirth || '',

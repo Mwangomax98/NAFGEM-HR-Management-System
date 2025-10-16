@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { isMarried } from '@/utils/marital';
+import { isMarried, toTitleMarital } from '@/utils/marital';
 
 export const useEmployeeProfileUpdate = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +41,7 @@ export const useEmployeeProfileUpdate = () => {
         nationality: profileData.personal.nationality,
         place_of_birth: profileData.personal.placeOfBirth,
         religion: profileData.personal.religion || null,
-        marital_status: (profileData.personal.maritalStatus || 'single').toLowerCase(),
+        marital_status: toTitleMarital(profileData.personal.maritalStatus),
         spouse_name: profileData.personal.spouseName || null,
         spouse_contacts: profileData.personal.spouseContacts || null,
         
@@ -109,6 +109,9 @@ export const useEmployeeProfileUpdate = () => {
         dbData.spouse_name = null;
         dbData.spouse_contacts = null;
       }
+
+      // Debug log to verify marital_status value
+      console.debug('[updateEmployeeProfile] marital_status ->', dbData.marital_status);
  
       // Only add dates if they exist to avoid null errors
       const dateOfAppointment = formatDate(profileData.personal.dateOfAppointment);

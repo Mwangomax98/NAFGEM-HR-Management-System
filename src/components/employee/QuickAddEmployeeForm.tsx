@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
 import { RoleDiagnostics } from './RoleDiagnostics';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toTitleMarital, isMarried } from '@/utils/marital';
 
 interface QuickAddEmployeeFormProps {
   onSave: () => void;
@@ -217,7 +218,9 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
         place_of_birth: formData.place_of_birth || '',
         date_of_birth: formData.date_of_birth || new Date().toISOString().split('T')[0],
         date_of_appointment: formData.date_of_appointment || new Date().toISOString().split('T')[0],
-        marital_status: (formData.marital_status || 'single').toLowerCase(),
+        marital_status: toTitleMarital(formData.marital_status),
+        spouse_name: !isMarried(formData.marital_status) ? null : (formData as any).spouse_name || null,
+        spouse_contacts: !isMarried(formData.marital_status) ? null : (formData as any).spouse_contacts || null,
         father_name: formData.father_name || '',
         father_place_of_birth: formData.father_place_of_birth || '',
         father_nationality: formData.father_nationality || formData.nationality || '',
