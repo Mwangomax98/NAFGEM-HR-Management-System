@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { validateAndLogFileUpload, sanitizeFileName, FILE_VALIDATION_CONFIGS } from "@/utils/fileValidation";
 import { isMarried, normalizeMarital } from "@/utils/marital";
+import { useEmployeeValidation } from "@/hooks/useEmployeeValidation";
 
 const employeeEditSchema = z.object({
   personal: z.object({
@@ -100,6 +101,7 @@ interface EditProfileModalProps {
 
 export default function EditProfileModal({ isOpen, onClose, employee, onSave }: EditProfileModalProps) {
   const { toast } = useToast();
+  const { validateEmployeeData, showValidationResults, validating } = useEmployeeValidation();
   const [uploadingPassport, setUploadingPassport] = useState(false);
   const [uploadingCertificates, setUploadingCertificates] = useState<Record<number, boolean>>({});
   const passportInputRef = useRef<HTMLInputElement>(null);
@@ -268,6 +270,19 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
 
   const onSubmit = async (data: any) => {
     try {
+      // Validate before saving
+      const validationResult = await validateEmployeeData(
+        data,
+        employee.user_id,
+        employee.id
+      );
+
+      showValidationResults(validationResult);
+
+      if (!validationResult.isValid) {
+        return;
+      }
+
       await onSave(data);
       onClose();
     } catch (error: any) {
@@ -1003,8 +1018,8 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                Save Changes
+              <Button type="submit" disabled={form.formState.isSubmitting || validating}>
+                {validating ? "Validating..." : "Save Changes"}
               </Button>
             </div>
           </form>
