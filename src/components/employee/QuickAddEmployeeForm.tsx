@@ -212,6 +212,24 @@ export default function QuickAddEmployeeForm({ onSave, onCancel, preSelectedUser
     return true;
   };
 
+  // Validate Employee ID uniqueness
+  const validateEmployeeId = async (employeeId: string): Promise<boolean> => {
+    if (!employeeId) return false;
+    
+    const { data, error } = await supabase
+      .from('employee_profiles')
+      .select('id, name_full')
+      .eq('employee_id', employeeId)
+      .maybeSingle();
+    
+    if (data) {
+      toast.error(`Employee ID ${employeeId} is already in use by ${data.name_full}`);
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -232,6 +250,13 @@ export default function QuickAddEmployeeForm({ onSave, onCancel, preSelectedUser
       // Validate National ID uniqueness
       const isValidNationalId = await validateNationalId(formData.national_id);
       if (!isValidNationalId) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate Employee ID uniqueness
+      const isValidEmployeeId = await validateEmployeeId(formData.employee_id);
+      if (!isValidEmployeeId) {
         setIsSubmitting(false);
         return;
       }
