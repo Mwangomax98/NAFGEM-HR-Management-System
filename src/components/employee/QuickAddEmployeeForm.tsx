@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,9 +18,10 @@ import { toTitleMarital, isMarried, toTitleTermsOfService } from '@/utils/marita
 interface QuickAddEmployeeFormProps {
   onSave: () => void;
   onCancel: () => void;
+  preSelectedUserId?: string;
 }
 
-export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmployeeFormProps) {
+export default function QuickAddEmployeeForm({ onSave, onCancel, preSelectedUserId }: QuickAddEmployeeFormProps) {
   const { users, loading: usersLoading, error: usersError, refetch } = useAvailableUsers();
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
@@ -183,6 +184,34 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
     }
   };
 
+  // Auto-select user when preSelectedUserId is provided
+  useEffect(() => {
+    if (preSelectedUserId && users && users.length > 0) {
+      const user = users.find(u => u.id === preSelectedUserId);
+      if (user) {
+        handleUserSelect(preSelectedUserId);
+      }
+    }
+  }, [preSelectedUserId, users]);
+
+  // Validate National ID uniqueness
+  const validateNationalId = async (nationalId: string): Promise<boolean> => {
+    if (!nationalId) return false;
+    
+    const { data, error } = await supabase
+      .from('employee_profiles')
+      .select('id, name_full')
+      .eq('national_id', nationalId)
+      .maybeSingle();
+    
+    if (data) {
+      toast.error(`National ID ${nationalId} is already registered to ${data.name_full}`);
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -200,6 +229,13 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
     setIsSubmitting(true);
 
     try {
+      // Validate National ID uniqueness
+      const isValidNationalId = await validateNationalId(formData.national_id);
+      if (!isValidNationalId) {
+        setIsSubmitting(false);
+        return;
+      }
+
       // Debug the form data before transformation
       console.log('=== QUICK ADD FORM DATA ===');
       console.log('Raw form data:', formData);
@@ -246,7 +282,15 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
 
       if (error) {
         console.error('RPC Error:', error);
-        toast.error(`Failed to create employee profile: ${error.message}`);
+        
+        // Check for specific constraint violations
+        if (error.message.includes('duplicate key') || error.message.includes('national_id')) {
+          toast.error(`National ID ${formData.national_id} is already in use. Please use a different National ID.`);
+        } else if (error.message.includes('employee_id')) {
+          toast.error(`Employee ID ${formData.employee_id} is already in use. Please use a different Employee ID.`);
+        } else {
+          toast.error(`Failed to create employee profile: ${error.message}`);
+        }
         return;
       }
 
@@ -349,7 +393,11 @@ export default function QuickAddEmployeeForm({ onSave, onCancel }: QuickAddEmplo
           {/* User Selection */}
           <div className="space-y-2">
             <Label htmlFor="user">Select User *</Label>
-            <Select onValueChange={handleUserSelect}>
+            <Select 
+              onValueChange={handleUserSelect}
+              disabled={!!preSelectedUserId}
+              value={selectedUser?.id}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Choose a user to create employee profile for" />
               </SelectTrigger>

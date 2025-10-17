@@ -454,6 +454,7 @@ export default function UserManagement() {
             </DialogDescription>
           </DialogHeader>
           <QuickAddEmployeeForm
+            preSelectedUserId={userForEmployeeProfile?.id}
             onSave={async () => {
               await fetchUsers();
               setShowEmployeeForm(false);
