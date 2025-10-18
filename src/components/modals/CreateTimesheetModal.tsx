@@ -206,7 +206,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5" />
@@ -214,7 +214,8 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="max-h-[calc(90vh-120px)] overflow-y-auto pr-2">
+          <div className="space-y-6">
           {/* Week Selection */}
           <div className="space-y-2">
             <Label>Select Week</Label>
@@ -397,6 +398,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
               )}
             </Button>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
