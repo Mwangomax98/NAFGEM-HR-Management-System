@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Plus, Trash2, Send, Save, Calendar, Target, Clock, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
-import { KPIGapSuggestions } from "@/components/monitoring/KPIGapSuggestions";
+
 
 interface TaskSuggestion {
   targetId?: string;
@@ -656,17 +656,6 @@ export default function WeeklyTaskSubmission() {
           </Card>
         )}
 
-        {/* KPI Gap Suggestions */}
-        <KPIGapSuggestions onSuggestionSelect={(suggestion) => {
-          addNewTask();
-          const tasks = [...weeklyTask.tasks];
-          const newIndex = tasks.length - 1;
-          updateTask(newIndex, 'task_title', suggestion.title);
-          updateTask(newIndex, 'task_description', suggestion.description);
-          updateTask(newIndex, 'task_category', suggestion.category);
-          updateTask(newIndex, 'priority', suggestion.priority);
-          updateTask(newIndex, 'linked_kpi_id', suggestion.linked_kpi_id);
-        }} />
       </div>
     );
   }
