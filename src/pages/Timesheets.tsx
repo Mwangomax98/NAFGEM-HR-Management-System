@@ -247,6 +247,7 @@ export default function Timesheets() {
         <TimesheetDetailModal
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
+          onSuccess={fetchTimesheets}
           timesheet={selectedTimesheet}
         />
       )}
