@@ -21,11 +21,17 @@ export function useEmployeeValidation() {
       // Check if user exists and is available
       if (selectedUserId) {
         // Check if user already has an employee profile
-        const { data: existingProfile, error: profileCheckError } = await supabase
+        let query = supabase
           .from('employee_profiles')
           .select('id, name_full')
-          .eq('user_id', selectedUserId)
-          .maybeSingle();
+          .eq('user_id', selectedUserId);
+        
+        // Exclude current employee when updating
+        if (currentEmployeeId) {
+          query = query.neq('id', currentEmployeeId);
+        }
+        
+        const { data: existingProfile, error: profileCheckError } = await query.maybeSingle();
 
         if (profileCheckError && !profileCheckError.message.includes('No rows found')) {
           warnings.push('Could not verify if user already has a profile');
