@@ -26,6 +26,7 @@ export default function Timesheets() {
   const [selectedTimesheet, setSelectedTimesheet] = useState<Timesheet | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [timesheetToEdit, setTimesheetToEdit] = useState<Timesheet | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     thisWeekHours: 0,
@@ -93,6 +94,11 @@ export default function Timesheets() {
   const openTimesheetDetail = (timesheet: Timesheet) => {
     setSelectedTimesheet(timesheet);
     setIsDetailModalOpen(true);
+  };
+
+  const handleEditTimesheet = (timesheet: Timesheet) => {
+    setTimesheetToEdit(timesheet);
+    setIsCreateModalOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -239,8 +245,15 @@ export default function Timesheets() {
 
       <CreateTimesheetModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={fetchTimesheets}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setTimesheetToEdit(null);
+        }}
+        onSuccess={() => {
+          fetchTimesheets();
+          setTimesheetToEdit(null);
+        }}
+        timesheetToEdit={timesheetToEdit}
       />
 
       {selectedTimesheet && (
@@ -248,6 +261,7 @@ export default function Timesheets() {
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           onSuccess={fetchTimesheets}
+          onEdit={handleEditTimesheet}
           timesheet={selectedTimesheet}
         />
       )}

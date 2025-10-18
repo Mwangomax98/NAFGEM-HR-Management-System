@@ -24,9 +24,15 @@ interface CreateTimesheetModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  timesheetToEdit?: {
+    id: string;
+    week_start_date: string;
+    week_end_date: string;
+    notes?: string;
+  } | null;
 }
 
-export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimesheetModalProps) {
+export function CreateTimesheetModal({ isOpen, onClose, onSuccess, timesheetToEdit }: CreateTimesheetModalProps) {
   const [weekStartDate, setWeekStartDate] = useState<Date | undefined>();
   const [weekEndDate, setWeekEndDate] = useState<Date | undefined>();
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
@@ -34,6 +40,47 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (timesheetToEdit) {
+        const start = new Date(timesheetToEdit.week_start_date);
+        const end = new Date(timesheetToEdit.week_end_date);
+        setWeekStartDate(start);
+        setWeekEndDate(end);
+        setNotes(timesheetToEdit.notes || '');
+        fetchExistingEntries(timesheetToEdit.id);
+      } else {
+        const today = new Date();
+        initializeWeek(today);
+      }
+    }
+  }, [isOpen, timesheetToEdit]);
+
+  const fetchExistingEntries = async (timesheetId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .select('*')
+        .eq('timesheet_id', timesheetId)
+        .order('entry_date');
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const loadedEntries = data.map(entry => ({
+          date: new Date(entry.entry_date),
+          project: entry.project_name,
+          hours: Number(entry.hours_worked),
+          description: entry.description || ''
+        }));
+        setEntries(loadedEntries);
+      }
+    } catch (error) {
+      console.error('Error fetching timesheet entries:', error);
+      toast.error('Failed to load timesheet entries');
+    }
+  };
 
   const initializeWeek = (date?: Date) => {
     if (!date) return;
@@ -124,65 +171,107 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
       const totalHours = calculateTotalHours();
       const overtimeHours = calculateOvertimeHours();
 
-      // Create timesheet
-      const { data: timesheet, error: timesheetError } = await supabase
-        .from('timesheets')
-        .insert({
-          employee_id: user.id,
-          week_start_date: format(weekStartDate, 'yyyy-MM-dd'),
-          week_end_date: format(weekEndDate, 'yyyy-MM-dd'),
-          total_hours: totalHours,
-          overtime_hours: overtimeHours,
-          status: 'pending',
-          submitted_at: new Date().toISOString(),
-          notes
-        })
-        .select()
-        .single();
+      if (timesheetToEdit) {
+        // Update existing timesheet
+        const { error: updateError } = await supabase
+          .from('timesheets')
+          .update({
+            week_start_date: format(weekStartDate, 'yyyy-MM-dd'),
+            week_end_date: format(weekEndDate, 'yyyy-MM-dd'),
+            total_hours: totalHours,
+            overtime_hours: overtimeHours,
+            status: 'pending',
+            submitted_at: new Date().toISOString(),
+            notes
+          })
+          .eq('id', timesheetToEdit.id);
 
-      if (timesheetError) throw timesheetError;
+        if (updateError) throw updateError;
 
-      // Create timesheet entries
-      const entriesData = validEntries.map(entry => ({
-        timesheet_id: timesheet.id,
-        entry_date: format(entry.date, 'yyyy-MM-dd'),
-        project_name: entry.project,
-        hours_worked: entry.hours,
-        description: entry.description
-      }));
+        // Delete old entries
+        await supabase
+          .from('timesheet_entries')
+          .delete()
+          .eq('timesheet_id', timesheetToEdit.id);
 
-      const { error: entriesError } = await supabase
-        .from('timesheet_entries')
-        .insert(entriesData);
+        // Insert new entries
+        const entriesData = validEntries.map(entry => ({
+          timesheet_id: timesheetToEdit.id,
+          entry_date: format(entry.date, 'yyyy-MM-dd'),
+          project_name: entry.project,
+          hours_worked: entry.hours,
+          description: entry.description
+        }));
 
-      if (entriesError) throw entriesError;
+        const { error: entriesError } = await supabase
+          .from('timesheet_entries')
+          .insert(entriesData);
 
-      // Upload attachments
-      for (const file of attachments) {
-        const fileName = `${user.id}/${timesheet.id}/${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('timesheet-attachments')
-          .upload(fileName, file);
+        if (entriesError) throw entriesError;
 
-        if (uploadError) {
-          console.error('Error uploading file:', uploadError);
-          continue;
+        toast.success("Timesheet updated successfully!");
+      } else {
+        // Create new timesheet
+        const { data: timesheet, error: timesheetError } = await supabase
+          .from('timesheets')
+          .insert({
+            employee_id: user.id,
+            week_start_date: format(weekStartDate, 'yyyy-MM-dd'),
+            week_end_date: format(weekEndDate, 'yyyy-MM-dd'),
+            total_hours: totalHours,
+            overtime_hours: overtimeHours,
+            status: 'pending',
+            submitted_at: new Date().toISOString(),
+            notes
+          })
+          .select()
+          .single();
+
+        if (timesheetError) throw timesheetError;
+
+        // Create timesheet entries
+        const entriesData = validEntries.map(entry => ({
+          timesheet_id: timesheet.id,
+          entry_date: format(entry.date, 'yyyy-MM-dd'),
+          project_name: entry.project,
+          hours_worked: entry.hours,
+          description: entry.description
+        }));
+
+        const { error: entriesError } = await supabase
+          .from('timesheet_entries')
+          .insert(entriesData);
+
+        if (entriesError) throw entriesError;
+
+        // Upload attachments
+        for (const file of attachments) {
+          const fileName = `${user.id}/${timesheet.id}/${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('timesheet-attachments')
+            .upload(fileName, file);
+
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            continue;
+          }
+
+          // Record attachment in database
+          await supabase
+            .from('timesheet_attachments')
+            .insert({
+              timesheet_id: timesheet.id,
+              file_name: file.name,
+              file_path: fileName,
+              file_size: file.size,
+              file_type: file.type,
+              uploaded_by: user.id
+            });
         }
 
-        // Record attachment in database
-        await supabase
-          .from('timesheet_attachments')
-          .insert({
-            timesheet_id: timesheet.id,
-            file_name: file.name,
-            file_path: fileName,
-            file_size: file.size,
-            file_type: file.type,
-            uploaded_by: user.id
-          });
+        toast.success("Timesheet submitted successfully! It has been sent to HR for review.");
       }
 
-      toast.success("Timesheet submitted successfully! It has been sent to HR for review.");
       onSuccess();
       onClose();
       resetForm();
@@ -208,7 +297,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5" />
-            Create New Timesheet
+            {timesheetToEdit ? 'Edit Timesheet' : 'Create New Timesheet'}
           </DialogTitle>
         </DialogHeader>
 
@@ -389,11 +478,11 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
               disabled={isSubmitting || !weekStartDate || calculateTotalHours() === 0}
             >
               {isSubmitting ? (
-                "Submitting..."
+                timesheetToEdit ? "Updating..." : "Submitting..."
               ) : (
                 <>
                   <Send className="w-4 h-4 mr-2" />
-                  Submit to HR
+                  {timesheetToEdit ? 'Update Timesheet' : 'Submit to HR'}
                 </>
               )}
             </Button>

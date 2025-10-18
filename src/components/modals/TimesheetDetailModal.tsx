@@ -21,6 +21,7 @@ interface TimesheetDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onEdit?: (timesheet: any) => void;
   timesheet: {
     id: string;
     week_start_date: string;
@@ -34,7 +35,7 @@ interface TimesheetDetailModalProps {
   };
 }
 
-export function TimesheetDetailModal({ isOpen, onClose, onSuccess, timesheet }: TimesheetDetailModalProps) {
+export function TimesheetDetailModal({ isOpen, onClose, onSuccess, onEdit, timesheet }: TimesheetDetailModalProps) {
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -257,8 +258,14 @@ export function TimesheetDetailModal({ isOpen, onClose, onSuccess, timesheet }: 
               <Button variant="outline" onClick={onClose}>
                 Close
               </Button>
-              {timesheet.status === "pending" && (
-                <Button variant="outline">
+              {(timesheet.status === "pending" || timesheet.status === "draft") && onEdit && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    onEdit(timesheet);
+                    onClose();
+                  }}
+                >
                   Edit Timesheet
                 </Button>
               )}
