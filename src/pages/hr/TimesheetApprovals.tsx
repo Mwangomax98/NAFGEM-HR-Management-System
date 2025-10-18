@@ -35,61 +35,40 @@ export default function TimesheetApprovals() {
 
   const fetchPendingTimesheets = async () => {
     try {
-      // Debug: Check current user and role
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user ID:', user?.id);
-      
-      // Debug: Check user role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user?.id)
-        .single();
-      
-      console.log('User role:', roleData?.role, 'Error:', roleError);
-      
-      // Debug: Test has_role function
-      const { data: hasRoleResult, error: hasRoleError } = await supabase
-        .rpc('has_role', { 
-          _user_id: user?.id, 
-          _role: 'hr' 
-        });
-      
-      console.log('has_role(hr) result:', hasRoleResult, 'Error:', hasRoleError);
-      
-      // Debug: Fetch timesheets without JOIN first
-      const { data: timesheetsOnly, error: timesheetsError } = await supabase
+      // Fetch timesheets first
+      const { data: timesheets, error: timesheetsError } = await supabase
         .from('timesheets')
         .select('*')
-        .eq('status', 'pending');
-      
-      console.log('Timesheets without JOIN:', timesheetsOnly, 'Error:', timesheetsError);
-      
-      // Now try with JOIN
-      const { data, error } = await supabase
-        .from('timesheets')
-        .select(`
-          id,
-          employee_id,
-          week_start_date,
-          week_end_date,
-          total_hours,
-          overtime_hours,
-          status,
-          submitted_at,
-          notes,
-          profiles (
-            full_name,
-            email
-          )
-        `)
         .eq('status', 'pending')
         .order('submitted_at', { ascending: false });
 
-      console.log('Timesheets with JOIN:', data, 'Error:', error);
-      
-      if (error) throw error;
-      setPendingTimesheets((data as unknown as TimesheetWithProfile[]) || []);
+      if (timesheetsError) throw timesheetsError;
+      if (!timesheets || timesheets.length === 0) {
+        setPendingTimesheets([]);
+        return;
+      }
+
+      // Get unique employee IDs
+      const employeeIds = [...new Set(timesheets.map(t => t.employee_id))];
+
+      // Fetch profiles for those employees
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', employeeIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of employee_id to profile
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      // Merge timesheets with profiles
+      const timesheetsWithProfiles = timesheets.map(timesheet => ({
+        ...timesheet,
+        profiles: profileMap.get(timesheet.employee_id) || null
+      }));
+
+      setPendingTimesheets(timesheetsWithProfiles as unknown as TimesheetWithProfile[]);
     } catch (error) {
       console.error('Error fetching timesheets:', error);
       toast.error('Failed to load timesheets');
