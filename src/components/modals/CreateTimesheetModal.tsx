@@ -35,26 +35,24 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-  useEffect(() => {
-    if (weekStartDate) {
-      const start = startOfWeek(weekStartDate, { weekStartsOn: 1 });
-      const end = endOfWeek(weekStartDate, { weekStartsOn: 1 });
-      setWeekStartDate(start);
-      setWeekEndDate(end);
-      
-      // Initialize entries for the week
-      const weekEntries: TimesheetEntry[] = [];
-      for (let i = 0; i < 5; i++) {
-        weekEntries.push({
-          date: addDays(start, i),
-          project: "",
-          hours: 0,
-          description: ""
-        });
-      }
-      setEntries(weekEntries);
+  const initializeWeek = (date?: Date) => {
+    if (!date) return;
+    const start = startOfWeek(date, { weekStartsOn: 1 });
+    const end = endOfWeek(date, { weekStartsOn: 1 });
+    setWeekStartDate(start);
+    setWeekEndDate(end);
+
+    const weekEntries: TimesheetEntry[] = [];
+    for (let i = 0; i < 5; i++) {
+      weekEntries.push({
+        date: addDays(start, i),
+        project: "",
+        hours: 0,
+        description: "",
+      });
     }
-  }, [weekStartDate]);
+    setEntries(weekEntries);
+  };
 
   const handleEntryChange = (index: number, field: keyof TimesheetEntry, value: string | number) => {
     const newEntries = [...entries];
@@ -239,10 +237,11 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                   mode="single"
                   selected={weekStartDate}
                   onSelect={(date) => {
-                    setWeekStartDate(date);
+                    initializeWeek(date);
                     setIsCalendarOpen(false);
                   }}
                   initialFocus
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
             </Popover>
