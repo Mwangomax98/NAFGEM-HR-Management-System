@@ -35,6 +35,37 @@ export default function TimesheetApprovals() {
 
   const fetchPendingTimesheets = async () => {
     try {
+      // Debug: Check current user and role
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user ID:', user?.id);
+      
+      // Debug: Check user role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .single();
+      
+      console.log('User role:', roleData?.role, 'Error:', roleError);
+      
+      // Debug: Test has_role function
+      const { data: hasRoleResult, error: hasRoleError } = await supabase
+        .rpc('has_role', { 
+          _user_id: user?.id, 
+          _role: 'hr' 
+        });
+      
+      console.log('has_role(hr) result:', hasRoleResult, 'Error:', hasRoleError);
+      
+      // Debug: Fetch timesheets without JOIN first
+      const { data: timesheetsOnly, error: timesheetsError } = await supabase
+        .from('timesheets')
+        .select('*')
+        .eq('status', 'pending');
+      
+      console.log('Timesheets without JOIN:', timesheetsOnly, 'Error:', timesheetsError);
+      
+      // Now try with JOIN
       const { data, error } = await supabase
         .from('timesheets')
         .select(`
@@ -55,6 +86,8 @@ export default function TimesheetApprovals() {
         .eq('status', 'pending')
         .order('submitted_at', { ascending: false });
 
+      console.log('Timesheets with JOIN:', data, 'Error:', error);
+      
       if (error) throw error;
       setPendingTimesheets((data as unknown as TimesheetWithProfile[]) || []);
     } catch (error) {
