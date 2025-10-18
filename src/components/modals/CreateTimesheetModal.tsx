@@ -242,7 +242,6 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                     setIsCalendarOpen(false);
                   }}
                   initialFocus
-                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
@@ -259,8 +258,8 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                       {format(entry.date, 'EEEE, MMMM dd')}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <CardContent className="space-y-3 pointer-events-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <Label className="text-xs">Project</Label>
                         <Input
@@ -281,14 +280,16 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                           onChange={(e) => handleEntryChange(index, 'hours', parseFloat(e.target.value) || 0)}
                         />
                       </div>
-                      <div className="md:col-span-1">
-                        <Label className="text-xs">Description</Label>
-                        <Input
-                          placeholder="Work description"
-                          value={entry.description}
-                          onChange={(e) => handleEntryChange(index, 'description', e.target.value)}
-                        />
-                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Tasks Performed (one per line)</Label>
+                      <Textarea
+                        placeholder="• Task 1&#10;• Task 2&#10;• Task 3"
+                        value={entry.description}
+                        onChange={(e) => handleEntryChange(index, 'description', e.target.value)}
+                        rows={3}
+                        className="resize-none"
+                      />
                     </div>
                   </CardContent>
                 </Card>
