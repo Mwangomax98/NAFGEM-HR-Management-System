@@ -38,7 +38,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
   const initializeWeek = (date?: Date) => {
     if (!date) return;
     const start = startOfWeek(date, { weekStartsOn: 1 });
-    const end = endOfWeek(date, { weekStartsOn: 1 });
+    const end = addDays(start, 4); // Friday
     setWeekStartDate(start);
     setWeekEndDate(end);
 
@@ -240,6 +240,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                     initializeWeek(date);
                     setIsCalendarOpen(false);
                   }}
+                  disabled={(d) => d.getDay() === 0 || d.getDay() === 6}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                 />

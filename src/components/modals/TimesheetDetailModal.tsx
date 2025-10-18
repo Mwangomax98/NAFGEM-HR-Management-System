@@ -46,7 +46,8 @@ export function TimesheetDetailModal({ isOpen, onClose, timesheet }: TimesheetDe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl">
+        <div className="max-h-[calc(90vh-120px)] overflow-y-auto pr-2">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             Timesheet Details - {format(new Date(timesheet.week_start_date), 'MMM dd')} - {format(new Date(timesheet.week_end_date), 'MMM dd, yyyy')}
@@ -151,6 +152,7 @@ export function TimesheetDetailModal({ isOpen, onClose, timesheet }: TimesheetDe
               )}
             </div>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
