@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { TimesheetDetailModal } from "@/components/modals/TimesheetDetailModal";
 
 interface TimesheetWithProfile {
   id: string;
@@ -28,6 +29,7 @@ interface TimesheetWithProfile {
 export default function TimesheetApprovals() {
   const [pendingTimesheets, setPendingTimesheets] = useState<TimesheetWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTimesheet, setSelectedTimesheet] = useState<TimesheetWithProfile | null>(null);
 
   useEffect(() => {
     fetchPendingTimesheets();
@@ -75,6 +77,14 @@ export default function TimesheetApprovals() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewDetails = (timesheet: TimesheetWithProfile) => {
+    setSelectedTimesheet(timesheet);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedTimesheet(null);
   };
 
   const handleApproval = async (id: string, action: 'approve' | 'reject') => {
@@ -244,13 +254,14 @@ export default function TimesheetApprovals() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700"
+                            onClick={() => handleViewDetails(timesheet)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                         <Button 
                           variant="ghost" 
                           size="sm"
@@ -277,6 +288,17 @@ export default function TimesheetApprovals() {
         </CardContent>
       </Card>
 
+      {selectedTimesheet && (
+        <TimesheetDetailModal
+          isOpen={!!selectedTimesheet}
+          onClose={handleCloseDetail}
+          onSuccess={() => {
+            handleCloseDetail();
+            fetchPendingTimesheets();
+          }}
+          timesheet={selectedTimesheet}
+        />
+      )}
     </div>
   );
 }
