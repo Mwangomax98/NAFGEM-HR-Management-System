@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, Calendar, Target, TrendingUp } from "lucide-react";
+import { exportReviewToPDF } from "@/utils/pdfExport";
+import { toast } from "@/hooks/use-toast";
 
 interface ReviewDetailModalProps {
   isOpen: boolean;
@@ -203,7 +205,17 @@ export function ReviewDetailModal({ isOpen, onClose, review }: ReviewDetailModal
           {/* Actions */}
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  exportReviewToPDF(review, reviewSections, goals);
+                  toast({
+                    title: "PDF Export",
+                    description: "Review PDF is being generated",
+                  });
+                }}
+              >
                 Export PDF
               </Button>
               <Button variant="outline" size="sm">

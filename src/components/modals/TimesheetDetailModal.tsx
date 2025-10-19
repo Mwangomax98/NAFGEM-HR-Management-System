@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { exportTimesheetToPDF } from "@/utils/pdfExport";
 
 interface TimesheetEntry {
   id: string;
@@ -235,11 +236,27 @@ export function TimesheetDetailModal({ isOpen, onClose, onSuccess, onEdit, times
           {/* Actions */}
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  exportTimesheetToPDF(timesheet, entries);
+                  toast({
+                    title: "PDF Export",
+                    description: "Timesheet PDF is being generated",
+                  });
+                }}
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Export PDF
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  exportTimesheetToPDF(timesheet, entries);
+                }}
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 Print
               </Button>

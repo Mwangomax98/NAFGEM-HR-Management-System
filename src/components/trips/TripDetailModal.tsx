@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Calendar, Users, Car, User, FileText, Clock, AlertTriangle } from "lucide-react";
 import TripStatusBadge from "./TripStatusBadge";
 import { logTripStatusChange } from "@/utils/auditLogger";
+import { exportTripToPDF } from "@/utils/pdfExport";
+import { toast } from "@/hooks/use-toast";
 
 interface TripDetailModalProps {
   trip: any;
@@ -277,10 +279,26 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
                 )}
 
                 {/* Universal Actions */}
-                <Button variant="ghost" className="w-full">
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => {
+                    exportTripToPDF(trip);
+                  }}
+                >
                   Print Details
                 </Button>
-                <Button variant="ghost" className="w-full">
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => {
+                    exportTripToPDF(trip);
+                    toast({
+                      title: "PDF Export",
+                      description: "Trip request PDF is being generated",
+                    });
+                  }}
+                >
                   Export to PDF
                 </Button>
               </CardContent>
