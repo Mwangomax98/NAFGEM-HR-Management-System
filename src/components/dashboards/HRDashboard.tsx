@@ -88,14 +88,6 @@ export function HRDashboard({ userName }: HRDashboardProps) {
           <TrendingUp className="h-4 w-4 mr-2" />
           Performance Reviews
         </Button>
-        <Button 
-          variant="outline"
-          onClick={() => navigate('/reports')}
-          className="hover:bg-accent/5 hover:border-accent transition-all"
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Generate Reports
-        </Button>
       </div>
 
       {/* Stats Overview */}

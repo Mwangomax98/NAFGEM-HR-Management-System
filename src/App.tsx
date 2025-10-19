@@ -25,7 +25,6 @@ import TripManagement from "./pages/hr/TripManagement";
 import Performance from "./pages/hr/Performance";
 
 import Communications from "./pages/Communications";
-import Reports from "./pages/Reports";
 
 import Notifications from "./pages/Notifications";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -58,7 +57,6 @@ const App = () => (
           <Route path="/hr/performance" element={<ProtectedRoute requiredRole={ROLES.HR}><Performance /></ProtectedRoute>} />
           
           <Route path="/communications" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Communications /></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Reports /></ProtectedRoute>} />
           
           <Route path="/notifications" element={<ProtectedRoute requiredRole={ROLES.EMPLOYEE}><Notifications /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requiredRole={ROLES.ADMIN}><UserManagement /></ProtectedRoute>} />

@@ -61,7 +61,6 @@ const menuItems: SidebarItem[] = [
   // Admin Items
   { title: "User Management", url: "/admin/users", icon: Shield, roles: ["admin"] },
   { title: "System Settings", url: "/admin/settings", icon: Settings, roles: ["admin"] },
-  { title: "Analytics & Reports", url: "/reports", icon: BarChart3, roles: ["hr", "admin"] },
 ];
 
 interface HRSidebarProps {

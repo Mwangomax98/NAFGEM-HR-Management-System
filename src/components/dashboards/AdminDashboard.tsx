@@ -161,14 +161,6 @@ export function AdminDashboard({ userName }: AdminDashboardProps) {
         </Button>
         <Button 
           variant="outline"
-          onClick={() => navigate('/reports')}
-          className="hover:bg-accent/5 hover:border-accent transition-all"
-        >
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Analytics
-        </Button>
-        <Button 
-          variant="outline"
           onClick={() => navigate('/hr/monitoring-evaluation')}
           className="hover:bg-accent/5 hover:border-accent transition-all"
         >
