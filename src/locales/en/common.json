@@ -79,5 +79,8 @@
     "loading": "Loading...",
     "noResults": "No results found",
     "sessionExpired": "Session expired. Please login again."
+  },
+  "review": {
+    "supervisorReview": "Supervisor Review"
   }
 }

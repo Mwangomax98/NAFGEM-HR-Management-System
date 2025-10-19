@@ -336,7 +336,7 @@ export default function WeeklyTaskSubmission() {
                 Weekly Tasks - {currentWeek.display}
               </CardTitle>
               <CardDescription>
-                Submit your weekly tasks every Monday for HR review
+                Submit your weekly tasks every Monday for supervisor review
               </CardDescription>
             </div>
             <Badge variant={isSubmitted ? "default" : "secondary"}>

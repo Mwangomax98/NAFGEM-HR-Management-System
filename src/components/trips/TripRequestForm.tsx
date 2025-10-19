@@ -278,7 +278,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
         title: isDraft ? "Draft Saved" : "Trip Request Submitted",
         description: isDraft 
           ? "Your trip request has been saved as a draft"
-          : "Your trip request has been submitted for HR review",
+          : "Your trip request has been submitted for supervisor review",
       });
 
       onSubmit(result.data);

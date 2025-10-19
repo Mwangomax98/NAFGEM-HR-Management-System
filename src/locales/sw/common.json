@@ -79,5 +79,8 @@
     "loading": "Inapakia...",
     "noResults": "Hakuna matokeo yaliyopatikana",
     "sessionExpired": "Kipindi kimemalizika. Tafadhali ingia tena."
+  },
+  "review": {
+    "supervisorReview": "Ukaguzi wa Msimamizi"
   }
 }

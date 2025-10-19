@@ -443,7 +443,7 @@ export default function HRLeaveReview() {
                                   {/* HR Review Section */}
                                   <Card className="border-accent">
                                     <CardHeader className="bg-accent text-accent-foreground">
-                                      <CardTitle className="text-lg">HR Review & Decision</CardTitle>
+                                      <CardTitle className="text-lg">Supervisor Review & Decision</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-4">
                                       <div className="grid grid-cols-2 gap-4">

@@ -397,7 +397,7 @@ export default function Trips() {
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="DRAFT">Draft</SelectItem>
                       <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                      <SelectItem value="HR_REVIEW">HR Review</SelectItem>
+                      <SelectItem value="HR_REVIEW">Supervisor Review</SelectItem>
                       <SelectItem value="DRIVER_PENDING">Driver Pending</SelectItem>
                       <SelectItem value="SCHEDULED">Scheduled</SelectItem>
                       <SelectItem value="IN_PROGRESS">In Progress</SelectItem>

@@ -345,7 +345,7 @@ export default function TripManagement() {
                     <SelectContent>
                       <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                      <SelectItem value="HR_REVIEW">HR Review</SelectItem>
+                      <SelectItem value="HR_REVIEW">Supervisor Review</SelectItem>
                       <SelectItem value="SCHEDULED">Scheduled</SelectItem>
                       <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                     </SelectContent>

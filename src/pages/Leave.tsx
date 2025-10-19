@@ -36,7 +36,7 @@ export default function Leave() {
               <TabsTrigger value="request">New Request</TabsTrigger>
               <TabsTrigger value="my-requests">My Requests</TabsTrigger>
               {(userRole === "hr" || userRole === "admin") && (
-                <TabsTrigger value="hr-review">HR Review</TabsTrigger>
+                <TabsTrigger value="hr-review">Supervisor Review</TabsTrigger>
               )}
               {userRole === "admin" && (
                 <TabsTrigger value="final-approval">Final Approval</TabsTrigger>

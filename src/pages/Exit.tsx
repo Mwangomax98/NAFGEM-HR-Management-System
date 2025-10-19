@@ -117,7 +117,7 @@ export default function Exit() {
     
     const labels: Record<string, string> = {
       pending: "Pending Review",
-      hr_review: "HR Review",
+      hr_review: "Supervisor Review",
       asset_verification: "Asset Verification",
       final_approval: "Final Approval",
       completed: "Completed",

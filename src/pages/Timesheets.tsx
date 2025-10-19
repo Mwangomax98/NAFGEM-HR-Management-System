@@ -178,7 +178,7 @@ export default function Timesheets() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingCount}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.pendingCount === 0 ? "No pending timesheets" : "Awaiting HR review"}
+              {stats.pendingCount === 0 ? "No pending timesheets" : "Awaiting supervisor review"}
             </p>
           </CardContent>
         </Card>
