@@ -15,7 +15,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast, toast } from "@/hooks/use-toast";
 import { checkRateLimit, RATE_LIMITS, getRateLimitResetTime } from "@/utils/rateLimiter";
-import { logRateLimitExceeded } from "@/utils/auditLogger";
+import { logRateLimitExceeded, logTripCreated, logTripUpdated } from "@/utils/auditLogger";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface TripRequestFormProps {
   onSubmit: (trip: any) => void;
@@ -33,6 +34,8 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
   const [saving, setSaving] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicateTrips, setDuplicateTrips] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     projectId: existingTrip?.projectId || "",
     purpose: existingTrip?.purpose || "",
@@ -167,12 +170,32 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
       if (!formData.objectives) errors.push("Objectives are required");
       if (!formData.expectedOutcomes) errors.push("Expected outcomes are required");
       
+      // Prevent past-date trips (Fix #2)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (formData.startDate && formData.startDate < today) {
+        errors.push("Start date cannot be in the past");
+      }
+      
       if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
         errors.push("End date must be after start date");
       }
       
+      // Maximum trip duration validation (30 days for NGO context)
+      if (formData.startDate && formData.endDate) {
+        const durationDays = Math.ceil((formData.endDate.getTime() - formData.startDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (durationDays > 30) {
+          errors.push("Trip duration cannot exceed 30 days. Please split into multiple trips.");
+        }
+      }
+      
       if (formData.passengersCount < 1) {
         errors.push("At least 1 passenger is required");
+      }
+      
+      // Maximum passenger validation
+      if (formData.passengersCount > 50) {
+        errors.push("Passenger count cannot exceed 50. For larger groups, please submit multiple trips.");
       }
       
       const selectedVehicle = vehicles.find(v => v.id === formData.proposedVehicleId);
@@ -183,6 +206,39 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
     
     setValidationErrors(errors);
     return errors.length === 0;
+  };
+
+  // Check for duplicate trips (Fix #4)
+  const checkDuplicateTrips = async () => {
+    if (!formData.startDate || !currentUser) return [];
+    
+    try {
+      const startDateTime = formData.startDate && formData.startTime
+        ? new Date(`${format(formData.startDate, 'yyyy-MM-dd')}T${formData.startTime}`)
+        : formData.startDate;
+      
+      const oneDayBefore = new Date(startDateTime);
+      oneDayBefore.setDate(oneDayBefore.getDate() - 1);
+      const oneDayAfter = new Date(startDateTime);
+      oneDayAfter.setDate(oneDayAfter.getDate() + 1);
+
+      const { data, error } = await supabase
+        .from('trip_requests')
+        .select('id, purpose, destination, start_datetime, status')
+        .eq('requester_id', currentUser.id)
+        .eq('destination', formData.destination)
+        .gte('start_datetime', oneDayBefore.toISOString())
+        .lte('start_datetime', oneDayAfter.toISOString())
+        .not('status', 'in', '(rejected,cancelled)');
+      
+      if (error) throw error;
+      
+      // Filter out the current trip if editing
+      return (data || []).filter(trip => trip.id !== existingTrip?.id);
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+      return [];
+    }
   };
 
   const handleSubmit = async (isDraft = false) => {
@@ -204,6 +260,20 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
       return;
     }
 
+    // Check for duplicate trips (Fix #4)
+    if (!isDraft && !existingTrip) {
+      const duplicates = await checkDuplicateTrips();
+      if (duplicates.length > 0) {
+        setDuplicateTrips(duplicates);
+        setDuplicateDialogOpen(true);
+        return;
+      }
+    }
+
+    await proceedWithSubmit(isDraft);
+  };
+
+  const proceedWithSubmit = async (isDraft = false) => {
     // Check rate limit (only for submissions, not drafts)
     if (!isDraft) {
       const rateLimitKey = `trip-request-${currentUser.id}`;
@@ -274,6 +344,17 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
         throw result.error;
       }
 
+      // Audit logging (Fix #3)
+      if (existingTrip?.id) {
+        await logTripUpdated(existingTrip.id, Object.keys(formData));
+      } else {
+        await logTripCreated(result.data.id, {
+          destination: formData.destination,
+          purpose: formData.purpose,
+          project_id: formData.projectId,
+        });
+      }
+
       toast({
         title: isDraft ? "Draft Saved" : "Trip Request Submitted",
         description: isDraft 
@@ -297,15 +378,31 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
 
   const selectedProject = projects.find(p => p.id === formData.projectId);
 
+  // Fix #1: Check if trip is editable (only pending trips can be edited)
+  const isEditable = !existingTrip || existingTrip.status === 'pending' || existingTrip.status === 'draft';
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Fix #1: Show read-only message for non-editable trips */}
+      {existingTrip && !isEditable && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            This trip request cannot be edited as it has been <strong>{existingTrip.status}</strong>. 
+            Only pending trips can be modified.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-heading text-primary">
-            {existingTrip ? "Edit Trip Request" : "New Trip Request"}
+            {existingTrip ? (isEditable ? "Edit Trip Request" : "View Trip Request") : "New Trip Request"}
           </CardTitle>
           <CardDescription>
-            Plan your project-related travel with driver and vehicle coordination
+            {isEditable 
+              ? "Plan your project-related travel with driver and vehicle coordination"
+              : "Trip request details (read-only)"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -314,7 +411,11 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
             <Label htmlFor="project" className="text-sm font-medium">
               Project <span className="text-destructive">*</span>
             </Label>
-            <Select value={formData.projectId} onValueChange={(value) => setFormData({...formData, projectId: value})}>
+            <Select 
+              value={formData.projectId} 
+              onValueChange={(value) => setFormData({...formData, projectId: value})}
+              disabled={!isEditable}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
@@ -350,6 +451,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                   placeholder="Purpose of trip"
                   value={formData.purpose}
                   onChange={(e) => setFormData({...formData, purpose: e.target.value})}
+                  disabled={!isEditable}
                 />
             </div>
             <div className="space-y-2">
@@ -359,6 +461,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                   placeholder="Destination"
                   value={formData.destination}
                   onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                  disabled={!isEditable}
                 />
             </div>
           </div>
@@ -375,6 +478,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                     className="pl-10"
                     value={formData.pickupLocation}
                     onChange={(e) => setFormData({...formData, pickupLocation: e.target.value})}
+                    disabled={!isEditable}
                   />
               </div>
             </div>
@@ -388,6 +492,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                     className="pl-10"
                     value={formData.dropLocation}
                     onChange={(e) => setFormData({...formData, dropLocation: e.target.value})}
+                    disabled={!isEditable}
                   />
               </div>
             </div>
@@ -416,6 +521,11 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                       mode="single"
                       selected={formData.startDate}
                       onSelect={(date) => setFormData({...formData, startDate: date})}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return !isEditable || date < today;
+                      }}
                       initialFocus
                       className="pointer-events-auto"
                     />
@@ -426,6 +536,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                   className="w-32"
                   value={formData.startTime}
                   onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                  disabled={!isEditable}
                 />
               </div>
             </div>
@@ -460,6 +571,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                   className="w-32"
                   value={formData.endTime}
                   onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                  disabled={!isEditable}
                 />
               </div>
             </div>
@@ -475,10 +587,11 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                   id="passengers"
                   type="number"
                   min="1"
-                  max="10"
+                  max="50"
                   className="pl-10"
                   value={formData.passengersCount}
                   onChange={(e) => setFormData({...formData, passengersCount: parseInt(e.target.value)})}
+                  disabled={!isEditable}
                 />
               </div>
             </div>
@@ -489,6 +602,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                 placeholder="Special luggage requirements"
                 value={formData.luggageNotes}
                 onChange={(e) => setFormData({...formData, luggageNotes: e.target.value})}
+                disabled={!isEditable}
               />
             </div>
           </div>
@@ -497,10 +611,14 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Proposed Driver</Label>
-              <Select value={formData.proposedDriverId} onValueChange={(value) => {
-                setFormData({...formData, proposedDriverId: value});
-                setTimeout(checkConflicts, 100);
-              }}>
+              <Select 
+                value={formData.proposedDriverId} 
+                onValueChange={(value) => {
+                  setFormData({...formData, proposedDriverId: value});
+                  setTimeout(checkConflicts, 100);
+                }}
+                disabled={!isEditable}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a driver" />
                 </SelectTrigger>
@@ -525,10 +643,14 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
             </div>
             <div className="space-y-2">
               <Label>Proposed Vehicle</Label>
-              <Select value={formData.proposedVehicleId} onValueChange={(value) => {
-                setFormData({...formData, proposedVehicleId: value});
-                setTimeout(checkConflicts, 100);
-              }}>
+              <Select 
+                value={formData.proposedVehicleId} 
+                onValueChange={(value) => {
+                  setFormData({...formData, proposedVehicleId: value});
+                  setTimeout(checkConflicts, 100);
+                }}
+                disabled={!isEditable}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a vehicle" />
                 </SelectTrigger>
@@ -601,6 +723,7 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                 rows={3}
                 value={formData.objectives}
                 onChange={(e) => setFormData({...formData, objectives: e.target.value})}
+                disabled={!isEditable}
               />
             </div>
             
@@ -612,30 +735,62 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
                 rows={3}
                 value={formData.expectedOutcomes}
                 onChange={(e) => setFormData({...formData, expectedOutcomes: e.target.value})}
+                disabled={!isEditable}
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
-            <Button
-              variant="outline"
-              onClick={() => handleSubmit(true)}
-              disabled={saving || !currentUser}
-              className="flex-1"
-            >
-              {saving ? "Saving..." : "Save as Draft"}
-            </Button>
-            <Button
-              onClick={() => handleSubmit(false)}
-              disabled={saving || !currentUser || validationErrors.length > 0}
-              className="flex-1"
-            >
-              {saving ? "Submitting..." : "Submit Request"}
-            </Button>
-          </div>
+          {isEditable && (
+            <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={() => handleSubmit(true)}
+                disabled={saving || !currentUser}
+                className="flex-1"
+              >
+                {saving ? "Saving..." : "Save as Draft"}
+              </Button>
+              <Button
+                onClick={() => handleSubmit(false)}
+                disabled={saving || !currentUser || validationErrors.length > 0}
+                className="flex-1"
+              >
+                {saving ? "Submitting..." : "Submit Request"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Duplicate Trip Warning Dialog (Fix #4) */}
+      <AlertDialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Similar Trip Request Found</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have {duplicateTrips.length} similar trip request(s) to the same destination around the same dates:
+              <ul className="mt-2 space-y-1">
+                {duplicateTrips.map((trip) => (
+                  <li key={trip.id} className="text-sm">
+                    • {trip.purpose} - {new Date(trip.start_datetime).toLocaleDateString()} ({trip.status})
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3">Do you still want to create this trip request?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setDuplicateDialogOpen(false);
+              proceedWithSubmit(false);
+            }}>
+              Yes, Create Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

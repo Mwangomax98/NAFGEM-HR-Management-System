@@ -16,7 +16,11 @@ export type AuditEventType =
   | 'file_uploaded'
   | 'file_downloaded'
   | 'permission_denied'
-  | 'rate_limit_exceeded';
+  | 'rate_limit_exceeded'
+  | 'trip_status_change'
+  | 'trip_assignment_change'
+  | 'trip_created'
+  | 'trip_updated';
 
 interface AuditLogEntry {
   eventType: AuditEventType;
@@ -144,6 +148,76 @@ export const logPermissionDenied = async (resource: string, action: string) => {
     details: {
       resource,
       action,
+      timestamp: new Date().toISOString(),
+    },
+  });
+};
+
+/**
+ * Log trip status changes
+ */
+export const logTripStatusChange = async (
+  tripId: string, 
+  oldStatus: string, 
+  newStatus: string, 
+  additionalDetails?: Record<string, any>
+) => {
+  await logAuditEvent({
+    eventType: 'trip_status_change',
+    details: {
+      trip_id: tripId,
+      old_status: oldStatus,
+      new_status: newStatus,
+      timestamp: new Date().toISOString(),
+      ...additionalDetails,
+    },
+  });
+};
+
+/**
+ * Log trip resource assignment changes
+ */
+export const logTripAssignmentChange = async (
+  tripId: string,
+  assignmentType: 'driver' | 'vehicle',
+  resourceId: string,
+  resourceName: string
+) => {
+  await logAuditEvent({
+    eventType: 'trip_assignment_change',
+    details: {
+      trip_id: tripId,
+      assignment_type: assignmentType,
+      resource_id: resourceId,
+      resource_name: resourceName,
+      timestamp: new Date().toISOString(),
+    },
+  });
+};
+
+/**
+ * Log trip creation
+ */
+export const logTripCreated = async (tripId: string, tripDetails: Record<string, any>) => {
+  await logAuditEvent({
+    eventType: 'trip_created',
+    details: {
+      trip_id: tripId,
+      ...tripDetails,
+      timestamp: new Date().toISOString(),
+    },
+  });
+};
+
+/**
+ * Log trip updates
+ */
+export const logTripUpdated = async (tripId: string, updatedFields: string[]) => {
+  await logAuditEvent({
+    eventType: 'trip_updated',
+    details: {
+      trip_id: tripId,
+      fields_updated: updatedFields,
       timestamp: new Date().toISOString(),
     },
   });

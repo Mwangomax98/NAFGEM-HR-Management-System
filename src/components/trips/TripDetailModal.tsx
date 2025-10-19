@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Calendar, Users, Car, User, FileText, Clock, AlertTriangle } from "lucide-react";
 import TripStatusBadge from "./TripStatusBadge";
+import { logTripStatusChange } from "@/utils/auditLogger";
 
 interface TripDetailModalProps {
   trip: any;
@@ -21,7 +22,13 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
   const canEditAssignment = userRole === "hr" || userRole === "admin";
   const isDriver = false; // TODO: Implement driver check
 
-  const handleStatusUpdate = (newStatus: string, reason?: string) => {
+  const handleStatusUpdate = async (newStatus: string, reason?: string) => {
+    // Fix #3: Audit logging for status updates
+    await logTripStatusChange(trip.id, trip.status, newStatus, {
+      destination: trip.destination,
+      reason: reason || 'Manual status update'
+    });
+
     onStatusUpdate?.(trip.id, newStatus, reason);
     onClose();
   };

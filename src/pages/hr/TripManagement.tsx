@@ -19,6 +19,7 @@ import { AutoAssignment } from "@/components/scheduling/AutoAssignment";
 import { TripAnalyticsDashboard } from "@/components/analytics/TripAnalyticsDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast, toast } from "@/hooks/use-toast";
+import { logTripStatusChange, logTripAssignmentChange } from "@/utils/auditLogger";
 
 type TripStatus = 
   | "pending" 
@@ -229,12 +230,50 @@ export default function TripManagement() {
 
   const handleApprove = async (tripId: string) => {
     try {
+      // Fix #5: Require resource assignment before approval
+      const trip = trips.find(t => t.id === tripId);
+      
+      if (!trip) {
+        toast({ title: "Trip not found", variant: "destructive" });
+        return;
+      }
+
+      // Check if driver and vehicle are assigned
+      const hasDriver = trip.assignedDriverId || trip.proposedDriverId;
+      const hasVehicle = trip.assignedVehicleId || trip.proposedVehicleId;
+
+      if (!hasDriver) {
+        toast({ 
+          title: "Cannot Approve", 
+          description: "Please assign a driver before approving this trip",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      if (!hasVehicle) {
+        toast({ 
+          title: "Cannot Approve", 
+          description: "Please assign a vehicle before approving this trip",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      // Proceed with approval
       const { error } = await supabase
         .from('trip_requests')
         .update({ status: 'approved' })
         .eq('id', tripId);
       
       if (error) throw error;
+
+      // Fix #3: Audit logging
+      await logTripStatusChange(tripId, trip.status, 'approved', {
+        destination: trip.destination,
+        requester: trip.requesterName
+      });
+
       toast({ title: "Trip approved successfully" });
       fetchTrips();
     } catch (error) {
@@ -245,12 +284,23 @@ export default function TripManagement() {
 
   const handleReject = async (tripId: string) => {
     try {
+      const trip = trips.find(t => t.id === tripId);
+      
       const { error } = await supabase
         .from('trip_requests')
         .update({ status: 'rejected' })
         .eq('id', tripId);
       
       if (error) throw error;
+
+      // Fix #3: Audit logging
+      if (trip) {
+        await logTripStatusChange(tripId, trip.status, 'rejected', {
+          destination: trip.destination,
+          requester: trip.requesterName
+        });
+      }
+
       toast({ title: "Trip rejected successfully" });
       fetchTrips();
     } catch (error) {
