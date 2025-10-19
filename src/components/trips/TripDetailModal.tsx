@@ -8,6 +8,7 @@ import TripStatusBadge from "./TripStatusBadge";
 import { logTripStatusChange } from "@/utils/auditLogger";
 import { exportTripToPDF } from "@/utils/pdfExport";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TripDetailModalProps {
   trip: any;
@@ -23,6 +24,19 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
   const canApprove = userRole === "hr" || userRole === "admin";
   const canEditAssignment = userRole === "hr" || userRole === "admin";
   const isDriver = false; // TODO: Implement driver check
+
+  // Helper to format datetime from combined datetime field
+  const formatTripDateTime = (datetime: string | null) => {
+    if (!datetime) return { date: 'N/A', time: 'N/A' };
+    const dt = new Date(datetime);
+    return {
+      date: dt.toLocaleDateString(),
+      time: dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+  };
+
+  const startDT = formatTripDateTime(trip.startDateTime);
+  const endDT = formatTripDateTime(trip.endDateTime);
 
   const handleStatusUpdate = async (newStatus: string, reason?: string) => {
     // Fix #3: Audit logging for status updates
@@ -101,14 +115,14 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
                     <p className="text-sm font-medium text-muted-foreground">Start</p>
                     <p className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      {new Date(trip.startDate).toLocaleDateString()} {trip.startTime}
+                      {startDT.date} {startDT.time}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">End</p>
                     <p className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      {new Date(trip.endDate).toLocaleDateString()} {trip.endTime}
+                      {endDT.date} {endDT.time}
                     </p>
                   </div>
                 </div>
@@ -282,8 +296,23 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
                 <Button 
                   variant="ghost" 
                   className="w-full"
-                  onClick={() => {
-                    exportTripToPDF(trip);
+                  onClick={async () => {
+                    // Fetch complete trip data for PDF
+                    const { data: tripData } = await supabase
+                      .from('trip_requests')
+                      .select(`
+                        *,
+                        requester:profiles!trip_requests_requester_id_fkey(full_name),
+                        assigned_driver:drivers(name),
+                        assigned_vehicle:vehicles(make, model, plate_number),
+                        project:projects(name, donor)
+                      `)
+                      .eq('id', trip.id)
+                      .single();
+                    
+                    if (tripData) {
+                      exportTripToPDF(tripData);
+                    }
                   }}
                 >
                   Print Details
@@ -291,12 +320,27 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
                 <Button 
                   variant="ghost" 
                   className="w-full"
-                  onClick={() => {
-                    exportTripToPDF(trip);
-                    toast({
-                      title: "PDF Export",
-                      description: "Trip request PDF is being generated",
-                    });
+                  onClick={async () => {
+                    // Fetch complete trip data for PDF
+                    const { data: tripData } = await supabase
+                      .from('trip_requests')
+                      .select(`
+                        *,
+                        requester:profiles!trip_requests_requester_id_fkey(full_name),
+                        assigned_driver:drivers(name),
+                        assigned_vehicle:vehicles(make, model, plate_number),
+                        project:projects(name, donor)
+                      `)
+                      .eq('id', trip.id)
+                      .single();
+                    
+                    if (tripData) {
+                      exportTripToPDF(tripData);
+                      toast({
+                        title: "PDF Export",
+                        description: "Trip request PDF is being generated",
+                      });
+                    }
                   }}
                 >
                   Export to PDF

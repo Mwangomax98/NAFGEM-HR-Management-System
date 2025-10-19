@@ -434,9 +434,6 @@ export default function TripRequestForm({ onSubmit, onSaveDraft, existingTrip }:
               <div className="mt-2 p-3 bg-accent/10 rounded-md">
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">{selectedProject.donor}</Badge>
-                  <span className="text-sm text-muted-foreground">
-                    Budget: ${selectedProject.budget.toLocaleString()}
-                  </span>
                 </div>
               </div>
             )}

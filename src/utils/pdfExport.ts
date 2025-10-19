@@ -856,6 +856,15 @@ export const exportTripToPDF = (trip: any) => {
     return;
   }
 
+  // Extract names from related objects or use IDs as fallback
+  const requesterName = trip.requester?.full_name || trip.requester_name || 'N/A';
+  const projectName = trip.project?.name || trip.project_name || 'N/A';
+  const donorName = trip.project?.donor || trip.donor_name || 'N/A';
+  const driverName = trip.assigned_driver?.name || trip.assigned_driver_name || 'Not assigned';
+  const vehicleInfo = trip.assigned_vehicle 
+    ? `${trip.assigned_vehicle.make} ${trip.assigned_vehicle.model} (${trip.assigned_vehicle.plate_number})`
+    : trip.assigned_vehicle_info || 'Not assigned';
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -963,7 +972,8 @@ export const exportTripToPDF = (trip: any) => {
       <div class="trip-header">
         <h3>${trip.destination}</h3>
         <p><strong>Status:</strong> <span class="badge status-${trip.status}">${trip.status.toUpperCase()}</span></p>
-        <p><strong>Project:</strong> ${trip.project_id}</p>
+        <p><strong>Project:</strong> ${projectName}</p>
+        <p><strong>Donor:</strong> ${donorName}</p>
       </div>
 
       <div class="section">
@@ -988,11 +998,11 @@ export const exportTripToPDF = (trip: any) => {
             </div>
             <div class="info-item">
               <span class="info-label">Start Date & Time:</span><br>
-              ${new Date(trip.start_datetime).toLocaleString()}
+              ${new Date(trip.start_datetime || trip.startDateTime).toLocaleString()}
             </div>
             <div class="info-item">
               <span class="info-label">End Date & Time:</span><br>
-              ${new Date(trip.end_datetime).toLocaleString()}
+              ${new Date(trip.end_datetime || trip.endDateTime).toLocaleString()}
             </div>
             <div class="info-item">
               <span class="info-label">Passengers:</span><br>
@@ -1012,19 +1022,15 @@ export const exportTripToPDF = (trip: any) => {
         <h2 class="section-title">Resource Assignment</h2>
         <div class="section-content">
           <div class="info-grid">
-            ${trip.assigned_driver_id || trip.proposed_driver_id ? `
             <div class="info-item">
               <span class="info-label">Driver:</span><br>
-              ${trip.assigned_driver_id ? `Assigned: ${trip.assigned_driver_id}` : `Proposed: ${trip.proposed_driver_id}`}
+              ${driverName}
             </div>
-            ` : '<div class="info-item"><span class="info-label">Driver:</span><br>Not assigned</div>'}
             
-            ${trip.assigned_vehicle_id || trip.proposed_vehicle_id ? `
             <div class="info-item">
               <span class="info-label">Vehicle:</span><br>
-              ${trip.assigned_vehicle_id ? `Assigned: ${trip.assigned_vehicle_id}` : `Proposed: ${trip.proposed_vehicle_id}`}
+              ${vehicleInfo}
             </div>
-            ` : '<div class="info-item"><span class="info-label">Vehicle:</span><br>Not assigned</div>'}
           </div>
         </div>
       </div>
@@ -1067,8 +1073,8 @@ export const exportTripToPDF = (trip: any) => {
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">Requester ID:</span><br>
-              ${trip.requester_id}
+              <span class="info-label">Requested By:</span><br>
+              ${requesterName}
             </div>
             <div class="info-item">
               <span class="info-label">Created:</span><br>
