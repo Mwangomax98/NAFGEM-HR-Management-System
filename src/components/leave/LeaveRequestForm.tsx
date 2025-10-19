@@ -438,7 +438,7 @@ export default function LeaveRequestForm() {
                         <SelectContent>
                           {leaveTypes.map((type) => (
                             <SelectItem key={type.value} value={type.value}>
-                              {type.label} ({type.entitlement} days)
+                              {type.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
