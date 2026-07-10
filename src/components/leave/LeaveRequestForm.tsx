@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Upload, Save, Send } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { useUserRole } from "@/hooks/useUserRole";
 
 import { Button } from "@/components/ui/button";

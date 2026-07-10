@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, AppRole } from "@/lib/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 

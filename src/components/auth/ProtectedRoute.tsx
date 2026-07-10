@@ -1,45 +1,61 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUserRole } from "@/hooks/useUserRole";
-import { hasMinimumRole, AppRole } from "@/lib/roles";
+import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { api } from '@/lib/api';
+import { hasMinimumRole, normalizeRole, ROLES } from '@/lib/roles';
+
+const AUTH_DISABLED = import.meta.env.VITE_AUTH_DISABLED === 'true';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole: AppRole;
+  requiredRole?: string;
   fallbackPath?: string;
 }
 
-export const ProtectedRoute = ({ 
-  children, 
-  requiredRole, 
-  fallbackPath = "/" 
+export const ProtectedRoute = ({
+  children,
+  requiredRole = ROLES.EMPLOYEE,
+  fallbackPath = '/auth',
 }: ProtectedRouteProps) => {
-  const { userRole, loading } = useUserRole();
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(AUTH_DISABLED);
 
   useEffect(() => {
-    if (!loading && userRole && !hasMinimumRole(userRole, requiredRole)) {
-      navigate(fallbackPath);
+    if (AUTH_DISABLED) {
+      setAllowed(true);
+      setLoading(false);
+      return;
     }
-  }, [userRole, loading, requiredRole, fallbackPath, navigate]);
+
+    (async () => {
+      const { data: { session } } = await api.auth.getSession();
+      if (!session) {
+        setAllowed(false);
+        setLoading(false);
+        return;
+      }
+
+      const { data: roleData } = await api
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      const userRole = normalizeRole(roleData?.role || session.role);
+      setAllowed(hasMinimumRole(userRole, requiredRole));
+      setLoading(false);
+    })();
+  }, [requiredRole]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
-  if (!userRole || !hasMinimumRole(userRole, requiredRole)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-destructive mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You don't have permission to access this page.</p>
-        </div>
-      </div>
-    );
+  if (!allowed) {
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return <>{children}</>;

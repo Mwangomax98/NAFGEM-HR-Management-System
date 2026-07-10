@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { CalendarIcon, Upload, Plus, Trash2, Save, UserPlus, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { UserSelectionStep } from "./UserSelectionStep";
 
 import { RoleDiagnostics } from "./RoleDiagnostics";
@@ -215,9 +215,9 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
             variant: "destructive",
           });
         } else {
-          const { data: { publicUrl } } = supabase.storage
+          const publicUrl = uploadData?.publicUrl || supabase.storage
             .from('profile-photos')
-            .getPublicUrl(passportPath);
+            .getPublicUrl(uploadData?.fullPath || passportPath).data.publicUrl;
           mergedData.personal.passportPhotoUrl = publicUrl;
         }
       }
@@ -238,9 +238,9 @@ export default function AddEmployeeForm({ onSave, onCancel }: AddEmployeeFormPro
                 .upload(certPath, certFile, { upsert: true });
 
               if (!uploadError) {
-                const { data: { publicUrl } } = supabase.storage
+                const publicUrl = uploadData?.publicUrl || supabase.storage
                   .from('education-certificates')
-                  .getPublicUrl(certPath);
+                  .getPublicUrl(uploadData?.fullPath || certPath).data.publicUrl;
                 certUrls.push(publicUrl);
               }
             }

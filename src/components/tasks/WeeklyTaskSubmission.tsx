@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Plus, Trash2, Send, Save, Calendar, Target, Clock, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 
 
 interface TaskSuggestion {
@@ -78,28 +78,27 @@ export default function WeeklyTaskSubmission() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Check if weekly task exists for current week
       const { data: existingWeeklyTask, error: weekError } = await supabase
         .from('weekly_tasks')
-        .select(`
-          *,
-          task_submissions (*)
-        `)
+        .select('*')
         .eq('employee_id', user.id)
         .eq('week_start_date', currentWeek.start)
-        .single();
+        .maybeSingle();
 
-      if (weekError && weekError.code !== 'PGRST116') {
-        throw weekError;
-      }
+      if (weekError) throw weekError;
 
       if (existingWeeklyTask) {
+        const { data: submissions } = await supabase
+          .from('task_submissions')
+          .select('*')
+          .eq('weekly_task_id', existingWeeklyTask.id);
+
         setWeeklyTask({
           id: existingWeeklyTask.id,
           week_start_date: existingWeeklyTask.week_start_date,
           week_end_date: existingWeeklyTask.week_end_date,
           status: existingWeeklyTask.status as 'draft' | 'submitted' | 'under_review' | 'evaluated',
-          tasks: (existingWeeklyTask.task_submissions || []).map((task: any) => ({
+          tasks: (submissions || []).map((task: any) => ({
             id: task.id,
             task_title: task.task_title,
             task_description: task.task_description,
@@ -217,31 +216,56 @@ export default function WeeklyTaskSubmission() {
 
       let weeklyTaskId = weeklyTask.id;
 
-      // Use UPSERT to handle duplicate key constraint
-      const { data: weeklyTaskData, error: weekError } = await supabase
-        .from('weekly_tasks')
-        .upsert({
-          employee_id: user.id,
-          week_start_date: weeklyTask.week_start_date,
-          week_end_date: weeklyTask.week_end_date,
-          status: submit ? 'submitted' : 'draft',
-          submitted_at: submit ? new Date().toISOString() : null
-        }, {
-          onConflict: 'employee_id,week_start_date',
-          ignoreDuplicates: false
-        })
-        .select()
-        .single();
+      if (weeklyTaskId) {
+        const { error: weekError } = await supabase
+          .from('weekly_tasks')
+          .update({
+            week_end_date: weeklyTask.week_end_date,
+            status: submit ? 'submitted' : 'draft',
+            submitted_at: submit ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', weeklyTaskId);
+        if (weekError) throw weekError;
+      } else {
+        const { data: existing } = await supabase
+          .from('weekly_tasks')
+          .select('id')
+          .eq('employee_id', user.id)
+          .eq('week_start_date', weeklyTask.week_start_date)
+          .maybeSingle();
 
-      if (weekError) {
-        console.error('Error saving weekly task:', weekError);
-        throw weekError;
+        if (existing?.id) {
+          weeklyTaskId = existing.id;
+          const { error: weekError } = await supabase
+            .from('weekly_tasks')
+            .update({
+              week_end_date: weeklyTask.week_end_date,
+              status: submit ? 'submitted' : 'draft',
+              submitted_at: submit ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', weeklyTaskId);
+          if (weekError) throw weekError;
+        } else {
+          const { data: weeklyTaskData, error: weekError } = await supabase
+            .from('weekly_tasks')
+            .insert({
+              employee_id: user.id,
+              week_start_date: weeklyTask.week_start_date,
+              week_end_date: weeklyTask.week_end_date,
+              status: submit ? 'submitted' : 'draft',
+              submitted_at: submit ? new Date().toISOString() : null,
+            })
+            .select()
+            .single();
+          if (weekError) throw weekError;
+          weeklyTaskId = weeklyTaskData.id;
+        }
       }
 
-      weeklyTaskId = weeklyTaskData.id;
-
-      // Delete existing task submissions
-      if (weeklyTask.id) {
+      // Delete existing task submissions and re-insert
+      if (weeklyTaskId) {
         const { error: deleteError } = await supabase
           .from('task_submissions')
           .delete()
@@ -266,7 +290,7 @@ export default function WeeklyTaskSubmission() {
           actual_completion_date: task.actual_completion_date,
           completion_explanation: task.completion_explanation,
           task_category: task.task_category,
-          linked_kpi_id: task.linked_kpi_id
+          linked_kpi_id: task.linked_kpi_id || null
         }));
 
         const { error: insertError } = await supabase

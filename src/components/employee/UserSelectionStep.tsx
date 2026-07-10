@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { RoleDiagnostics } from "./RoleDiagnostics";
 

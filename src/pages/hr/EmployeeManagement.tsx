@@ -17,7 +17,7 @@ import { useEmployeeNotifications } from "@/hooks/useEmployeeNotifications";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { useAvailableUsers } from "@/hooks/useAvailableUsers";
 
 

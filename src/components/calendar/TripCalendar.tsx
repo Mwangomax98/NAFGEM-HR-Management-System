@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays, Car, User, Clock, MapPin } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/api";
 import { toast } from '@/hooks/use-toast';
 
 interface TripEvent {

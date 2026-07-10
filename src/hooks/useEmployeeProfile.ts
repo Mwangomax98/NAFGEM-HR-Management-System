@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/api";
 import { useToast } from '@/hooks/use-toast';
 
 export interface EmployeeProfile {
@@ -116,54 +116,18 @@ export function useEmployeeProfile(userId?: string): UseEmployeeProfileReturn {
   useEffect(() => {
     fetchProfile();
 
-    // Refetch when page becomes visible (e.g., after navigating back)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Page became visible, refetching profile...');
         fetchProfile();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Set up real-time subscription for individual profile
-    const currentUserId = userId;
-    const subscription = supabase
-      .channel('employee_profile_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'employee_profiles',
-          filter: currentUserId ? `user_id=eq.${currentUserId}` : undefined
-        },
-        (payload) => {
-          console.log('Real-time profile update:', payload);
-          const updatedProfile = payload.new as any;
-          
-          if (updatedProfile) {
-            const profileData = {
-              ...updatedProfile,
-              children: Array.isArray(updatedProfile.children) ? updatedProfile.children : JSON.parse(String(updatedProfile.children || '[]')),
-              education: Array.isArray(updatedProfile.education) ? updatedProfile.education : JSON.parse(String(updatedProfile.education || '[]')),
-              next_of_kin: Array.isArray(updatedProfile.next_of_kin) ? updatedProfile.next_of_kin : JSON.parse(String(updatedProfile.next_of_kin || '[]')),
-              projects: Array.isArray(updatedProfile.projects) ? updatedProfile.projects : JSON.parse(String(updatedProfile.projects || '[]')),
-            };
-            setProfile(profileData);
-            
-            toast({
-              title: "Profile Updated",
-              description: "Your employee profile has been updated.",
-            });
-          }
-        }
-      )
-      .subscribe();
+    const interval = setInterval(fetchProfile, 30000);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      subscription.unsubscribe();
+      clearInterval(interval);
     };
   }, [userId]);
 
@@ -221,59 +185,8 @@ export function useAllEmployeeProfiles() {
 
   useEffect(() => {
     fetchProfiles();
-
-    // Set up real-time subscription for employee profiles
-    const subscription = supabase
-      .channel('employee_profiles_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'employee_profiles'
-        },
-        (payload) => {
-          console.log('Real-time update for employee profiles:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newProfile = payload.new as any;
-            const parsedProfile = {
-              ...newProfile,
-              children: Array.isArray(newProfile.children) ? newProfile.children : JSON.parse(String(newProfile.children || '[]')),
-              education: Array.isArray(newProfile.education) ? newProfile.education : JSON.parse(String(newProfile.education || '[]')),
-              next_of_kin: Array.isArray(newProfile.next_of_kin) ? newProfile.next_of_kin : JSON.parse(String(newProfile.next_of_kin || '[]')),
-              projects: Array.isArray(newProfile.projects) ? newProfile.projects : JSON.parse(String(newProfile.projects || '[]')),
-            };
-            
-            setProfiles(current => [parsedProfile, ...current]);
-            toast({
-              title: "New Employee Added",
-              description: `${newProfile.name_full} has been added to the system.`,
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedProfile = payload.new as any;
-            const parsedProfile = {
-              ...updatedProfile,
-              children: Array.isArray(updatedProfile.children) ? updatedProfile.children : JSON.parse(String(updatedProfile.children || '[]')),
-              education: Array.isArray(updatedProfile.education) ? updatedProfile.education : JSON.parse(String(updatedProfile.education || '[]')),
-              next_of_kin: Array.isArray(updatedProfile.next_of_kin) ? updatedProfile.next_of_kin : JSON.parse(String(updatedProfile.next_of_kin || '[]')),
-              projects: Array.isArray(updatedProfile.projects) ? updatedProfile.projects : JSON.parse(String(updatedProfile.projects || '[]')),
-            };
-            
-            setProfiles(current => current.map(profile => 
-              profile.id === updatedProfile.id ? parsedProfile : profile
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            const deletedProfile = payload.old as any;
-            setProfiles(current => current.filter(profile => profile.id !== deletedProfile.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    const interval = setInterval(fetchProfiles, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const applyLocalUpdate = (updatedRow: any) => {

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, MessageSquare, User, Users, Smile, Paperclip, Mic, Phone, Video } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -131,25 +131,10 @@ export default function TaskChatModal({ evaluationId, taskTitle, isOpen, onClose
   };
 
   const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel(`task-chat-${evaluationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'task_conversations',
-          filter: `task_evaluation_id=eq.${evaluationId}`
-        },
-        (payload) => {
-          loadMessages();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(() => {
+      loadMessages();
+    }, 5000);
+    return () => clearInterval(interval);
   };
 
   const sendMessage = async () => {

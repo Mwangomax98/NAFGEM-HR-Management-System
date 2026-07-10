@@ -2,16 +2,13 @@ import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { logLogout } from "@/utils/auditLogger";
 
 export function LogoutConfirmation() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logLogout();
-    await supabase.auth.signOut();
     setIsOpen(false);
+    // Auth disabled — reload home as stub user
     window.location.href = "/";
   };
 
@@ -26,8 +23,7 @@ export function LogoutConfirmation() {
         <DialogHeader>
           <DialogTitle>Confirm Logout</DialogTitle>
           <DialogDescription>
-            Are you sure you want to log out of the NAFGEM HR Management System? 
-            You will need to log in again to access your account.
+            Auth is disabled in local mode. This will reload the app as the stub admin user.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -36,7 +32,7 @@ export function LogoutConfirmation() {
           </Button>
           <Button variant="destructive" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
-            Logout
+            Reload
           </Button>
         </DialogFooter>
       </DialogContent>

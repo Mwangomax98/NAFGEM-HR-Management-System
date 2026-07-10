@@ -1,73 +1,89 @@
-# Welcome to your Lovable project
+# NAFGEM HR Management System
 
-## Project info
+Staff portal for **NAFGEM Tanzania** — PostgreSQL + Express + Vite/React. Branded for NAFGEM (teal + orange), with five-role RBAC, JWT login, and modules for training, staff requests, donor projects, and field activity reports.
 
-**URL**: https://lovable.dev/projects/399d0195-8c20-4c88-91d3-e9e46ae26a83
+## Prerequisites
 
-## How can I edit this code?
+- Node.js 18+
+- **Docker Desktop** for local PostgreSQL
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/399d0195-8c20-4c88-91d3-e9e46ae26a83) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Quick start
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run server:install
+npm run db:up
+npm run db:migrate
+npm run db:seed
+npm run server    # API :4000
+npm run dev       # UI :8080
 ```
 
-**Edit a file directly in GitHub**
+Open http://localhost:8080
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Local dev (no login)
 
-**Use GitHub Codespaces**
+Set in `.env`:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+AUTH_DISABLED=true
+VITE_AUTH_DISABLED=true
+```
 
-## What technologies are used for this project?
+You enter as stub **Super Admin** (`admin@local.dev`).
 
-This project is built with:
+### Production login
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Default seed password: `admin123` (change before deploy).
 
-## How can I deploy this project?
+Login page: `/auth` — footer links to https://nafgemtanzania.or.tz
 
-Simply open [Lovable](https://lovable.dev/projects/399d0195-8c20-4c88-91d3-e9e46ae26a83) and click on Share -> Publish.
+## Environment
 
-## Can I connect a custom domain to my Lovable project?
+```
+DATABASE_URL=postgresql://harmony:harmony@localhost:5432/harmony_hr
+PORT=4000
+VITE_API_URL=http://localhost:4000
+JWT_SECRET=change-me-in-production
+AUTH_DISABLED=true
+VITE_AUTH_DISABLED=true
+VITE_MAIN_SITE_URL=https://nafgemtanzania.or.tz
+VITE_HR_PORTAL_URL=https://hr.nafgemtanzania.or.tz
+```
 
-Yes, you can!
+## Roles
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+| Role | Access |
+|------|--------|
+| Super Admin | Full access |
+| HR Admin | All HR features, records, reports, staff requests |
+| Manager | Team-scoped (via `manager_id`) — tasks, field reports |
+| Employee | Own profile, tasks, leave, staff requests, field reports |
+| Field Officer | Own field reports only |
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Modules
+
+- **Training & Certifications** — `/training`, `/hr/training`
+- **Staff Requests** — `/staff-requests` (maintenance, IT, supplies, etc.; leave-style two-stage approval)
+- **Donor Projects** — `/hr/projects` with staff allocation
+- **Field Activity Reports** — `/field-reports`, `/hr/field-reports` (filter + CSV export)
+
+## Main website integration
+
+On [nafgemtanzania.or.tz](https://nafgemtanzania.or.tz), add a navbar link **Staff Portal** → `https://hr.nafgemtanzania.or.tz`. No shared user database.
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run db:migrate` | Apply `schema.sql` + `migrate_v2*.sql` + `migrate_v3.sql` + `migrate_v4.sql` |
+| `npm run db:seed` | Seed super admin + leave balances |
+| `npm run server` | Express API |
+| `npm run dev` | Vite frontend |
+| `npm run build` | Production build |
+
+## Architecture
+
+- Frontend: `src/` — NAFGEM brand tokens in `src/index.css`
+- API: `server/` — CRUD `/api/db/:table`, auth `/api/auth/login`, uploads `/api/storage/:bucket`
+- Migrations: `server/db/schema.sql`, `server/db/migrate_v2.sql`

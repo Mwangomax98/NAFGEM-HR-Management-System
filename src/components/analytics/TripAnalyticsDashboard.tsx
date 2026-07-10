@@ -30,7 +30,7 @@ import {
   BarChart3,
   Download
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/api";
 import { toast } from '@/hooks/use-toast';
 import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 
@@ -255,26 +255,28 @@ export function TripAnalyticsDashboard() {
   const fetchDriverPerformance = async (startDate: Date, endDate: Date): Promise<DriverPerformance[]> => {
     const { data: drivers } = await supabase
       .from('drivers')
-      .select(`
-        id,
-        name,
-        trip_requests!assigned_driver_id(
-          id,
-          start_datetime,
-          end_datetime,
-          status
-        )
-      `);
+      .select('id, name');
 
-    if (!drivers) return [];
+    if (!drivers?.length) return [];
+
+    const { data: trips } = await supabase
+      .from('trip_requests')
+      .select('id, assigned_driver_id, start_datetime, end_datetime, status')
+      .gte('start_datetime', startDate.toISOString())
+      .lte('start_datetime', endDate.toISOString())
+      .not('assigned_driver_id', 'is', null);
+
+    const tripsByDriver: Record<string, any[]> = {};
+    for (const trip of trips || []) {
+      if (!trip.assigned_driver_id) continue;
+      if (!tripsByDriver[trip.assigned_driver_id]) tripsByDriver[trip.assigned_driver_id] = [];
+      tripsByDriver[trip.assigned_driver_id].push(trip);
+    }
 
     return drivers.map(driver => {
-      const trips = driver.trip_requests?.filter(trip => {
-        const tripDate = new Date(trip.start_datetime);
-        return tripDate >= startDate && tripDate <= endDate;
-      }) || [];
+      const driverTrips = tripsByDriver[driver.id] || [];
 
-      const totalHours = trips.reduce((sum, trip) => {
+      const totalHours = driverTrips.reduce((sum, trip) => {
         if (trip.start_datetime && trip.end_datetime) {
           const start = new Date(trip.start_datetime);
           const end = new Date(trip.end_datetime);
@@ -283,13 +285,12 @@ export function TripAnalyticsDashboard() {
         return sum;
       }, 0);
 
-      // Simplified rating calculation
-      const completedTrips = trips.filter(t => t.status === 'completed').length;
-      const rating = trips.length > 0 ? (completedTrips / trips.length) * 5 : 0;
+      const completedTrips = driverTrips.filter(t => t.status === 'completed').length;
+      const rating = driverTrips.length > 0 ? (completedTrips / driverTrips.length) * 5 : 0;
 
       return {
         name: driver.name,
-        trips: trips.length,
+        trips: driverTrips.length,
         hours: Math.round(totalHours * 10) / 10,
         rating: Math.round(rating * 10) / 10
       };

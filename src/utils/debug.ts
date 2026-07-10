@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/api";
 
 export const debugUserAccess = async () => {
   try {

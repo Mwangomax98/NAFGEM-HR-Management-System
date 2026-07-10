@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, User, Search, Filter } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import TaskEvaluationModal from "@/components/modals/TaskEvaluationModal";
@@ -67,20 +67,7 @@ export default function WeeklyPerformanceReview() {
       
       let query = supabase
         .from('weekly_tasks')
-        .select(`
-          id,
-          employee_id,
-          week_start_date,
-          week_end_date,
-          status,
-          submitted_at,
-          task_submissions (
-            id,
-            estimated_hours,
-            actual_hours,
-            completion_percentage
-          )
-        `);
+        .select('id, employee_id, week_start_date, week_end_date, status, submitted_at');
 
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
@@ -94,15 +81,27 @@ export default function WeeklyPerformanceReview() {
 
       if (error) throw error;
 
+      const weeklyIds = data?.map(task => task.id) || [];
+      let submissionsByWeek: Record<string, any[]> = {};
+      if (weeklyIds.length) {
+        const { data: submissions } = await supabase
+          .from('task_submissions')
+          .select('id, weekly_task_id, estimated_hours, actual_hours, completion_percentage')
+          .in('weekly_task_id', weeklyIds);
+        for (const s of submissions || []) {
+          if (!submissionsByWeek[s.weekly_task_id]) submissionsByWeek[s.weekly_task_id] = [];
+          submissionsByWeek[s.weekly_task_id].push(s);
+        }
+      }
+
       // Get employee profiles separately
       const employeeIds = data?.map(task => task.employee_id) || [];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', employeeIds);
+      const { data: profiles } = employeeIds.length
+        ? await supabase.from('profiles').select('id, full_name, email').in('id', employeeIds)
+        : { data: [] as any[] };
 
       const formattedData: WeeklyTaskSummary[] = data?.map(task => {
-        const tasks = task.task_submissions || [];
+        const tasks = submissionsByWeek[task.id] || [];
         const totalEstimated = tasks.reduce((sum: number, t: any) => sum + (t.estimated_hours || 0), 0);
         const totalActual = tasks.reduce((sum: number, t: any) => sum + (t.actual_hours || 0), 0);
         const avgCompletion = tasks.length > 0 
@@ -140,18 +139,22 @@ export default function WeeklyPerformanceReview() {
     try {
       const { data, error } = await supabase
         .from('task_submissions')
-        .select(`
-          *,
-          task_evaluations (
-            performance_score,
-            completion_assessment,
-            feedback,
-            requires_explanation
-          )
-        `)
+        .select('*')
         .eq('weekly_task_id', weeklyTaskId);
 
       if (error) throw error;
+
+      const submissionIds = (data || []).map((t: any) => t.id);
+      let evalBySubmission: Record<string, any> = {};
+      if (submissionIds.length) {
+        const { data: evaluations } = await supabase
+          .from('task_evaluations')
+          .select('task_submission_id, performance_score, completion_assessment, feedback, requires_explanation')
+          .in('task_submission_id', submissionIds);
+        for (const ev of evaluations || []) {
+          evalBySubmission[ev.task_submission_id] = ev;
+        }
+      }
 
       const formattedTasks: TaskSubmissionDetails[] = data?.map(task => ({
         id: task.id,
@@ -163,7 +166,7 @@ export default function WeeklyPerformanceReview() {
         completion_status: task.completion_status,
         completion_percentage: task.completion_percentage || 0,
         notes: task.notes || '',
-        evaluation: task.task_evaluations?.[0] || undefined
+        evaluation: evalBySubmission[task.id] || undefined
       })) || [];
 
       setTaskDetails(formattedTasks);

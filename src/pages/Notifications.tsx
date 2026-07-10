@@ -3,7 +3,7 @@ import { Bell, Check, Trash2, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,31 +25,8 @@ export default function Notifications() {
 
   useEffect(() => {
     fetchNotifications();
-
-    // Subscribe to real-time notifications
-    const channel = supabase
-      .channel('notifications-page-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications'
-        },
-        (payload) => {
-          const newNotification = {
-            ...payload.new,
-            type: payload.new.type as "info" | "warning" | "success" | "error"
-          } as Notification;
-          
-          setNotifications(prev => [newNotification, ...prev]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchNotifications = async () => {

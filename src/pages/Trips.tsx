@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Car, Plus, MapPin, Calendar, Clock, Filter, Search, Users, Fuel, AlertTriangle, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import TripRequestForm from "@/components/trips/TripRequestForm";
 import TripStatusBadge from "@/components/trips/TripStatusBadge";
 import TripDetailModal from "@/components/trips/TripDetailModal";
@@ -85,14 +85,35 @@ export default function Trips() {
         throw error;
       }
 
+      const requesterIds = Array.from(new Set((data || []).map((t: any) => t.requester_id).filter(Boolean)));
+      const driverIds = Array.from(new Set((data || []).flatMap((t: any) => [t.assigned_driver_id, t.proposed_driver_id]).filter(Boolean)));
+      const vehicleIds = Array.from(new Set((data || []).flatMap((t: any) => [t.assigned_vehicle_id, t.proposed_vehicle_id]).filter(Boolean)));
+      const projectIds = Array.from(new Set((data || []).map((t: any) => t.project_id).filter(Boolean)));
+
+      const [{ data: profiles }, { data: drivers }, { data: vehicles }, { data: projects }] = await Promise.all([
+        requesterIds.length ? supabase.from('profiles').select('id, full_name').in('id', requesterIds) : Promise.resolve({ data: [] as any[] }),
+        driverIds.length ? supabase.from('drivers').select('id, name').in('id', driverIds) : Promise.resolve({ data: [] as any[] }),
+        vehicleIds.length ? supabase.from('vehicles').select('id, make, model, plate_number').in('id', vehicleIds) : Promise.resolve({ data: [] as any[] }),
+        projectIds.length ? supabase.from('projects').select('id, name, donor').in('id', projectIds) : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]));
+      const driverMap = Object.fromEntries((drivers || []).map((d: any) => [d.id, d]));
+      const vehicleMap = Object.fromEntries((vehicles || []).map((v: any) => [v.id, v]));
+      const projectMap = Object.fromEntries((projects || []).map((p: any) => [p.id, p]));
+
       // Transform data to match component expectations
-      const transformedTrips = data?.map(trip => ({
+      const transformedTrips = data?.map(trip => {
+        const vehicle = vehicleMap[trip.assigned_vehicle_id] || vehicleMap[trip.proposed_vehicle_id];
+        const driver = driverMap[trip.assigned_driver_id] || driverMap[trip.proposed_driver_id];
+        const project = projectMap[trip.project_id];
+        return {
         id: trip.id,
         projectId: trip.project_id,
-        projectName: trip.project_id, // You may want to join with projects table
-        donorName: "", // You may want to join with projects table
+        projectName: project?.name || trip.project_id || '',
+        donorName: project?.donor || '',
         requesterId: trip.requester_id,
-        requesterName: "User", // Simplified for now
+        requesterName: profileMap[trip.requester_id]?.full_name || 'User',
         purpose: trip.purpose,
         destination: trip.destination,
         pickupLocation: trip.pickup_location,
@@ -107,13 +128,14 @@ export default function Trips() {
         proposedVehicleId: trip.proposed_vehicle_id,
         assignedDriverId: trip.assigned_driver_id,
         assignedVehicleId: trip.assigned_vehicle_id,
-        assignedDriverName: "", // Simplified for now
-        assignedVehicle: "", // Simplified for now
+        assignedDriverName: driver?.name || '',
+        assignedVehicle: vehicle ? `${vehicle.make} ${vehicle.model} (${vehicle.plate_number})` : '',
         createdAt: trip.created_at,
         objectives: trip.objectives,
         expectedOutcomes: trip.expected_outcomes,
         termsOfReference: trip.terms_of_reference
-      })) || [];
+      };
+      }) || [];
 
       setTrips(transformedTrips);
     } catch (error) {

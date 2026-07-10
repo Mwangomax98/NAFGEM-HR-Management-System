@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
+import { STUB_USER_ID } from '@/lib/currentUser';
 import { useToast } from '@/hooks/use-toast';
 
 export interface UserProfile {
@@ -28,22 +29,12 @@ export function useUserProfile(userId?: string): UseUserProfileReturn {
       setLoading(true);
       setError(null);
 
-      let query = supabase.from('profiles').select('*');
-      
-      if (userId) {
-        query = query.eq('id', userId);
-      } else {
-        // Fetch current user's profile
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-        query = query.eq('id', user.id);
-      }
-
-      const { data, error: fetchError } = await query.maybeSingle();
+      const id = userId || STUB_USER_ID;
+      const { data, error: fetchError } = await api
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
 
       if (fetchError) {
         console.error('Error fetching user profile:', fetchError);
@@ -71,29 +62,8 @@ export function useUserProfile(userId?: string): UseUserProfileReturn {
 
   useEffect(() => {
     fetchProfile();
-
-    // Set up real-time subscription for profile updates
-    const currentUserId = userId;
-    const subscription = supabase
-      .channel('profile_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: currentUserId ? `id=eq.${currentUserId}` : undefined
-        },
-        (payload) => {
-          console.log('Real-time profile update:', payload);
-          setProfile(payload.new as UserProfile);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    const interval = setInterval(fetchProfile, 30000);
+    return () => clearInterval(interval);
   }, [userId]);
 
   return {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -324,15 +324,15 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
       const sanitizedName = sanitizeFileName(file.name);
       const passportPath = `${employee.user_id}/passport_${Date.now()}_${sanitizedName}`;
       
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-photos')
         .upload(passportPath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const publicUrl = uploadData?.publicUrl || supabase.storage
         .from('profile-photos')
-        .getPublicUrl(passportPath);
+        .getPublicUrl(uploadData?.fullPath || passportPath).data.publicUrl;
 
       form.setValue('personal.passportPhotoUrl', publicUrl);
       
@@ -375,15 +375,15 @@ export default function EditProfileModal({ isOpen, onClose, employee, onSave }: 
       const sanitizedName = sanitizeFileName(file.name);
       const certPath = `${employee.user_id}/edu_${educationIndex}/${Date.now()}_${sanitizedName}`;
       
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('education-certificates')
         .upload(certPath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const publicUrl = uploadData?.publicUrl || supabase.storage
         .from('education-certificates')
-        .getPublicUrl(certPath);
+        .getPublicUrl(uploadData?.fullPath || certPath).data.publicUrl;
 
       const currentUrls = form.watch(`education.${educationIndex}.certificateUrls`) || [];
       form.setValue(`education.${educationIndex}.certificateUrls`, [...currentUrls, publicUrl]);

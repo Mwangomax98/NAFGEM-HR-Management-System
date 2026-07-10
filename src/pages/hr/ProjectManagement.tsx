@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Building2, Plus, Calendar, Users, DollarSign, BarChart3, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
 

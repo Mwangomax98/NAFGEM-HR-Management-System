@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { AppRole } from '@/lib/roles';
+import { api } from '@/lib/api';
+import { STUB_USER_ID } from '@/lib/currentUser';
+import { AppRole, normalizeRole } from '@/lib/roles';
 
 interface UseUserRoleReturn {
   userRole: AppRole | null;
@@ -10,7 +11,7 @@ interface UseUserRoleReturn {
 }
 
 export const useUserRole = (userId?: string): UseUserRoleReturn => {
-  const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [userRole, setUserRole] = useState<AppRole | null>('employee');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,35 +20,25 @@ export const useUserRole = (userId?: string): UseUserRoleReturn => {
       setLoading(true);
       setError(null);
 
-      // Get current user if no userId provided
-      const { data: { user } } = await supabase.auth.getUser();
-      const finalUserId = targetUserId || user?.id;
-      
+      let finalUserId = targetUserId;
       if (!finalUserId) {
-        setUserRole(null);
-        return;
+        const { data: { user } } = await api.auth.getUser();
+        finalUserId = user?.id || STUB_USER_ID;
       }
 
-      const { data, error: roleError } = await supabase
+      const { data, error: roleError } = await api
         .from('user_roles')
         .select('role')
         .eq('user_id', finalUserId)
         .maybeSingle();
 
-      if (roleError) {
-        throw roleError;
-      }
+      if (roleError) throw roleError;
 
-      if (data) {
-        setUserRole(data.role as AppRole);
-      } else {
-        // No role found, default to employee
-        setUserRole('employee');
-      }
+      setUserRole(normalizeRole(data?.role));
     } catch (err: any) {
       console.error('Error fetching user role:', err);
       setError(err.message || 'Failed to fetch user role');
-      setUserRole(null);
+      setUserRole('employee');
     } finally {
       setLoading(false);
     }
@@ -61,47 +52,5 @@ export const useUserRole = (userId?: string): UseUserRoleReturn => {
     fetchUserRole(userId);
   }, [userId]);
 
-  // Listen for role changes in real-time
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return userId || user?.id;
-    };
-    
-    getCurrentUser().then(targetUserId => {
-    
-    if (!targetUserId) return;
-
-    const channel = supabase
-      .channel('user-roles-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_roles',
-          filter: `user_id=eq.${targetUserId}`
-        },
-        (payload) => {
-          if (payload.eventType === 'DELETE') {
-            setUserRole('employee'); // Default fallback
-          } else {
-            setUserRole((payload.new as any)?.role || 'employee');
-          }
-        }
-      )
-      .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    });
-  }, [userId]);
-
-  return {
-    userRole,
-    loading,
-    error,
-    refetchRole
-  };
+  return { userRole, loading, error, refetchRole };
 };

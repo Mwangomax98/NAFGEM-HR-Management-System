@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Star, Send } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { toast } from "sonner";
 import TaskChatModal from "./TaskChatModal";
 

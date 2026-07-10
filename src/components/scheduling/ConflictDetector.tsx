@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Clock, User, Car, MapPin, Calendar } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/api";
 import { toast } from '@/hooks/use-toast';
 import { format, addHours, isBefore, isAfter, addMinutes } from 'date-fns';
 

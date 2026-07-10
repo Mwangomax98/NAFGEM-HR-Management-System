@@ -17,7 +17,7 @@ import { TripCalendar } from "@/components/calendar/TripCalendar";
 import { ConflictDetector } from "@/components/scheduling/ConflictDetector";
 import { AutoAssignment } from "@/components/scheduling/AutoAssignment";
 import { TripAnalyticsDashboard } from "@/components/analytics/TripAnalyticsDashboard";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { useToast, toast } from "@/hooks/use-toast";
 import { logTripStatusChange, logTripAssignmentChange } from "@/utils/auditLogger";
 

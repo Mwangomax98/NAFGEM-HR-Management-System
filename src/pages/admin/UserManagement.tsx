@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Shield, Plus, Search, Filter, Edit, Trash2, UserPlus, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import AddUserModal from "@/components/modals/AddUserModal";
 import AssignRoleModal from "@/components/modals/AssignRoleModal";

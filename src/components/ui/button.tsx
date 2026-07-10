@@ -23,7 +23,7 @@ const buttonVariants = cva(
         success: "bg-gradient-success text-success-foreground hover:shadow-accent-glow shadow-button font-medium accent-glow",
         warning: "bg-warning text-warning-foreground hover:bg-warning/90 shadow-button font-medium",
         navy: "bg-navy-pro text-white hover:bg-primary-hover shadow-button font-medium",
-        teal: "bg-teal-pro text-white hover:bg-accent-hover shadow-button font-medium",
+        teal: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-button font-medium",
         elegant: "bg-card border-2 border-primary/10 text-card-foreground hover:border-primary/30 hover:bg-gradient-card shadow-card interactive-lift",
       },
       size: {

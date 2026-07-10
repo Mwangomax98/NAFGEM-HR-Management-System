@@ -21,9 +21,8 @@ export function SettingsModal() {
       email: true,
       push: true,
       desktop: false,
-      timesheet: true,
       leave: true,
-      tasks: false
+      tasks: true
     },
     privacy: {
       profileVisible: true,
@@ -219,14 +218,6 @@ export function SettingsModal() {
                   <div>
                     <h4 className="font-medium mb-3">Notification Types</h4>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="timesheet-notifications">Timesheet Updates</Label>
-                        <Switch 
-                          id="timesheet-notifications"
-                          checked={settings.notifications.timesheet}
-                          onCheckedChange={(checked) => updateSetting('notifications', 'timesheet', checked)}
-                        />
-                      </div>
                       <div className="flex items-center justify-between">
                         <Label htmlFor="leave-notifications">Leave Requests</Label>
                         <Switch 

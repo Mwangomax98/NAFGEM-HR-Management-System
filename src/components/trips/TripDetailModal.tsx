@@ -8,7 +8,7 @@ import TripStatusBadge from "./TripStatusBadge";
 import { logTripStatusChange } from "@/utils/auditLogger";
 import { exportTripToPDF } from "@/utils/pdfExport";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 
 interface TripDetailModalProps {
   trip: any;
@@ -24,6 +24,39 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
   const canApprove = userRole === "hr" || userRole === "admin";
   const canEditAssignment = userRole === "hr" || userRole === "admin";
   const isDriver = false; // TODO: Implement driver check
+
+  const loadTripForExport = async () => {
+    const { data: tripData } = await supabase
+      .from('trip_requests')
+      .select('*')
+      .eq('id', trip.id)
+      .maybeSingle();
+
+    if (!tripData) return null;
+
+    const [{ data: requester }, { data: driver }, { data: vehicle }, { data: project }] = await Promise.all([
+      tripData.requester_id
+        ? supabase.from('profiles').select('full_name').eq('id', tripData.requester_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      tripData.assigned_driver_id
+        ? supabase.from('drivers').select('name').eq('id', tripData.assigned_driver_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      tripData.assigned_vehicle_id
+        ? supabase.from('vehicles').select('make, model, plate_number').eq('id', tripData.assigned_vehicle_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      tripData.project_id
+        ? supabase.from('projects').select('name, donor').eq('id', tripData.project_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    return {
+      ...tripData,
+      requester: requester.data ? { full_name: requester.data.full_name } : { full_name: 'Unknown' },
+      assigned_driver: driver.data ? { name: driver.data.name } : null,
+      assigned_vehicle: vehicle.data || null,
+      project: project.data || { name: tripData.project_id, donor: null },
+    };
+  };
 
   // Helper to format datetime from combined datetime field
   const formatTripDateTime = (datetime: string | null) => {
@@ -297,19 +330,7 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
                   variant="ghost" 
                   className="w-full"
                   onClick={async () => {
-                    // Fetch complete trip data for PDF
-                    const { data: tripData } = await supabase
-                      .from('trip_requests')
-                      .select(`
-                        *,
-                        requester:profiles!trip_requests_requester_id_fkey(full_name),
-                        assigned_driver:drivers(name),
-                        assigned_vehicle:vehicles(make, model, plate_number),
-                        project:projects(name, donor)
-                      `)
-                      .eq('id', trip.id)
-                      .single();
-                    
+                    const tripData = await loadTripForExport();
                     if (tripData) {
                       exportTripToPDF(tripData);
                     }
@@ -321,19 +342,7 @@ export default function TripDetailModal({ trip, isOpen, onClose, userRole, onSta
                   variant="ghost" 
                   className="w-full"
                   onClick={async () => {
-                    // Fetch complete trip data for PDF
-                    const { data: tripData } = await supabase
-                      .from('trip_requests')
-                      .select(`
-                        *,
-                        requester:profiles!trip_requests_requester_id_fkey(full_name),
-                        assigned_driver:drivers(name),
-                        assigned_vehicle:vehicles(make, model, plate_number),
-                        project:projects(name, donor)
-                      `)
-                      .eq('id', trip.id)
-                      .single();
-                    
+                    const tripData = await loadTripForExport();
                     if (tripData) {
                       exportTripToPDF(tripData);
                       toast({

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Bot, User, Car, MapPin, Clock, Zap, CheckCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/api";
 import { toast } from '@/hooks/use-toast';
 
 interface Assignment {

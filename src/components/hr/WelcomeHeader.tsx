@@ -3,19 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Clock, TrendingUp, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/api";
 import heroImage from "@/assets/hr-hero-background.jpg";
+
+import { isHrOrAbove, isAdmin, normalizeRole } from "@/lib/roles";
 
 interface WelcomeHeaderProps {
   userName: string;
-  userRole: "employee" | "hr" | "admin";
+  userRole: string;
 }
 
 export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
+  const role = normalizeRole(userRole);
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [stats, setStats] = useState({
-    tasks: 0,
+    reports: 0,
     hoursLogged: 0,
     pending: 0,
     notifications: 0
@@ -39,31 +42,29 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
       if (!user) return;
 
       // Load stats based on user role
-      const [tasksResult, hoursResult, pendingResult, notificationsResult] = await Promise.all([
-        // Tasks count
-        userRole === 'employee' 
-          ? supabase.from('task_submissions').select('id', { count: 'exact' }).eq('weekly_task_id', null)
-          : supabase.from('task_submissions').select('id', { count: 'exact' }),
-        
-        // Hours logged this week
-        userRole === 'employee'
-          ? supabase.from('timesheet_entries').select('hours_worked').gte('entry_date', getWeekStart())
-          : supabase.from('timesheet_entries').select('hours_worked').gte('entry_date', getWeekStart()),
-        
-        // Pending items
-        userRole === 'hr' || userRole === 'admin'
-          ? supabase.from('trip_requests').select('id', { count: 'exact' }).eq('status', 'pending')
-          : supabase.from('timesheets').select('id', { count: 'exact' }).eq('employee_id', user.id).eq('status', 'pending'),
-        
-        // Notifications
-        supabase.from('notifications').select('id', { count: 'exact' }).eq('user_id', user.id).eq('read', false)
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      const monthStartStr = monthStart.toISOString().split('T')[0];
+
+      const [reportsResult, tasksResult, pendingResult, notificationsResult] = await Promise.all([
+        isHrOrAbove(role)
+          ? supabase.from('field_activity_reports').select('id', { count: 'exact', head: true }).gte('activity_date', monthStartStr)
+          : supabase.from('field_activity_reports').select('id', { count: 'exact', head: true }).eq('submitted_by', user.id).gte('activity_date', monthStartStr),
+
+        supabase.from('weekly_tasks').select('id', { count: 'exact', head: true })
+          .eq('employee_id', user.id)
+          .gte('week_start_date', getWeekStart()),
+
+        isHrOrAbove(role)
+          ? supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+          : supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('requester_id', user.id).eq('status', 'pending'),
+
+        supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
       ]);
 
-      const totalHours = hoursResult.data?.reduce((sum, entry) => sum + Number(entry.hours_worked || 0), 0) || 0;
-
       setStats({
-        tasks: tasksResult.count || 0,
-        hoursLogged: Math.round(totalHours),
+        reports: reportsResult.count || 0,
+        hoursLogged: tasksResult.count || 0,
         pending: pendingResult.count || 0,
         notifications: notificationsResult.count || 0
       });
@@ -105,27 +106,28 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
   };
 
   const getRoleDescription = () => {
-    switch (userRole) {
-      case "employee":
-        return "Manage your tasks, timesheets, and personal HR needs";
-      case "hr":
-        return "Oversee employee management and HR operations";
-      case "admin":
-        return "System administration and analytics dashboard";
-      default:
-        return "Welcome to NAFGEM HR Management System";
-    }
+    if (isAdmin(role)) return "System administration and operational metrics";
+    if (isHrOrAbove(role)) return "Oversee employee management and HR operations";
+    if (role === 'field_officer') return "Submit and track field activity reports";
+    if (role === 'manager') return "Review your team's tasks and field activities";
+    return "Manage your tasks, leave, staff requests, and training";
   };
 
   const handleViewReports = () => {
-    navigate('/reports');
+    if (isHrOrAbove(role)) {
+      navigate('/hr/field-reports');
+    } else {
+      navigate('/field-reports');
+    }
   };
 
   const handleQuickActions = () => {
-    if (userRole === 'hr' || userRole === 'admin') {
+    if (isAdmin(role)) {
+      navigate('/admin/users');
+    } else if (isHrOrAbove(role)) {
       navigate('/hr/projects');
     } else {
-      navigate('/tasks');
+      navigate('/staff-requests');
     }
   };
 
@@ -164,12 +166,17 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
               </div>
             </div>
 
-            <div className="flex space-x-4 pt-4">
-              <Button variant="teal" size="lg" onClick={handleViewReports}>
+            <div className="flex flex-wrap gap-3 pt-4">
+              <Button variant="default" size="lg" onClick={handleViewReports}>
                 <TrendingUp className="w-5 h-5 mr-2" />
                 View Reports
               </Button>
-              <Button variant="outline" size="lg" className="border-white/20 text-white hover:bg-white/10" onClick={handleQuickActions}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-2 border-white/80 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                onClick={handleQuickActions}
+              >
                 <Users className="w-5 h-5 mr-2" />
                 Quick Actions
               </Button>
@@ -181,14 +188,14 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
             <div className="grid grid-cols-2 gap-4">
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-highlight font-bold text-white">{stats.tasks}</div>
-                  <div className="text-sm text-white/80">Tasks</div>
+                  <div className="text-2xl font-highlight font-bold text-white">{stats.reports}</div>
+                  <div className="text-sm text-white/80">Reports</div>
                 </CardContent>
               </Card>
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-highlight font-bold text-white">{stats.hoursLogged}h</div>
-                  <div className="text-sm text-white/80">Hours Logged</div>
+                  <div className="text-2xl font-highlight font-bold text-white">{stats.hoursLogged}</div>
+                  <div className="text-sm text-white/80">Tasks</div>
                 </CardContent>
               </Card>
               <Card className="bg-white/10 border-white/20 backdrop-blur-sm">

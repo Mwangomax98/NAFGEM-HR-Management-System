@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserProfile, useAvailableUsers } from '@/hooks/useAvailableUsers';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/api";
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
 import { RoleDiagnostics } from './RoleDiagnostics';

@@ -38,8 +38,6 @@ export function HRDashboard({ userName }: HRDashboardProps) {
       navigate('/hr/leave-approvals');
     } else if (type === 'trip') {
       navigate('/hr/trip-management');
-    } else if (type === 'timesheet') {
-      navigate('/hr/timesheet-approvals');
     }
   };
 
@@ -82,11 +80,11 @@ export function HRDashboard({ userName }: HRDashboardProps) {
         </Button>
         <Button 
           variant="outline"
-          onClick={() => navigate('/hr/performance')}
+          onClick={() => navigate('/hr/field-reports')}
           className="hover:bg-accent/5 hover:border-accent transition-all"
         >
-          <TrendingUp className="h-4 w-4 mr-2" />
-          Performance Reviews
+          <FileText className="h-4 w-4 mr-2" />
+          Field Reports
         </Button>
       </div>
 
@@ -133,13 +131,13 @@ export function HRDashboard({ userName }: HRDashboardProps) {
 
         <Card className="shadow-card hover:shadow-elevated transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Performance</CardTitle>
-            <TrendingUp className="h-4 w-4 text-accent" />
+            <CardTitle className="text-sm font-medium">Field Reports</CardTitle>
+            <FileText className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-accent">{stats.avgPerformance}%</div>
+            <div className="text-2xl font-bold text-accent">{stats.fieldReportsThisMonth}</div>
             <p className="text-xs text-muted-foreground mt-2">
-              Average completion rate
+              Submitted this month
             </p>
           </CardContent>
         </Card>
@@ -225,50 +223,16 @@ export function HRDashboard({ userName }: HRDashboardProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             {[
-              { 
-                metric: "Task Completion Rate", 
-                value: stats.avgPerformance, 
-                target: 90,
-                color: "bg-accent" 
-              },
-              { 
-                metric: "Attendance Rate", 
-                value: 95, 
-                target: 95,
-                color: "bg-primary" 
-              },
-              { 
-                metric: "Goal Achievement", 
-                value: 87, 
-                target: 85,
-                color: "bg-secondary" 
-              },
-              { 
-                metric: "Training Completion", 
-                value: 78, 
-                target: 80,
-                color: "bg-warning" 
-              }
+              { metric: "Pending leave requests", value: stats.pendingLeaveRequests, max: 20 },
+              { metric: "Active donor projects", value: stats.activeProjects, max: 20 },
+              { metric: "Certs expiring (60d)", value: stats.certsExpiringSoon, max: 10 },
             ].map((item, index) => (
-              <div key={index} className="space-y-3">
+              <div key={index} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">{item.metric}</span>
-                  <div className="text-right">
-                    <span className="text-sm font-bold">{item.value}%</span>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      / {item.target}%
-                    </span>
-                  </div>
+                  <span className="text-sm font-bold">{item.value}</span>
                 </div>
-                <div className="space-y-2">
-                  <Progress value={item.value} className="h-2" />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Current</span>
-                    <span className={item.value >= item.target ? "text-success" : "text-warning"}>
-                      {item.value >= item.target ? "On Target" : "Needs Attention"}
-                    </span>
-                  </div>
-                </div>
+                <Progress value={Math.min(100, (item.value / item.max) * 100)} className="h-2" />
               </div>
             ))}
           </CardContent>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Database, Shield, Bell, Mail, Clock, Save } from "lucide-react";
+import { Settings, Database, Shield, Bell, Mail, Save } from "lucide-react";
 import { useState } from "react";
 
 export default function SystemSettings() {
@@ -38,13 +38,6 @@ export default function SystemSettings() {
       defaultSickDays: 0,
       defaultPersonalDays: 0,
       carryOverLimit: 0,
-      requireApproval: false
-    },
-    timesheet: {
-      weekStartDay: "monday",
-      defaultWorkHours: 8,
-      enableOvertime: false,
-      overtimeThreshold: 40,
       requireApproval: false
     }
   });
@@ -145,10 +138,6 @@ export default function SystemSettings() {
           <TabsTrigger value="leave" className="flex items-center space-x-2">
             <Bell className="w-4 h-4" />
             <span>Leave</span>
-          </TabsTrigger>
-          <TabsTrigger value="timesheet" className="flex items-center space-x-2">
-            <Clock className="w-4 h-4" />
-            <span>Timesheet</span>
           </TabsTrigger>
         </TabsList>
 
@@ -402,69 +391,6 @@ export default function SystemSettings() {
                   checked={settings.leave.requireApproval}
                   onCheckedChange={(checked) => updateSetting('leave', 'requireApproval', checked)}
                 />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="timesheet" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Timesheet Settings</CardTitle>
-              <CardDescription>Configure timesheet policies and work hours</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="weekStartDay">Week Start Day</Label>
-                  <Select 
-                    value={settings.timesheet.weekStartDay}
-                    onValueChange={(value) => updateSetting('timesheet', 'weekStartDay', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sunday">Sunday</SelectItem>
-                      <SelectItem value="monday">Monday</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="defaultWorkHours">Default Work Hours/Day</Label>
-                  <Input 
-                    id="defaultWorkHours" 
-                    type="number"
-                    value={settings.timesheet.defaultWorkHours}
-                    onChange={(e) => updateSetting('timesheet', 'defaultWorkHours', parseInt(e.target.value))}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="enableOvertime">Enable Overtime Tracking</Label>
-                    <p className="text-sm text-muted-foreground">Track and calculate overtime hours automatically</p>
-                  </div>
-                  <Switch 
-                    id="enableOvertime"
-                    checked={settings.timesheet.enableOvertime}
-                    onCheckedChange={(checked) => updateSetting('timesheet', 'enableOvertime', checked)}
-                  />
-                </div>
-                
-                {settings.timesheet.enableOvertime && (
-                  <div className="space-y-2">
-                    <Label htmlFor="overtimeThreshold">Overtime Threshold (hours/week)</Label>
-                    <Input 
-                      id="overtimeThreshold" 
-                      type="number"
-                      value={settings.timesheet.overtimeThreshold}
-                      onChange={(e) => updateSetting('timesheet', 'overtimeThreshold', parseInt(e.target.value))}
-                    />
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
