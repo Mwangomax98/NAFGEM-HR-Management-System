@@ -1,6 +1,12 @@
-import { STUB_USER, STUB_SESSION, STUB_USER_ID } from './currentUser';
+import { STUB_USER, STUB_SESSION } from './currentUser';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const envApi = import.meta.env.VITE_API_URL;
+const API_URL =
+  envApi === undefined || envApi === ''
+    ? import.meta.env.DEV
+      ? 'http://localhost:4000'
+      : ''
+    : envApi;
 const AUTH_DISABLED = import.meta.env.VITE_AUTH_DISABLED === 'true';
 
 const SESSION_KEY = 'nafgem_hr_session';
@@ -404,39 +410,42 @@ export const api = {
       return { error: null };
     },
     admin: {
-      async createUser(attrs: { email: string; password?: string; user_metadata?: Record<string, unknown> }) {
-        const id = crypto.randomUUID();
-        const res = await fetch(`${API_URL}/api/db/profiles`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            id,
-            email: attrs.email,
-            full_name: attrs.user_metadata?.full_name || attrs.email,
-            project: attrs.user_metadata?.project || '',
-            title: attrs.user_metadata?.title || '',
-          }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: res.statusText }));
-          return { data: { user: null }, error: { message: err.error } };
-        }
-        const profile = await res.json();
-        await fetch(`${API_URL}/api/db/user_roles`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({ user_id: profile.id, role: 'employee', assigned_by: STUB_USER_ID }),
-        });
-        return {
-          data: {
-            user: {
-              id: profile.id,
-              email: profile.email,
-              user_metadata: attrs.user_metadata || {},
+      async createUser(attrs: {
+        email: string;
+        password?: string;
+        role?: string;
+        user_metadata?: Record<string, unknown>;
+      }) {
+        try {
+          const res = await fetch(`${API_URL}/api/auth/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({
+              email: attrs.email,
+              password: attrs.password,
+              role: attrs.role || 'employee',
+              full_name: attrs.user_metadata?.full_name || attrs.email,
+              project: attrs.user_metadata?.project || '',
+              title: attrs.user_metadata?.title || '',
+            }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            return { data: { user: null }, error: { message: body.error || res.statusText } };
+          }
+          return {
+            data: {
+              user: body.user || {
+                id: body.profile?.id,
+                email: attrs.email,
+                user_metadata: attrs.user_metadata || {},
+              },
             },
-          },
-          error: null,
-        };
+            error: null,
+          };
+        } catch (err: any) {
+          return { data: { user: null }, error: { message: err.message } };
+        }
       },
     },
   },

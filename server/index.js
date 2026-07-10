@@ -21,6 +21,7 @@ const uploadsRoot = path.join(__dirname, 'uploads');
 for (const bucket of [
   'profile-photos',
   'education-certificates',
+  'field-reports',
 ]) {
   fs.mkdirSync(path.join(uploadsRoot, bucket), { recursive: true });
 }
@@ -116,7 +117,8 @@ app.post('/api/storage/:bucket', (req, res, next) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     const bucket = req.params.bucket;
-    const publicUrl = `http://localhost:${PORT}/uploads/${bucket}/${req.file.filename}`;
+    const publicBase = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const publicUrl = `${publicBase}/uploads/${bucket}/${req.file.filename}`;
     res.json({
       path: req.body.path || req.file.filename,
       fullPath: `${bucket}/${req.file.filename}`,
@@ -134,6 +136,18 @@ app.get('/api/storage/:bucket/*', (req, res) => {
   }
   res.sendFile(full);
 });
+
+// Production: serve Vite build from /app/dist (same origin as API)
+const staticRoot = process.env.SERVE_STATIC === 'true'
+  ? path.resolve(__dirname, '../dist')
+  : null;
+if (staticRoot && fs.existsSync(staticRoot)) {
+  app.use(express.static(staticRoot));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(staticRoot, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`NAFGEM HR API listening on http://localhost:${PORT}`);

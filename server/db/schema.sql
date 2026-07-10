@@ -503,6 +503,8 @@ CREATE TABLE IF NOT EXISTS public.field_activity_reports (
   beneficiaries_reached INTEGER DEFAULT 0,
   challenges TEXT,
   recommendations TEXT,
+  attachment_url TEXT,
+  attachment_name TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

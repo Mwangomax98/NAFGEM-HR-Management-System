@@ -10,8 +10,11 @@ import { NAFGEM_PROGRAMS, NAFGEM_REGIONS } from '@/lib/constants';
 import { isHrOrAbove, normalizeRole } from '@/lib/roles';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Download, Plus } from 'lucide-react';
+import { MapPin, Download, Plus, Paperclip, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
+
+const ACCEPTED_TYPES = '.pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp,.xls,.xlsx';
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 export default function FieldReports() {
   const { userRole } = useUserRole();
@@ -22,6 +25,8 @@ export default function FieldReports() {
   const [reports, setReports] = useState<any[]>([]);
   const [filterRegion, setFilterRegion] = useState<string>('all');
   const [filterProgram, setFilterProgram] = useState<string>('all');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     program: NAFGEM_PROGRAMS[0],
     region: NAFGEM_REGIONS[0],
@@ -62,41 +67,86 @@ export default function FieldReports() {
     return true;
   });
 
-  const submitReport = async () => {
-    if (!userId || !form.description) return;
-    const { error } = await api.from('field_activity_reports').insert({
-      submitted_by: userId,
-      program: form.program,
-      region: form.region,
-      activity_date: form.activity_date,
-      description: form.description,
-      beneficiaries_reached: form.beneficiaries_reached ? Number(form.beneficiaries_reached) : 0,
-      challenges: form.challenges || null,
-      recommendations: form.recommendations || null,
-    });
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+  const onAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file && file.size > MAX_FILE_BYTES) {
+      toast({
+        title: 'File too large',
+        description: 'Attachments must be 5MB or smaller',
+        variant: 'destructive',
+      });
+      e.target.value = '';
+      setAttachment(null);
       return;
     }
-    toast({ title: 'Submitted', description: 'Field activity report saved' });
-    setForm({
-      ...form,
-      description: '',
-      beneficiaries_reached: '',
-      challenges: '',
-      recommendations: '',
-    });
-    loadReports();
+    setAttachment(file);
+  };
+
+  const submitReport = async () => {
+    if (!userId || !form.description) return;
+    setSubmitting(true);
+    try {
+      let attachmentUrl: string | null = null;
+      let attachmentName: string | null = null;
+
+      if (attachment) {
+        const safeName = attachment.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${userId}/${Date.now()}_${safeName}`;
+        const { data: uploadData, error: uploadError } = await api.storage
+          .from('field-reports')
+          .upload(path, attachment);
+
+        if (uploadError) {
+          toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
+          return;
+        }
+
+        attachmentUrl =
+          uploadData?.publicUrl ||
+          api.storage.from('field-reports').getPublicUrl(uploadData?.fullPath || path).data.publicUrl;
+        attachmentName = attachment.name;
+      }
+
+      const { error } = await api.from('field_activity_reports').insert({
+        submitted_by: userId,
+        program: form.program,
+        region: form.region,
+        activity_date: form.activity_date,
+        description: form.description,
+        beneficiaries_reached: form.beneficiaries_reached ? Number(form.beneficiaries_reached) : 0,
+        challenges: form.challenges || null,
+        recommendations: form.recommendations || null,
+        attachment_url: attachmentUrl,
+        attachment_name: attachmentName,
+      });
+      if (error) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Submitted', description: 'Field activity report saved' });
+      setForm({
+        ...form,
+        description: '',
+        beneficiaries_reached: '',
+        challenges: '',
+        recommendations: '',
+      });
+      setAttachment(null);
+      loadReports();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const exportCsv = () => {
-    const headers = ['Date', 'Program', 'Region', 'Beneficiaries', 'Description'];
+    const headers = ['Date', 'Program', 'Region', 'Beneficiaries', 'Description', 'Attachment'];
     const rows = filtered.map((r) => [
       r.activity_date,
       r.program,
       r.region,
       r.beneficiaries_reached,
       `"${String(r.description).replace(/"/g, '""')}"`,
+      r.attachment_name || '',
     ]);
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -111,140 +161,167 @@ export default function FieldReports() {
   const canSubmit = userId && (hrView || !isFieldOfficer || isFieldOfficer || normalizeRole(userRole || '') === 'employee');
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-primary">
-            {hrView ? 'All Field Reports' : 'Field Activity Reports'}
-          </h1>
-          <p className="text-muted-foreground">Program activities across NAFGEM regions</p>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-primary">
+              {hrView ? 'All Field Reports' : 'Field Activity Reports'}
+            </h1>
+            <p className="text-muted-foreground">Program activities across NAFGEM regions</p>
+          </div>
+          {hrView && (
+            <Button variant="outline" onClick={exportCsv}>
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+          )}
         </div>
-        {hrView && (
-          <Button variant="outline" onClick={exportCsv}>
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
-        )}
-      </div>
 
-      {canSubmit && (
+        {canSubmit && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Submit Report
+              </CardTitle>
+              <CardDescription>Record field activities and beneficiary reach</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 max-w-2xl">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Program</Label>
+                  <Select value={form.program} onValueChange={(v) => setForm({ ...form, program: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {NAFGEM_PROGRAMS.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Region</Label>
+                  <Select value={form.region} onValueChange={(v) => setForm({ ...form, region: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {NAFGEM_REGIONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Activity date</Label>
+                  <Input type="date" value={form.activity_date}
+                    onChange={(e) => setForm({ ...form, activity_date: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Beneficiaries reached</Label>
+                  <Input type="number" min={0} value={form.beneficiaries_reached}
+                    onChange={(e) => setForm({ ...form, beneficiaries_reached: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} />
+              </div>
+              <div className="space-y-2">
+                <Label>Challenges (optional)</Label>
+                <Textarea value={form.challenges} onChange={(e) => setForm({ ...form, challenges: e.target.value })} rows={2} />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Paperclip className="w-4 h-4" />
+                  Attachment (optional)
+                </Label>
+                <Input
+                  type="file"
+                  accept={ACCEPTED_TYPES}
+                  onChange={onAttachmentChange}
+                />
+                <p className="text-xs text-muted-foreground">
+                  PDF, Word, Excel, or images up to 5MB
+                  {attachment ? ` · Selected: ${attachment.name}` : ''}
+                </p>
+              </div>
+              <Button onClick={submitReport} disabled={submitting || !form.description}>
+                {submitting ? 'Submitting…' : 'Submit Report'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {hrView && (
+          <Card>
+            <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
+            <CardContent className="flex flex-wrap gap-4">
+              <Select value={filterProgram} onValueChange={setFilterProgram}>
+                <SelectTrigger className="w-48"><SelectValue placeholder="Program" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All programs</SelectItem>
+                  {NAFGEM_PROGRAMS.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterRegion} onValueChange={setFilterRegion}>
+                <SelectTrigger className="w-48"><SelectValue placeholder="Region" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All regions</SelectItem>
+                  {NAFGEM_REGIONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Submit Report
+              <MapPin className="w-5 h-5" />
+              Reports ({filtered.length})
             </CardTitle>
-            <CardDescription>Record field activities and beneficiary reach</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 max-w-2xl">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Program</Label>
-                <Select value={form.program} onValueChange={(v) => setForm({ ...form, program: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {NAFGEM_PROGRAMS.map((p) => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Region</Label>
-                <Select value={form.region} onValueChange={(v) => setForm({ ...form, region: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {NAFGEM_REGIONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Activity date</Label>
-                <Input type="date" value={form.activity_date}
-                  onChange={(e) => setForm({ ...form, activity_date: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Beneficiaries reached</Label>
-                <Input type="number" min={0} value={form.beneficiaries_reached}
-                  onChange={(e) => setForm({ ...form, beneficiaries_reached: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} />
-            </div>
-            <div className="space-y-2">
-              <Label>Challenges (optional)</Label>
-              <Textarea value={form.challenges} onChange={(e) => setForm({ ...form, challenges: e.target.value })} rows={2} />
-            </div>
-            <Button onClick={submitReport}>Submit Report</Button>
+          <CardContent>
+            {filtered.length === 0 ? (
+              <p className="text-muted-foreground">No reports yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {filtered.map((r) => (
+                  <li key={r.id} className="border rounded-lg p-4">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded">{r.program}</span>
+                      <span className="text-xs font-medium bg-accent/10 text-accent px-2 py-1 rounded">{r.region}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(r.activity_date), 'dd MMM yyyy')}
+                      </span>
+                    </div>
+                    <p className="text-sm">{r.description}</p>
+                    {r.beneficiaries_reached > 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Beneficiaries: {r.beneficiaries_reached}
+                      </p>
+                    )}
+                    {r.attachment_url && (
+                      <div className="mt-3">
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" download={r.attachment_name || true}>
+                            <FileDown className="w-4 h-4 mr-2" />
+                            {r.attachment_name || 'Download attachment'}
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
-      )}
-
-      {hrView && (
-        <Card>
-          <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
-            <Select value={filterProgram} onValueChange={setFilterProgram}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Program" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All programs</SelectItem>
-                {NAFGEM_PROGRAMS.map((p) => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterRegion} onValueChange={setFilterRegion}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Region" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All regions</SelectItem>
-                {NAFGEM_REGIONS.map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="w-5 h-5" />
-            Reports ({filtered.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filtered.length === 0 ? (
-            <p className="text-muted-foreground">No reports yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {filtered.map((r) => (
-                <li key={r.id} className="border rounded-lg p-4">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded">{r.program}</span>
-                    <span className="text-xs font-medium bg-accent/10 text-accent px-2 py-1 rounded">{r.region}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(r.activity_date), 'dd MMM yyyy')}
-                    </span>
-                  </div>
-                  <p className="text-sm">{r.description}</p>
-                  {r.beneficiaries_reached > 0 && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Beneficiaries: {r.beneficiaries_reached}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      </div>
   );
 }

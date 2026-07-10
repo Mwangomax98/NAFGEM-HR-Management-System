@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLocation } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api } from '@/lib/api';
-import { isHrOrAbove } from '@/lib/roles';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { Award, GraduationCap, AlertTriangle } from 'lucide-react';
 import { format, addDays, isBefore } from 'date-fns';
 
 export default function MyTraining() {
-  const { userRole } = useUserRole();
+  const location = useLocation();
   const { toast } = useToast();
-  const hrView = isHrOrAbove(userRole || undefined);
+  /** Personal page shows staff forms; HR route is records-only */
+  const isHrRecordsPage = location.pathname.startsWith('/hr/');
   const [userId, setUserId] = useState<string | null>(null);
   const [certs, setCerts] = useState<any[]>([]);
   const [external, setExternal] = useState<any[]>([]);
@@ -41,13 +41,13 @@ export default function MyTraining() {
 
   useEffect(() => {
     if (userId) loadData();
-  }, [userId, hrView]);
+  }, [userId, isHrRecordsPage]);
 
   const loadData = async () => {
     let certQuery = api.from('employee_certifications').select('*').order('expiry_date');
     let extQuery = api.from('external_trainings').select('*').order('training_date', { ascending: false });
 
-    if (!hrView && userId) {
+    if (!isHrRecordsPage && userId) {
       certQuery = certQuery.eq('employee_id', userId);
       extQuery = extQuery.eq('employee_id', userId);
     }
@@ -75,6 +75,7 @@ export default function MyTraining() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return;
     }
+    toast({ title: 'Saved', description: 'Certification added' });
     setCertForm({ certificate_name: '', issuing_body: '', issue_date: '', expiry_date: '' });
     loadData();
   };
@@ -94,17 +95,24 @@ export default function MyTraining() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return;
     }
+    toast({ title: 'Saved', description: 'External training logged' });
     setExtForm({ training_name: '', provider: '', training_date: '', location: '', cost: '' });
     loadData();
   };
+
+  const showStaffForms = !isHrRecordsPage;
 
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-heading font-bold text-primary">
-          {hrView ? 'Training Records' : 'My Training'}
+          {isHrRecordsPage ? 'Training Records' : 'My Training'}
         </h1>
-        <p className="text-muted-foreground">Certifications and external training history</p>
+        <p className="text-muted-foreground">
+          {isHrRecordsPage
+            ? 'All staff certifications and external training history'
+            : 'Add your certifications and log external training'}
+        </p>
       </div>
 
       {expiringSoon.length > 0 && (
@@ -134,27 +142,33 @@ export default function MyTraining() {
         </TabsList>
 
         <TabsContent value="certifications" className="space-y-4">
-          {!hrView && (
+          {showStaffForms && (
             <Card>
               <CardHeader><CardTitle>Add Certification</CardTitle></CardHeader>
               <CardContent className="grid gap-3 max-w-lg">
-                <Input placeholder="Certificate name" value={certForm.certificate_name}
-                  onChange={(e) => setCertForm({ ...certForm, certificate_name: e.target.value })} />
-                <Input placeholder="Issuing body" value={certForm.issuing_body}
-                  onChange={(e) => setCertForm({ ...certForm, issuing_body: e.target.value })} />
+                <div className="space-y-2">
+                  <Label>Certificate name</Label>
+                  <Input placeholder="e.g. First Aid Certificate" value={certForm.certificate_name}
+                    onChange={(e) => setCertForm({ ...certForm, certificate_name: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Issuing body</Label>
+                  <Input placeholder="Issuing organization" value={certForm.issuing_body}
+                    onChange={(e) => setCertForm({ ...certForm, issuing_body: e.target.value })} />
+                </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div>
+                  <div className="space-y-2">
                     <Label>Issue date</Label>
                     <Input type="date" value={certForm.issue_date}
                       onChange={(e) => setCertForm({ ...certForm, issue_date: e.target.value })} />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Expiry date</Label>
                     <Input type="date" value={certForm.expiry_date}
                       onChange={(e) => setCertForm({ ...certForm, expiry_date: e.target.value })} />
                   </div>
                 </div>
-                <Button onClick={addCert}>Save Certification</Button>
+                <Button onClick={addCert} disabled={!certForm.certificate_name}>Save Certification</Button>
               </CardContent>
             </Card>
           )}
@@ -184,17 +198,36 @@ export default function MyTraining() {
         </TabsContent>
 
         <TabsContent value="external" className="space-y-4">
-          {!hrView && (
+          {showStaffForms && (
             <Card>
               <CardHeader><CardTitle>Log External Training</CardTitle></CardHeader>
               <CardContent className="grid gap-3 max-w-lg">
-                <Input placeholder="Training name" value={extForm.training_name}
-                  onChange={(e) => setExtForm({ ...extForm, training_name: e.target.value })} />
-                <Input placeholder="Provider" value={extForm.provider}
-                  onChange={(e) => setExtForm({ ...extForm, provider: e.target.value })} />
-                <Input type="date" value={extForm.training_date}
-                  onChange={(e) => setExtForm({ ...extForm, training_date: e.target.value })} />
-                <Button onClick={addExternal}>Save Training</Button>
+                <div className="space-y-2">
+                  <Label>Training name</Label>
+                  <Input placeholder="Training or workshop name" value={extForm.training_name}
+                    onChange={(e) => setExtForm({ ...extForm, training_name: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Provider</Label>
+                  <Input placeholder="Provider or organizer" value={extForm.provider}
+                    onChange={(e) => setExtForm({ ...extForm, provider: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input type="date" value={extForm.training_date}
+                    onChange={(e) => setExtForm({ ...extForm, training_date: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Location (optional)</Label>
+                  <Input placeholder="Location" value={extForm.location}
+                    onChange={(e) => setExtForm({ ...extForm, location: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cost (optional)</Label>
+                  <Input type="number" min={0} placeholder="0" value={extForm.cost}
+                    onChange={(e) => setExtForm({ ...extForm, cost: e.target.value })} />
+                </div>
+                <Button onClick={addExternal} disabled={!extForm.training_name}>Save Training</Button>
               </CardContent>
             </Card>
           )}

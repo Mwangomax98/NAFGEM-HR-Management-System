@@ -1,6 +1,6 @@
 # NAFGEM HR Management System
 
-Staff portal for **NAFGEM Tanzania** — PostgreSQL + Express + Vite/React. Branded for NAFGEM (teal + orange), with five-role RBAC, JWT login, and modules for training, staff requests, donor projects, and field activity reports.
+Staff portal for **NAFGEM Tanzania** — PostgreSQL + Express + Vite/React. Brand colors match [nafgemtanzania.or.tz](https://nafgemtanzania.or.tz) (maroon + orange). Five-role RBAC, JWT login, admin-created users only.
 
 ## Prerequisites
 
@@ -34,9 +34,17 @@ You enter as stub **Super Admin** (`admin@local.dev`).
 
 ### Production login
 
-Default seed password: `admin123` (change before deploy).
+- Login only at `/auth` — **no self-registration**
+- Admins create users under **User Management → Add New User**
+- Default seed: `admin@local.dev` / `admin123` (change before deploy)
 
-Login page: `/auth` — footer links to https://nafgemtanzania.or.tz
+## Hosting at hr.nafgemtanzania.or.tz (Contabo)
+
+Same VPS as the main website. Step-by-step: **[deploy/HOSTING.md](deploy/HOSTING.md)**.
+
+```sh
+docker compose -f docker-compose.prod.yml up -d --build
+```
 
 ## Environment
 
@@ -64,26 +72,22 @@ VITE_HR_PORTAL_URL=https://hr.nafgemtanzania.or.tz
 ## Modules
 
 - **Training & Certifications** — `/training`, `/hr/training`
-- **Staff Requests** — `/staff-requests` (maintenance, IT, supplies, etc.; leave-style two-stage approval)
-- **Donor Projects** — `/hr/projects` with staff allocation
-- **Field Activity Reports** — `/field-reports`, `/hr/field-reports` (filter + CSV export)
-
-## Main website integration
-
-On [nafgemtanzania.or.tz](https://nafgemtanzania.or.tz), add a navbar link **Staff Portal** → `https://hr.nafgemtanzania.or.tz`. No shared user database.
+- **Staff Requests** — `/staff-requests`
+- **Donor Projects** — `/hr/projects`
+- **Field Activity Reports** — `/field-reports`, `/hr/field-reports`
 
 ## Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm run db:migrate` | Apply `schema.sql` + `migrate_v2*.sql` + `migrate_v3.sql` + `migrate_v4.sql` |
-| `npm run db:seed` | Seed super admin + leave balances |
+| `npm run db:migrate` | Apply schema + migrations |
+| `npm run db:seed` | Seed super admin |
 | `npm run server` | Express API |
 | `npm run dev` | Vite frontend |
 | `npm run build` | Production build |
 
 ## Architecture
 
-- Frontend: `src/` — NAFGEM brand tokens in `src/index.css`
-- API: `server/` — CRUD `/api/db/:table`, auth `/api/auth/login`, uploads `/api/storage/:bucket`
-- Migrations: `server/db/schema.sql`, `server/db/migrate_v2.sql`
+- Frontend: `src/` — brand tokens in `src/index.css`
+- API: `server/` — CRUD `/api/db/:table`, auth `/api/auth/login` + `/api/auth/users`, uploads `/api/storage/:bucket`
+- Deploy: `Dockerfile`, `docker-compose.prod.yml`, `deploy/`

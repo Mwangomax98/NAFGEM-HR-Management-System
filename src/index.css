@@ -2,77 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
-/* NAFGEM brand design system — nafgemtanzania.or.tz */
+/* NAFGEM brand design system — matched to nafgemtanzania.or.tz
+   Maroon #881337 · Orange #f99c00 · Navy #0f172a · Warm white #faf6f0 */
 
 @layer base {
   :root {
-    --background: 150 8% 96%;
-    --foreground: 0 0% 10%;
+    --background: 36 43% 96%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 172 83% 24%;
+    /* Brand maroon #881337 */
+    --primary: 341 75% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 172 83% 17%;
-    --primary-glow: 172 60% 35%;
+    --primary-hover: 341 95% 16%;
+    --primary-glow: 341 70% 42%;
 
-    --secondary: 172 50% 30%;
+    --secondary: 341 60% 22%;
     --secondary-foreground: 0 0% 100%;
-    --secondary-hover: 172 83% 17%;
+    --secondary-hover: 341 95% 16%;
 
-    --muted: 150 6% 92%;
-    --muted-foreground: 165 5% 38%;
+    --muted: 36 25% 92%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 27 80% 52%;
+    /* Brand orange #f99c00 (DONATE / CTA) */
+    --accent: 38 100% 49%;
     --accent-foreground: 0 0% 100%;
-    --accent-hover: 27 90% 40%;
-    --accent-glow: 27 85% 60%;
+    --accent-hover: 32 100% 40%;
+    --accent-glow: 38 100% 58%;
 
-    --success: 152 55% 40%;
+    --success: 160 84% 30%;
     --success-foreground: 0 0% 100%;
-    --success-glow: 152 45% 50%;
+    --success-glow: 160 70% 40%;
 
-    --warning: 27 80% 52%;
+    --warning: 38 100% 49%;
     --warning-foreground: 0 0% 100%;
-    --warning-glow: 27 85% 60%;
+    --warning-glow: 38 100% 58%;
 
-    --destructive: 2 65% 58%;
+    --destructive: 350 89% 40%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-glow: 2 55% 68%;
+    --destructive-glow: 350 80% 55%;
 
-    --border: 150 8% 85%;
+    --border: 36 20% 88%;
     --input: 0 0% 100%;
-    --ring: 27 80% 52%;
+    --ring: 38 100% 49%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 172 83% 24%;
+    /* Sidebar: brand maroon with orange active state */
+    --sidebar-background: 341 75% 30%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 27 80% 52%;
+    --sidebar-primary: 38 100% 49%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 172 83% 17%;
+    --sidebar-accent: 341 95% 16%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 172 83% 17%;
-    --sidebar-ring: 27 80% 52%;
+    --sidebar-border: 341 70% 22%;
+    --sidebar-ring: 38 100% 49%;
 
-    --navy-pro: 172 83% 24%;
-    --slate-pro: 165 5% 38%;
-    --teal-pro: 172 83% 24%;
-    --emerald-pro: 152 55% 40%;
-    --amber-pro: 27 80% 52%;
-    --crimson-pro: 2 65% 58%;
-    --off-white-pro: 150 8% 96%;
+    --navy-pro: 222 47% 11%;
+    --slate-pro: 215 16% 47%;
+    --teal-pro: 341 75% 30%;
+    --emerald-pro: 160 84% 30%;
+    --amber-pro: 38 100% 49%;
+    --crimson-pro: 350 89% 40%;
+    --off-white-pro: 36 43% 96%;
 
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover)));
     --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-hover)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(172 60% 30%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(150 8% 98%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(341 60% 22%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(36 40% 98%) 100%);
     --gradient-button: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-hover)));
-    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(152 45% 50%));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(160 70% 40%));
 
     --shadow-soft: 0 2px 8px -2px hsl(var(--primary) / 0.08);
     --shadow-card: 0 4px 16px -4px hsl(var(--primary) / 0.12);
@@ -84,19 +88,32 @@
   }
 
   .dark {
-    --background: 172 30% 8%;
-    --foreground: 150 8% 96%;
-    --card: 172 25% 12%;
-    --card-foreground: 150 8% 96%;
-    --primary: 172 60% 35%;
+    --background: 341 30% 8%;
+    --foreground: 36 43% 96%;
+    --card: 341 25% 12%;
+    --card-foreground: 36 43% 96%;
+    --primary: 341 70% 42%;
     --primary-foreground: 0 0% 100%;
-    --accent: 27 80% 52%;
-    --sidebar-background: 172 83% 17%;
+    --primary-hover: 341 75% 30%;
+    --primary-glow: 341 70% 50%;
+    --secondary: 341 40% 20%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 341 20% 16%;
+    --muted-foreground: 36 15% 70%;
+    --accent: 38 100% 49%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 32 100% 40%;
+    --border: 341 20% 20%;
+    --input: 341 25% 14%;
+    --ring: 38 100% 49%;
+    --sidebar-background: 341 95% 12%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 27 80% 52%;
-    --sidebar-accent: 172 60% 22%;
-    --sidebar-border: 172 60% 22%;
-    --sidebar-ring: 27 80% 52%;
+    --sidebar-primary: 38 100% 49%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 341 70% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 341 40% 18%;
+    --sidebar-ring: 38 100% 49%;
   }
 }
 
@@ -107,24 +124,24 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', 'Montserrat', sans-serif;
     font-weight: 600;
   }
 
   .font-heading {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', 'Montserrat', sans-serif;
   }
 
   .font-body {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
 
   .font-highlight {
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Inter', 'Open Sans', sans-serif;
     font-weight: 600;
   }
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { HRSidebar } from "./HRSidebar";
 import { HRDashboard } from "./HRDashboard";
@@ -38,7 +39,7 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
 
   if (loading || roleLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-svh flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -53,12 +54,12 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
     .slice(0, 2);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <HRSidebar userRole={normalizeRole(userRole || 'employee')} userName={displayName} />
+    <SidebarProvider className="h-svh max-h-svh min-h-0 overflow-hidden">
+      <div className="flex h-full w-full min-h-0 overflow-hidden bg-background">
+        <HRSidebar userRole={normalizeRole(userRole || "employee")} userName={displayName} />
 
-        <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b border-border bg-card shadow-nav flex items-center justify-between px-6">
+        <div className="flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden">
+          <header className="h-16 shrink-0 border-b border-border bg-card shadow-nav flex items-center justify-between px-6">
             <div className="flex items-center space-x-4">
               <SidebarTrigger />
               <div className="flex items-center space-x-3">
@@ -97,11 +98,28 @@ export function HRLayout({ children }: { children?: React.ReactNode }) {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto">
-            {children || <HRDashboard userRole={userRole} userName={displayName} />}
+          <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+            {children !== undefined ? children : <Outlet />}
           </main>
         </div>
       </div>
     </SidebarProvider>
   );
+}
+
+/** Default dashboard content for the index route inside the shell */
+export function DashboardPage() {
+  const { userRole } = useUserRole();
+  const [userName, setUserName] = useState(STUB_USER.email || "User");
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await api.auth.getUser();
+      const id = user?.id || STUB_USER.id;
+      const { data } = await api.from("profiles").select("full_name").eq("id", id).maybeSingle();
+      if (data?.full_name) setUserName(data.full_name);
+    })();
+  }, []);
+
+  return <HRDashboard userRole={userRole} userName={userName} />;
 }

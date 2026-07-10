@@ -1,0 +1,41 @@
+# Production stack: Postgres + API (serves built UI when SERVE_STATIC=true)
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-harmony}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-harmony_hr}
+    volumes:
+      - nafgem_hr_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_AUTH_DISABLED: "false"
+        VITE_MAIN_SITE_URL: ${VITE_MAIN_SITE_URL:-https://nafgemtanzania.or.tz}
+        VITE_HR_PORTAL_URL: ${VITE_HR_PORTAL_URL:-https://hr.nafgemtanzania.or.tz}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-harmony}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-harmony_hr}
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      AUTH_DISABLED: "false"
+      SERVE_STATIC: "true"
+    ports:
+      - "127.0.0.1:4000:4000"
+
+volumes:
+  nafgem_hr_pg:

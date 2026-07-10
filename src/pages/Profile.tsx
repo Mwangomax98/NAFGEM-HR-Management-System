@@ -84,7 +84,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="bg-background p-6">
         <div className="max-w-6xl mx-auto space-y-6">
           <Skeleton className="h-8 w-64" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -104,7 +104,7 @@ export default function Profile() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="bg-background p-6">
         <div className="max-w-6xl mx-auto">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -119,7 +119,7 @@ export default function Profile() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="bg-background p-6">
         <div className="max-w-6xl mx-auto">
           <Alert>
             <AlertCircle className="h-4 w-4" />

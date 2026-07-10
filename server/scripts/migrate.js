@@ -27,6 +27,7 @@ async function main() {
     await runSql(client, 'migrate_v2.sql');
     await runSql(client, 'migrate_v3.sql');
     await runSql(client, 'migrate_v4.sql');
+    await runSql(client, 'migrate_v5.sql');
     console.log('Migration completed successfully');
   } finally {
     await client.end();

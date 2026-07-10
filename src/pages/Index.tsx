@@ -1,7 +1,1 @@
-import { HRLayout } from "@/components/hr/HRLayout";
-
-const Index = () => {
-  return <HRLayout />;
-};
-
-export default Index;
+export { DashboardPage as default } from "@/components/hr/HRLayout";
